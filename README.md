@@ -1,6 +1,23 @@
 # NVIDIA 算子优化 Agent 设计
 
-T00 工程基础已验收：Python 包、CPU 验收命令、依赖锁和 CI。[四组跨平台 CI 已通过](https://github.com/yuan-jc/kernelagent/actions/runs/34667461881)。尚未实现 GPU 优化 Agent，T01 及后续功能未开始。
+T00 工程基础与 T01 核心 domain 契约已验收：Python 包、CPU 验收命令、依赖锁、CI，以及 12 个不可变契约对象（OperatorSpec/Workload/OptimizationTask/Implementation/MethodProposal/EvaluationResult/TaskResult 等）、版本化 JSON 序列化与内容 hash 身份。[T00 四组跨平台 CI 已通过](https://github.com/yuan-jc/kernelagent/actions/runs/34667461881)。尚未实现 GPU 优化 Agent，T02 及后续功能未开始。
+
+## 核心 domain（T01）
+
+`kernelagent.domain` 提供纯契约层：frozen dataclass + 构造期校验、`schema_version` 信封序列化（未知版本/篡改字段明确拒绝）、按设计 §11.1 从内容派生的 `implementation_id`。domain 不导入 torch、Triton、模型 SDK 或任何 adapter，由 AST 边界测试与子进程导入测试双重锁定。示例：
+
+```python
+from kernelagent.domain import IOPort, OperatorSpec, dumps, loads
+
+spec = OperatorSpec(
+    operator_id="matmul",
+    granularity="operator",
+    inputs=(IOPort(name="a", dtype="float32", shape=(-1, -1)),
+            IOPort(name="b", dtype="float32", shape=(-1, -1))),
+    outputs=(IOPort(name="y", dtype="float32", shape=(-1, -1)),),
+)
+restored = loads(dumps(spec))  # 往返保持语义；非法字段在构造期被拒绝
+```
 
 ## 本地开发（Windows / Linux）
 

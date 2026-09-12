@@ -17,7 +17,7 @@
     "N/A"
   ],
   "notes": [
-    "T00 accepted after local checks and four successful CPU CI jobs; T01-T25 remain TODO.",
+    "T00 and T01 accepted after local CPU checks; T02-T25 remain TODO.",
     "Dependencies are hard gates; acceptance requires evidence, not narrative.",
     "GPU N/A means this package is offline; it does not certify integrated GPU behavior.",
     "Create a work-package record from docs/work-package-template.md before implementation; exact acceptance commands are not implemented yet.",
@@ -49,15 +49,18 @@
       "dependencies": [
         "T00"
       ],
-      "status": "TODO",
+      "status": "ACCEPTED",
       "checks": {
-        "CPU": "NOT_RUN",
+        "CPU": "PASS",
         "GPU": "N/A",
         "LIVE_MODEL": "N/A",
-        "REVIEW": "NOT_RUN"
+        "REVIEW": "PASS"
       },
-      "evidence": [],
-      "work_package_record": null,
+      "evidence": [
+        "docs/work-packages/T01.md",
+        "docs/evidence/T01.json"
+      ],
+      "work_package_record": "docs/work-packages/T01.md",
       "blocker": null
     },
     {
