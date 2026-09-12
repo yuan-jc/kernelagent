@@ -1,0 +1,63 @@
+{
+  "suite": "tritonbench",
+  "upstream": {
+    "repository": "pytorch-labs/tritonbench",
+    "commit": "e2bbc48fdee59d3d050e1b6fc3327eb3d2127f47",
+    "pinned_rationale": "commit era-matched to the pinned torch 2.5.1 evaluation image (HEAD requires newer torch._inductor API)"
+  },
+  "scope": "files the T18 adapter executes/relies on; the clone must stay byte-identical on these paths",
+  "files": [
+    {
+      "path": "run.py",
+      "sha256": "1b68ff2fb2c1f0927b9616e6ee00a30ea5f278c783bea5c44aa7213bb62ca105"
+    },
+    {
+      "path": "tritonbench/utils/data_utils.py",
+      "sha256": "a6d2e902b008d19f89214b899b1c370e66f768797f52f823b8e500e980d4205b"
+    },
+    {
+      "path": "tritonbench/utils/env_utils.py",
+      "sha256": "35a3b95b902e1f063ce0c27c39251fef5c76382eb2f5900df2ff4e889989f483"
+    },
+    {
+      "path": "tritonbench/utils/gpu_utils.py",
+      "sha256": "5271b07e5bb7a7438e8f031b51c0d53bb9ea7df099520ce77767798917c62124"
+    },
+    {
+      "path": "tritonbench/utils/input.py",
+      "sha256": "89a6621a744d9eff062b3199d995185eb6322a56651ce8bb214a9cc6a61bc02c"
+    },
+    {
+      "path": "tritonbench/utils/jagged_utils.py",
+      "sha256": "a70fa769771da9054ff132e5978a7f855740198f86a3e51e8d4546d69b5dc4d3"
+    },
+    {
+      "path": "tritonbench/utils/loader.py",
+      "sha256": "4bd10244229c50440138b6d06d4438183600b82c12286523cc377b1ec0beeb95"
+    },
+    {
+      "path": "tritonbench/utils/parser.py",
+      "sha256": "f014388c4c7ddc130845606838a57ec3ccb8e32c928d0c60b30e89423f1fb049"
+    },
+    {
+      "path": "tritonbench/utils/path_utils.py",
+      "sha256": "088d0dbbaf018db4aad35b7dc5e8960056074839929ef40cc6c998bc3c737e8b"
+    },
+    {
+      "path": "tritonbench/utils/triton_op.py",
+      "sha256": "98fcf5a53efb45b22719154907ad4bf73c4f678f8190c42c52bd4ad9ca65d627"
+    },
+    {
+      "path": "tritonbench/operators/vector_add/__init__.py",
+      "sha256": "af7b6b7d38888472df42580076254ca3d438aa9bc9459020e5e5c722799c269c"
+    },
+    {
+      "path": "tritonbench/operators/vector_add/kernels.py",
+      "sha256": "91c059da7fbae934289b1c727a9eec2d53fddf829509bf9562c11a9e9a436a26"
+    },
+    {
+      "path": "tritonbench/operators/vector_add/operator.py",
+      "sha256": "ddc85056d7edf2b6055653c68e5996f8d56804164fad9bfb023d667b23d74c09"
+    }
+  ]
+}

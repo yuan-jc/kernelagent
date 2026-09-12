@@ -15,7 +15,7 @@
     "T12a"
   ],
   "pending": {
-    "T11/T18": "external adapters",
+    "T11": "external KernelAgent adapter (upstream generation needs LLM credential, same as T12)",
     "T16/T17/T20/T21/T22": "composites",
     "T12/G5": "LIVE_MODEL needs user provider credentials",
     "LIVE_MODEL": "NOT_RUN"
@@ -617,5 +617,21 @@
         }
       }
     }
+  },
+  "target_ubuntu_t18": {
+    "status": "ACCEPTED",
+    "accepted_at": "2026-09-13",
+    "gpu_checks": {
+      "status": "PASS",
+      "command": "uv run --locked python examples/tritonbench_smoke.py --output artifacts/t18",
+      "exit_code": 0,
+      "report": {
+        "path": "artifacts/t18/tritonbench-report.json",
+        "sha256": "see evidence JSON report_sha256 line in artifacts/t18"
+      },
+      "cases": "pinned tritonbench commit e2bbc48f (13-file manifest verified, clone byte-identical); upstream vector_add runner end-to-end on real GPU; project backend ka_vector_add_sm89 registered at runtime via upstream API and present in the upstream measurement table; same-protocol T07 batches for baseline/upstream-config/variant"
+    },
+    "eval_image": "T18 diagnostic layer sha256:5ce0c61e8d6fc0c053d137e9ad730fe0d9d96810fad7eba24b03ba1f4b2b893e (eval image + tabulate/psutil/pynvml, configs/tritonbench/Dockerfile)",
+    "scope_note": "vector_add operator only; other 60 operators out of smoke scope."
   }
 }
