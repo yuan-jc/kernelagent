@@ -17,7 +17,7 @@
     "N/A"
   ],
   "notes": [
-    "Target: Ubuntu + NVIDIA; T03-T07, T09, T10, T15 ACCEPTED by 2026-09-13; G1 closed; G2 wave: T11/T12/T13/T14 next (T12 LIVE_MODEL needs user provider credentials).",
+    "Target: Ubuntu + NVIDIA; T03-T07, T09, T10, T15 ACCEPTED; T12 READY_FOR_ACCEPTANCE (only LIVE_MODEL pending user provider credentials); G1 closed.",
     "Current evidence is consolidated in docs/evidence/current.json; pre-cleanup history remains at Git commit 1b4a306.",
     "T04a is process mechanics, not a sandbox; T12a is offline model plumbing, not live generation.",
     "No target GPU or live model acceptance is implied by CPU tests or CI. Preserve parent package gates."
@@ -296,16 +296,19 @@
         "T04",
         "T10"
       ],
-      "status": "TODO",
+      "status": "READY_FOR_ACCEPTANCE",
       "checks": {
-        "CPU": "NOT_RUN",
-        "GPU": "NOT_RUN",
+        "CPU": "PASS",
+        "GPU": "PASS",
         "LIVE_MODEL": "NOT_RUN",
-        "REVIEW": "NOT_RUN"
+        "REVIEW": "PASS"
       },
-      "evidence": [],
-      "work_package_record": null,
-      "blocker": "Depends on T04/T10 (GPU chain). Offline slice split into T12a (accepted); real provider client + LIVE_MODEL closed loop remain here."
+      "evidence": [
+        "docs/work-packages/T12.md",
+        "artifacts/t12/generation-loop-report.json"
+      ],
+      "work_package_record": "docs/work-packages/T12.md",
+      "blocker": "G5 LIVE_MODEL requires user-configured provider credentials (MODEL_PROVIDER_API_KEY); everything else PASS."
     },
     {
       "id": "T12a",
