@@ -17,7 +17,7 @@
     "N/A"
   ],
   "notes": [
-    "T00, T01, T02 and T08 accepted after local CPU checks; GPU packages (T03+) await a user-provided Linux NVIDIA environment; T09/T07 chain blocked on GPU.",
+    "T00, T01, T02 and T08 accepted; T03 is READY_FOR_ACCEPTANCE - probe tooling verified on real hardware (native + WSL reports in evidence), GPU acceptance blocked on a real card (host VM GPU-PV blocks kernel result read-back, nested WSL driver segfaults).",
     "Dependencies are hard gates; acceptance requires evidence, not narrative.",
     "GPU N/A means this package is offline; it does not certify integrated GPU behavior.",
     "Create a work-package record from docs/work-package-template.md before implementation; exact acceptance commands are not implemented yet.",
@@ -89,16 +89,19 @@
       "dependencies": [
         "T00"
       ],
-      "status": "TODO",
+      "status": "READY_FOR_ACCEPTANCE",
       "checks": {
-        "CPU": "NOT_RUN",
+        "CPU": "PASS",
         "GPU": "NOT_RUN",
         "LIVE_MODEL": "N/A",
-        "REVIEW": "NOT_RUN"
+        "REVIEW": "PASS"
       },
-      "evidence": [],
-      "work_package_record": null,
-      "blocker": null
+      "evidence": [
+        "docs/work-packages/T03.md",
+        "docs/evidence/T03.json"
+      ],
+      "work_package_record": "docs/work-packages/T03.md",
+      "blocker": "No environment can complete a verified kernel write-read round trip: host VM GPU-PV blocks device memory read-back, nested WSL driver segfaults; physical NVIDIA card not yet installed. Rerun 'kernelagent probe' on a real GPU environment to accept."
     },
     {
       "id": "T04",

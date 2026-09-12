@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "GPU environment probe report",
+  "type": "object",
+  "required": ["schema_version", "probe_protocol", "generated_at", "platform", "python", "checks", "summary"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "probe_protocol": {"const": "gpu-probe-v1"},
+    "generated_at": {"type": "string", "format": "date-time"},
+    "platform": {
+      "type": "object",
+      "required": ["system", "release", "machine"],
+      "additionalProperties": false,
+      "properties": {
+        "system": {"type": "string"},
+        "release": {"type": "string"},
+        "machine": {"type": "string"}
+      }
+    },
+    "python": {"type": "string"},
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "status", "detail"],
+        "additionalProperties": false,
+        "properties": {
+          "name": {"type": "string"},
+          "status": {"enum": ["pass", "fail", "unavailable"]},
+          "detail": {"type": "object"},
+          "command": {"type": "string"}
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": ["pass", "fail", "unavailable"],
+      "additionalProperties": false,
+      "properties": {
+        "pass": {"type": "integer", "minimum": 0},
+        "fail": {"type": "integer", "minimum": 0},
+        "unavailable": {"type": "integer", "minimum": 0}
+      }
+    }
+  }
+}

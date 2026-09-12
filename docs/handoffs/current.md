@@ -1,15 +1,15 @@
 # 当前开发交接
 
 - 更新时间：2026-09-12
-- 当前工作包：T08，ACCEPTED；G0 剩 T03（GPU 环境探测，需用户提供 Linux NVIDIA worker），G1 剩 T04–T07/T09/T10（均依赖 GPU 链或 T07）。
-- 当前代码状态：T00 工程验收入口 + T01 domain 契约 + T02 KernelBench 数据适配 + T08 证据存储与身份（内容寻址 artifact、SQLite 追加式索引、evaluation_key 身份、实验记录不可变、完整性审计、事件流，180 项测试）。
-- 已完成：详细设计、任务计划、T00、T01、T02、T08，已上传 GitHub 公开仓库 https://github.com/yuan-jc/kernelagent。
-- 已通过检查：本地 180 项 CPU 测试、ruff、wheel 干净安装含 storage 功能验证、audit 健康检查；CI 修复后待远程确认（T01 起 4 个 run 因 README 代码块格式与清单绑定 hash 平台依赖失败，已修复）。
-- 被验证实现：T08 工作包卡片记录的提交（见 docs/work-packages/T08.md 与 docs/evidence/T08.json）。
-- 尚未执行：T03–T07、T09–T25；没有 GPU/模型实验。
-- 环境未知项：目标 NVIDIA GPU、Linux worker 访问方式、NCU 权限、运行时模型配置。网络：GitHub 走本机代理 127.0.0.1:7893（仓库级 git http.proxy 已配置）。
+- 当前工作包：T03，READY_FOR_ACCEPTANCE（探测工具在真实硬件验证完成，GPU 验收被环境阻塞）；T00/T01/T02/T08 ACCEPTED；T04+ 等待 T03 转 ACCEPTED。
+- 当前代码状态：T00 工程验收入口 + T01 domain 契约 + T02 KernelBench 数据适配 + T08 证据存储 + T03 GPU 环境探测（自包含跨平台 probe、驱动检查子进程隔离、CUresult 全程留痕、native/wsl 双传输、EvidenceStore 集成，200 项测试）。
+- 已完成：详细设计、任务计划、T00–T03、T08，已上传 GitHub 公开仓库 https://github.com/yuan-jc/kernelagent。
+- 已通过检查：本地 200 项 CPU 测试、ruff、wheel 探测冒烟；两份真实探测报告（native sha256 3715b324…、wsl b2ab7ab0…）已入证据库（audit healthy）。
+- 关键环境发现：本 Windows 会话是 VM，GPU 为 GPU-PV 透传（RTX 4060 可查询/JIT/启动/同步，但设备内存分配 0xc9、结果回读 0xc0000006）；嵌套 WSL 驱动执行层 SIGSEGV；WSL 的 ncu 是 Windows shim 不可用。**用户将安装实体 NVIDIA 卡**——装好后复跑 `kernelagent probe`，kernel_launch=pass 即 T03 转 ACCEPTED 并解锁 T04。
+- 尚未执行：T04–T07、T09–T25；没有 GPU/模型实验。
+- 网络与工具：GitHub 走本机代理 127.0.0.1:7893（仓库级 git http.proxy）；日志/工件 API 需认证，CI 失败用"干净 clone + uv sync --locked + 复现 workflow 命令"本地诊断。
 - 活动作业：无。
-- 下一步：两条路任选——(a) 用户提供 Linux GPU 环境后推进 T03（环境探测）；(b) 无 GPU 时先做 T12 的离线前置（ModelClient 结构化解析/异常分支/成本入账，用录制响应验证，真实验证留到有凭据时）。均需先填写工作包卡片。复查命令：`uv run --locked kernelagent check --output artifacts/local`。
+- 下一步：用户装好实体卡后执行 `uv run --locked kernelagent probe --target native --output artifacts/t03-native2 --evidence-root artifacts/t03-evidence`，cuda_kernel_launch=pass 即验收 T03 → 推进 T04（可信 worker 边界）。无卡窗口期可考虑 T12 离线前置（需用户同意放宽依赖门）。复查命令：`uv run --locked kernelagent check --output artifacts/local`。
 
 ## 后续每次交接必须补齐
 
