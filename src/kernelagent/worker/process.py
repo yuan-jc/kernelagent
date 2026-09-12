@@ -57,9 +57,13 @@ class _InfraFailure(Exception):
     """An infrastructure step failed; the run must not report completed."""
 
 
-def _is_secret_name(name: str) -> bool:
+def is_secret_name(name: str) -> bool:
     upper = name.upper()
     return any(marker in upper for marker in SECRET_MARKERS) or name in EXTRA_DENIED_NAMES
+
+
+# Backward-compatible private alias.
+_is_secret_name = is_secret_name
 
 
 def build_child_env(
