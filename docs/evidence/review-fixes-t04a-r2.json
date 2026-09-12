@@ -24,7 +24,12 @@
       "command": "uv run --locked kernelagent check --output artifacts/t04a-fix-r2",
       "status": "PASS",
       "run_id": "5dcad0572e7142d5a25128d229c05f20",
-      "counts": {"passed": 307, "failed": 0, "errors": 0, "skipped": 0}
+      "counts": {
+        "passed": 307,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0
+      }
     },
     "static_checks": {
       "uv run --locked ruff check .": "PASS",
@@ -34,5 +39,6 @@
   "not_run": [
     "Target Ubuntu + NVIDIA formal T03/T04 acceptance (frozen spec unchanged)",
     "POSIX setsid-escape and container-level enforcement verification (parent T04 on Linux)"
-  ]
+  ],
+  "commit": "75b52e8 (post-fix Windows CI: completed success, all four matrix jobs green - binds this exact commit)"
 }
