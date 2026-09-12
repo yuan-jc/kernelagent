@@ -1,0 +1,33 @@
+{
+  "work_package": "T04a",
+  "status": "ACCEPTED",
+  "repository": "https://github.com/yuan-jc/kernelagent",
+  "parent_note": "User-approved offline split of T04 (process mechanics). Parent T04 acceptance contract preserved: OS-enforced isolation (containers), real GPU evaluation requests, and network-off enforcement are accepted on the target Ubuntu environment.",
+  "local": {
+    "platform": "Windows",
+    "python": "3.13.3",
+    "uv": "0.12.13",
+    "cpu_counts": {"passed": 293, "failed": 0, "errors": 0, "skipped": 0},
+    "run_id": "9d82fbe577c549b99bc12e7026db50a8",
+    "checks": {
+      "normal_payload_completion_and_cleanup": "PASS",
+      "timeout_tree_kill_child_and_grandchild": "PASS",
+      "failed_payload_and_forged_success": "PASS",
+      "env_scrubbing_end_to_end": "PASS",
+      "trusted_dir_tamper_detection": "PASS",
+      "ensure_within_escape_rejection": "PASS",
+      "t00_t12a_regression_suite": "PASS",
+      "ruff_check_and_format": "PASS",
+      "wheel_build_worker_smoke": "PASS"
+    }
+  },
+  "deliverables": [
+    "worker/protocol: frozen WorkerRequest (validated timeout/argv/env pairs) and WorkerOutcome (status completed|failed|timeout, exit_code, duration, stdout/stderr tails, killed flag, workdir retention policy)",
+    "worker/process: execute() with private workdir, scrubbed environment (secret-shaped name denylist, case-insensitive), tree kill via taskkill /T /F (Windows) or setsid+killpg SIGKILL (POSIX) with reap fallback",
+    "ensure_within path-boundary guard; snapshot_dir_hashes/assert_dir_unchanged trusted-directory tamper detection",
+    "24 new tests including grandchild-survival regression for the tree kill"
+  ],
+  "gpu": "N/A",
+  "live_model": "N/A",
+  "review": "PASS: module docstring and card state explicitly this is process-boundary and detection machinery, not a sandbox; OS-enforced write isolation and network-off belong to parent T04 on Ubuntu; kill path is belt-and-braces (kill tree, then reap, then kill())"
+}

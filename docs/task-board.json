@@ -17,7 +17,8 @@
     "N/A"
   ],
   "notes": [
-    "T00-T02, T08 and T12a accepted; T03 is READY_FOR_ACCEPTANCE - probe tooling verified on real hardware (native + WSL reports in evidence), GPU acceptance blocked on a real card (host VM GPU-PV blocks kernel result read-back, nested WSL driver segfaults).",
+    "T00-T02, T04a, T08 and T12a accepted; T03 is READY_FOR_ACCEPTANCE - probe tooling verified after review fixes (native 6/6 pass incl. kernel round trip; WSL kernel launch pass), formal GPU acceptance waits for the target Ubuntu + NVIDIA run per frozen spec.",
+    "T04a is a user-approved offline split of T04 (process isolation mechanics); parent T04 acceptance contract (OS-enforced isolation, real GPU eval requests, network-off) unchanged.",
     "T12a is a user-approved offline split of T12: parent T12 acceptance contract (real model-to-code-to-GPU loop) is unchanged.",
     "Dependencies are hard gates; acceptance requires evidence, not narrative.",
     "GPU N/A means this package is offline; it does not certify integrated GPU behavior.",
@@ -120,6 +121,26 @@
       },
       "evidence": [],
       "work_package_record": null,
+      "blocker": "Blocked on T03 acceptance (target Ubuntu). Process-isolation mechanics split into T04a (accepted); OS-enforced isolation, real GPU evaluation requests and network-off enforcement remain here."
+    },
+    {
+      "id": "T04a",
+      "title": "可信 worker 进程隔离机制（T04 子包）",
+      "dependencies": [
+        "T01"
+      ],
+      "status": "ACCEPTED",
+      "checks": {
+        "CPU": "PASS",
+        "GPU": "N/A",
+        "LIVE_MODEL": "N/A",
+        "REVIEW": "PASS"
+      },
+      "evidence": [
+        "docs/work-packages/T04a.md",
+        "docs/evidence/T04a.json"
+      ],
+      "work_package_record": "docs/work-packages/T04a.md",
       "blocker": null
     },
     {

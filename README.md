@@ -1,6 +1,23 @@
 # NVIDIA 算子优化 Agent 设计
 
-T00 工程基础、T01 核心 domain 契约、T02 KernelBench 数据适配、T03 GPU 环境探测（READY_FOR_ACCEPTANCE）、T08 证据存储与 T12a 模型客户端离线层已验收：CPU 验收命令、不可变契约对象与内容 hash 身份、KernelBench 快照读取器、追加式证据存储、跨平台 GPU 探测（`kernelagent probe`），以及模型客户端离线层（请求身份 hash、录制回放、有限重试、成本预算、结构化解析）。[T00 四组跨平台 CI 已通过](https://github.com/yuan-jc/kernelagent/actions/runs/34667461881)。真实 GPU 优化闭环（T04+）等待实体卡环境验收。
+T00 工程基础、T01 核心 domain 契约、T02 KernelBench 数据适配、T03 GPU 环境探测（READY_FOR_ACCEPTANCE）、T04a 可信 worker 进程隔离、T08 证据存储与 T12a 模型客户端离线层已验收：CPU 验收命令、不可变契约对象与内容 hash 身份、KernelBench 快照读取器、追加式证据存储、跨平台 GPU 探测（`kernelagent probe`）、不可信载荷的进程隔离执行（超时杀进程树、环境净化、目录篡改检测），以及模型客户端离线层（请求身份 hash、录制回放、有限重试、成本预算、结构化解析）。[T00 四组跨平台 CI 已通过](https://github.com/yuan-jc/kernelagent/actions/runs/34667461881)。真实 GPU 优化闭环（T04 父包/T05+）等待目标 Ubuntu 环境验收。
+
+## 可信 worker 进程隔离（T04a）
+
+```python
+from kernelagent.worker import WorkerRequest, execute
+
+outcome = execute(WorkerRequest(
+    request_id="req-1",
+    argv=(sys.executable, "-c", "run_untrusted_candidate()"),
+    timeout_seconds=60.0,
+    workspace_root=workspace,
+))
+# 超时击杀整个进程树（Windows taskkill /T /F，POSIX setsid+killpg）；
+# 子进程环境默认拒绝 KEY/SECRET/TOKEN 等变量；私有工作目录自动清理；
+# 可信目录篡改由 snapshot_dir_hashes + assert_dir_unchanged 检出。
+# 这是进程边界与检测机制，不是沙箱——OS 级强制隔离属父包 T04（Ubuntu 容器）。
+```
 
 ## 模型客户端离线层（T12a）
 
