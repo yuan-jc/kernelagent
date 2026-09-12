@@ -17,7 +17,7 @@
     "N/A"
   ],
   "notes": [
-    "Target: Ubuntu + NVIDIA; start with docs/UBUNTU.md and T03 target acceptance.",
+    "Target: Ubuntu + NVIDIA; T03 target GPU acceptance ACCEPTED 2026-09-12 (RTX 4060 Laptop); next is T04.",
     "Current evidence is consolidated in docs/evidence/current.json; pre-cleanup history remains at Git commit 1b4a306.",
     "T04a is process mechanics, not a sandbox; T12a is offline model plumbing, not live generation.",
     "No target GPU or live model acceptance is implied by CPU tests or CI. Preserve parent package gates."
@@ -84,10 +84,10 @@
       "dependencies": [
         "T00"
       ],
-      "status": "READY_FOR_ACCEPTANCE",
+      "status": "ACCEPTED",
       "checks": {
         "CPU": "PASS",
-        "GPU": "NOT_RUN",
+        "GPU": "PASS",
         "LIVE_MODEL": "N/A",
         "REVIEW": "PASS"
       },
@@ -96,7 +96,7 @@
         "docs/work-packages/T03.md"
       ],
       "work_package_record": "docs/work-packages/T03.md",
-      "blocker": "Target Ubuntu runtime acceptance remains pending; see the current work-package card."
+      "blocker": null
     },
     {
       "id": "T04",
@@ -114,7 +114,7 @@
       },
       "evidence": [],
       "work_package_record": "docs/work-packages/T04.md",
-      "blocker": "Requires target T03 acceptance; containers, enforced resource isolation and GPU requests remain TODO."
+      "blocker": "Target T03 acceptance complete; containers, enforced resource isolation and real GPU requests remain TODO."
     },
     {
       "id": "T04a",
@@ -134,7 +134,7 @@
         "docs/work-packages/T04a.md"
       ],
       "work_package_record": "docs/work-packages/T04a.md",
-      "blocker": "Target Ubuntu runtime acceptance remains pending; see the current work-package card."
+      "blocker": "Target runtime confirmed by T03; process-mechanics recheck on Ubuntu pending per the work-package card."
     },
     {
       "id": "T05",

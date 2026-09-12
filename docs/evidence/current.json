@@ -1,6 +1,7 @@
 {
   "schema_version": "1.0",
   "kind": "ubuntu_development_handoff",
+  "updated_at": "2026-09-12",
   "history_before_cleanup": {
     "commit": "1b4a3066954317beff7a7b03b51048e7c94d834a",
     "note": "Historical working cards, evidence and research collection records remain in Git at this commit."
@@ -13,10 +14,77 @@
     "T12a"
   ],
   "pending": {
-    "T03": "Target Ubuntu + NVIDIA GPU acceptance NOT_RUN",
-    "T04a": "Target runtime review pending; process mechanics only",
+    "T04a": "Process-mechanics recheck on the now-confirmed Ubuntu target per the work-package card",
     "T04": "Container/OS-enforced worker and real GPU requests TODO",
     "LIVE_MODEL": "NOT_RUN"
+  },
+  "target_ubuntu_t03": {
+    "status": "ACCEPTED",
+    "accepted_at": "2026-09-12",
+    "commit": "e439fc1717d67696f8c6d613ed8ac692109c32fb",
+    "worktree_patch": "artifacts/ubuntu/worktree.patch (empty; only untracked GLM_CODEX_HANDOFF.md)",
+    "environment": {
+      "os": "Linux 6.14.0-37-generic x86_64 (Ubuntu 25.04, uname in artifacts/ubuntu/os.txt)",
+      "python": "3.11.16 (uv-managed)",
+      "gpu": "NVIDIA GeForce RTX 4060 Laptop GPU",
+      "gpu_uuid": "GPU-ea248ec5-1f33-d90f-c598-1c94dfdc6998",
+      "driver": "580.95.05",
+      "compute_capability": "8.9",
+      "nvidia_smi_evidence": "artifacts/ubuntu/nvidia-smi.txt"
+    },
+    "cpu_check": {
+      "status": "PASS",
+      "command": "uv run --locked kernelagent check --output artifacts/ubuntu-cpu",
+      "counts": {
+        "total": 315,
+        "passed": 312,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 3,
+        "skip_reason": "tests/test_worker_boundary.py Windows Job Object path (3 cases)"
+      },
+      "report": {
+        "path": "artifacts/ubuntu-cpu/2ebe2e803bd14621a9fce08bf049c1bf/report.json",
+        "sha256": "f33eabf385fa2a9ddae5e38eaf4971af61b257a27937fa1adaee4ce6d4b7c010",
+        "pytest_exit_code": 0
+      }
+    },
+    "lint_format_build": {
+      "ruff_check": "PASS",
+      "ruff_format": "PASS",
+      "worker_smoke": "PASS (status=completed, examples/worker_smoke.py)",
+      "uv_build": "PASS (dist/kernelagent_evidence-0.1.0 sdist+wheel)"
+    },
+    "gpu_probe": {
+      "status": "PASS",
+      "protocol": "gpu-probe-v1",
+      "command": "uv run --locked kernelagent probe --target native --output artifacts/ubuntu/probe --evidence-root artifacts/ubuntu/evidence",
+      "exit_code": 0,
+      "summary": {
+        "pass": 4,
+        "fail": 0,
+        "unavailable": 2
+      },
+      "checks": {
+        "nvidia_smi": "pass",
+        "cuda_driver_api": "pass",
+        "cuda_kernel_launch": "pass (PTX JIT kernel wrote 42, verified via device-memory round trip; 13-step CUresult trace all 0x0)",
+        "nvcc_toolchain": "unavailable (nvcc not found in PATH)",
+        "ncu_profiler": "unavailable (ncu not found in PATH)",
+        "optional_python_packages": "pass (torch/triton not installed, informational)"
+      },
+      "report": {
+        "path": "artifacts/ubuntu/probe/gpu-probe-report.json",
+        "sha256": "ab9f5627797f4d0e7df3c71f46898ae1e406466b0da2827f99d607e50f6b32cc",
+        "schema": "schemas/gpu-probe.schema.json validation PASS"
+      },
+      "evidence_store": {
+        "root": "artifacts/ubuntu/evidence",
+        "audit": "healthy (indexed=1, corrupted=0, missing=0, orphaned=0)",
+        "artifact_sha256": "ab9f5627797f4d0e7df3c71f46898ae1e406466b0da2827f99d607e50f6b32cc"
+      },
+      "tool_gap_impact": "nvcc/ncu absent on host: T04 container images must carry their own CUDA toolkit; T05 full upstream KernelBench needs nvcc; T15 real .ncu-rep profiling needs ncu. Recorded per probe semantics; not installed this round."
+    }
   },
   "local": {
     "system": "Windows",
