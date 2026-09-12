@@ -74,11 +74,13 @@ def test_request_hash_stable_and_content_sensitive():
         {"messages": (("wizard", "hi"),)},
         {"messages": (("user", ""),)},
         {"messages": (["user", "hi"],)},
+        {"messages": [("user", "hi")]},
         {"temperature": True},
         {"temperature": "hot"},
         {"temperature": 2.5},
         {"max_tokens": 0},
         {"max_tokens": True},
+        {"purpose": []},
     ],
     ids=[
         "model",
@@ -86,11 +88,13 @@ def test_request_hash_stable_and_content_sensitive():
         "bad-role",
         "empty-text",
         "list-message",
+        "list-messages",
         "bool-temp",
         "str-temp",
         "temp-range",
         "zero-tokens",
         "bool-tokens",
+        "mutable-purpose",
     ],
 )
 def test_invalid_requests_rejected(overrides):
@@ -121,6 +125,10 @@ def test_response_requires_content_and_finish_reason():
             finish_reason="",
             usage=response.usage,
         )
+    with pytest.raises(ValueError, match="request_sha256"):
+        ModelResponse("bad", request.model_id, "x", "stop", ModelUsage(1, 1))
+    with pytest.raises(ValueError, match="usage"):
+        ModelResponse(request.request_sha256, request.model_id, "x", "stop", [1, 1])
 
 
 # -- offline clients ---------------------------------------------------------
@@ -156,6 +164,25 @@ def test_recorded_client_hits_by_request_hash_and_misses_loudly():
     assert client.hits == 2
     with pytest.raises(RecordingMissError, match="no recorded response"):
         client.complete(make_request(max_tokens=512))
+
+
+def test_recorded_client_rejects_miskeyed_or_wrong_model_response():
+    request = make_request()
+    other = make_request(max_tokens=512)
+    with pytest.raises(ValueError, match="recording key"):
+        RecordedModelClient({request.request_sha256: make_response(other)})
+
+    wrong_model = ModelResponse(
+        request_sha256=request.request_sha256,
+        model_id="model-b",
+        content="{}",
+        finish_reason="stop",
+        usage=ModelUsage(1, 1),
+    )
+    client = RecordedModelClient({request.request_sha256: wrong_model})
+    with pytest.raises(ValueError, match="does not match request model"):
+        client.complete(request)
+    assert client.hits == 0
 
 
 def test_retrying_client_recovers_from_transient_errors():
@@ -230,6 +257,9 @@ def test_budget_rejects_invalid_configuration():
     budget = TokenBudget(max_total_tokens=10)
     with pytest.raises(ValueError):
         budget.ensure_allowed(ledger, estimated_next_tokens=-1)
+    for invalid in (True, 1.5, float("nan")):
+        with pytest.raises(ValueError, match="integer"):
+            budget.ensure_allowed(ledger, estimated_next_tokens=invalid)
 
 
 # -- structured parsing ------------------------------------------------------

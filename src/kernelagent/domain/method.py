@@ -9,7 +9,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from kernelagent.domain._validation import require_finite_number, require_sha256, require_text
+from kernelagent.domain._validation import (
+    require_finite_number,
+    require_instance,
+    require_sha256,
+    require_text,
+    require_tuple,
+)
 from kernelagent.domain.evidence import EvidenceRef
 
 
@@ -22,6 +28,15 @@ class Hypothesis:
 
     def __post_init__(self) -> None:
         require_text(self.statement, "statement")
+        require_tuple(self.supporting_evidence, "supporting_evidence")
+        for index, ref in enumerate(self.supporting_evidence):
+            require_instance(ref, EvidenceRef, f"supporting_evidence[{index}]")
+        require_tuple(self.predicted_observations, "predicted_observations")
+        for index, observation in enumerate(self.predicted_observations):
+            require_text(observation, f"predicted_observations[{index}]")
+        require_tuple(self.falsification_conditions, "falsification_conditions")
+        for index, condition in enumerate(self.falsification_conditions):
+            require_text(condition, f"falsification_conditions[{index}]")
 
 
 @dataclass(frozen=True, slots=True)
@@ -38,9 +53,11 @@ class MethodProposal:
     def __post_init__(self) -> None:
         require_text(self.method_id, "method_id")
         require_text(self.method_version, "method_version")
+        require_instance(self.hypothesis, Hypothesis, "hypothesis")
         require_sha256(self.parameter_space_sha256, "parameter_space_sha256")
         require_finite_number(
             self.estimated_gpu_seconds, "estimated_gpu_seconds", positive=True, allow_zero=True
         )
+        require_tuple(self.target_workload_ids, "target_workload_ids")
         for index, workload_id in enumerate(self.target_workload_ids):
             require_text(workload_id, f"target_workload_ids[{index}]")

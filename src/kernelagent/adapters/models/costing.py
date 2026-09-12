@@ -64,6 +64,8 @@ class TokenBudget:
         self.max_total_tokens = max_total_tokens
 
     def ensure_allowed(self, ledger: CostLedger, estimated_next_tokens: int = 0) -> None:
+        if isinstance(estimated_next_tokens, bool) or not isinstance(estimated_next_tokens, int):
+            raise ValueError("estimated_next_tokens must be an integer")
         if estimated_next_tokens < 0:
             raise ValueError("estimated_next_tokens must be >= 0")
         projected = ledger.total_tokens() + estimated_next_tokens

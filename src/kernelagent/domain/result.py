@@ -10,7 +10,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
-from kernelagent.domain._validation import require_one_of, require_sha256, require_text
+from kernelagent.domain._validation import (
+    require_instance,
+    require_one_of,
+    require_sha256,
+    require_text,
+    require_tuple,
+)
 from kernelagent.domain.errors import ContractError
 from kernelagent.domain.evidence import EvidenceRef
 from kernelagent.domain.implementation import Implementation
@@ -71,6 +77,9 @@ class EvaluationResult:
         require_sha256(self.protocol_sha256, "protocol_sha256")
         require_sha256(self.environment_sha256, "environment_sha256")
         require_one_of(self.status, "status", EVALUATION_STATUSES)
+        require_tuple(self.evidence, "evidence")
+        for index, ref in enumerate(self.evidence):
+            require_instance(ref, EvidenceRef, f"evidence[{index}]")
 
 
 @dataclass(frozen=True, slots=True)
@@ -84,6 +93,13 @@ class TaskResult:
     def __post_init__(self) -> None:
         require_text(self.task_id, "task_id")
         require_one_of(self.terminal_state, "terminal_state", TASK_TERMINAL_STATES)
+        if self.champion is not None:
+            require_instance(self.champion, Implementation, "champion")
+        if self.best_result is not None:
+            require_instance(self.best_result, EvaluationResult, "best_result")
+        require_tuple(self.evidence, "evidence")
+        for index, ref in enumerate(self.evidence):
+            require_instance(ref, EvidenceRef, f"evidence[{index}]")
         if self.terminal_state == "completed_improved" and self.champion is None:
             raise ContractError(
                 "terminal_state 'completed_improved' requires a champion implementation"

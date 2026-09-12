@@ -5,7 +5,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
-from kernelagent.domain._validation import require_one_of, require_text, require_unique
+from kernelagent.domain._validation import (
+    require_instance,
+    require_one_of,
+    require_text,
+    require_tuple,
+    require_unique,
+)
 from kernelagent.domain.errors import ContractError
 from kernelagent.domain.operator import OperatorSpec
 from kernelagent.domain.workload import Workload
@@ -32,8 +38,12 @@ class OptimizationTask:
     def __post_init__(self) -> None:
         require_text(self.task_id, "task_id")
         require_one_of(self.track, "track", TRACKS)
+        require_instance(self.operator, OperatorSpec, "operator")
+        require_tuple(self.workloads, "workloads")
         if not self.workloads:
             raise ContractError("OptimizationTask.workloads must not be empty")
+        for index, workload in enumerate(self.workloads):
+            require_instance(workload, Workload, f"workloads[{index}]")
         require_unique(tuple(w.workload_id for w in self.workloads), "workload ids")
         expected_inputs = len(self.operator.inputs)
         for workload in self.workloads:

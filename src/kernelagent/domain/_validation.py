@@ -21,13 +21,18 @@ def require_text(value: object, field: str) -> None:
         raise ContractError(f"{field} must be a non-empty string; got {value!r}")
 
 
+def require_string(value: object, field: str) -> None:
+    if not isinstance(value, str):
+        raise ContractError(f"{field} must be a string; got {value!r}")
+
+
 def require_sha256(value: object, field: str) -> None:
     if not isinstance(value, str) or not _SHA256.fullmatch(value):
         raise ContractError(f"{field} must be a lowercase 64-hex sha256 string; got {value!r}")
 
 
 def require_one_of(value: object, field: str, allowed: frozenset[str]) -> None:
-    if value not in allowed:
+    if not isinstance(value, str) or value not in allowed:
         raise ContractError(f"{field} must be one of {sorted(allowed)}; got {value!r}")
 
 
@@ -82,3 +87,14 @@ def require_unique(names: object, field: str) -> None:
         if item in seen:
             raise ContractError(f"{field} contains duplicate entries: {item!r}")
         seen.add(item)
+
+
+def require_tuple(value: object, field: str) -> None:
+    """Reject mutable sequence lookalikes at frozen contract boundaries."""
+    if not isinstance(value, tuple):
+        raise ContractError(f"{field} must be a tuple; got {value!r}")
+
+
+def require_instance(value: object, expected: type, field: str) -> None:
+    if not isinstance(value, expected):
+        raise ContractError(f"{field} must be a {expected.__name__}; got {type(value).__name__}")

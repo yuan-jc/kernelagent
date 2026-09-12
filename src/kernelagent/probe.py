@@ -37,6 +37,7 @@ PASS, FAIL, UNAVAILABLE = "pass", "fail", "unavailable"
 _PTX = """
 .version 7.0
 .target sm_70
+.address_size 64
 .visible .entry probe_fill(.param .u64 out_ptr)
 {
     .reg .u64 %rd1;
@@ -78,7 +79,12 @@ def _run_command(argv: list[str]) -> tuple[int, str, str] | None:
                 break
     if resolved is None:
         return None
-    completed = subprocess.run([resolved, *argv[1:]], capture_output=True, text=True, timeout=60)
+    try:
+        completed = subprocess.run(
+            [resolved, *argv[1:]], capture_output=True, text=True, timeout=60
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return -1, "", f"{type(exc).__name__}: {exc}"
     return completed.returncode, completed.stdout, completed.stderr
 
 
@@ -175,25 +181,28 @@ def _load_cuda_driver_lib() -> ctypes.CDLL | None:
     return None
 
 
+_CUdeviceptr = ctypes.c_uint64 if ctypes.sizeof(ctypes.c_void_p) == 8 else ctypes.c_uint32
+
+
 _ARGTYPES = {
     "cuInit": [ctypes.c_uint],
     "cuDeviceGetCount": [ctypes.POINTER(ctypes.c_int)],
     "cuDeviceGet": [ctypes.POINTER(ctypes.c_int), ctypes.c_int],
-    "cuDeviceGetName": [ctypes.c_char_p, ctypes.c_size_t, ctypes.c_int],
+    "cuDeviceGetName": [ctypes.c_char_p, ctypes.c_int, ctypes.c_int],
     "cuDeviceComputeCapability": [
         ctypes.POINTER(ctypes.c_int),
         ctypes.POINTER(ctypes.c_int),
         ctypes.c_int,
     ],
     "cuDevicePrimaryCtxRetain": [ctypes.POINTER(ctypes.c_void_p), ctypes.c_int],
-    "cuDevicePrimaryCtxRelease": [ctypes.c_int],
+    "cuDevicePrimaryCtxRelease_v2": [ctypes.c_int],
     "cuCtxSetCurrent": [ctypes.c_void_p],
     "cuModuleLoadData": [ctypes.POINTER(ctypes.c_void_p), ctypes.c_char_p],
     "cuModuleGetFunction": [ctypes.POINTER(ctypes.c_void_p), ctypes.c_void_p, ctypes.c_char_p],
-    "cuMemAlloc": [ctypes.POINTER(ctypes.c_void_p), ctypes.c_size_t],
-    "cuMemAllocManaged": [ctypes.POINTER(ctypes.c_void_p), ctypes.c_size_t, ctypes.c_uint],
-    "cuMemFree": [ctypes.c_void_p],
-    "cuMemcpyDtoH": [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t],
+    "cuMemAlloc_v2": [ctypes.POINTER(_CUdeviceptr), ctypes.c_size_t],
+    "cuMemAllocManaged": [ctypes.POINTER(_CUdeviceptr), ctypes.c_size_t, ctypes.c_uint],
+    "cuMemFree_v2": [_CUdeviceptr],
+    "cuMemcpyDtoH_v2": [ctypes.c_void_p, _CUdeviceptr, ctypes.c_size_t],
     "cuLaunchKernel": [
         ctypes.c_void_p,
         ctypes.c_uint,
@@ -264,9 +273,9 @@ def _driver_api_sequence(lib: ctypes.CDLL) -> dict:
 
 def _kernel_launch_sequence(lib: ctypes.CDLL) -> dict:
     """Small real probe: JIT an embedded PTX kernel, launch it, verify the
-    device actually wrote 42. Device memory is tried first; on restricted
-    environments (e.g. GPU paravirtualization) it falls back to managed
-    memory. Every step records its CUresult so a failure is diagnosable."""
+    device actually wrote 42. Device memory is tried first; if that driver
+    call fails, managed memory is tried as a separate supported allocation
+    path. Every step records its CUresult so a failure is diagnosable."""
     _configure_argtypes(lib)
     trace: dict[str, str] = {}
 
@@ -312,9 +321,9 @@ def _kernel_launch_sequence(lib: ctypes.CDLL) -> dict:
                         "status": FAIL,
                         "detail": {"reason": "cuModuleGetFunction failed", "trace": trace},
                     }
-                buffer = ctypes.c_void_p()
+                buffer = _CUdeviceptr()
                 memory = "device"
-                if not step("cuMemAlloc", lib.cuMemAlloc(ctypes.byref(buffer), 4)):
+                if not step("cuMemAlloc_v2", lib.cuMemAlloc_v2(ctypes.byref(buffer), 4)):
                     memory = "managed"
                     if not step(
                         "cuMemAllocManaged", lib.cuMemAllocManaged(ctypes.byref(buffer), 4, 1)
@@ -327,7 +336,13 @@ def _kernel_launch_sequence(lib: ctypes.CDLL) -> dict:
                             },
                         }
                 try:
-                    params = (ctypes.c_void_p * 1)(buffer.value)
+                    # kernelParams is an array of pointers to host-side argument
+                    # storage. The kernel argument value is the CUdeviceptr, so
+                    # passing buffer.value directly would lose one indirection.
+                    kernel_arg = _CUdeviceptr(buffer.value)
+                    params = (ctypes.c_void_p * 1)(
+                        ctypes.cast(ctypes.byref(kernel_arg), ctypes.c_void_p)
+                    )
                     launch_result = lib.cuLaunchKernel(
                         function, 1, 1, 1, 1, 1, 1, 0, None, params, None
                     )
@@ -356,11 +371,12 @@ def _kernel_launch_sequence(lib: ctypes.CDLL) -> dict:
                     host_value = ctypes.c_uint(0)
                     try:
                         read_ok = step(
-                            "cuMemcpyDtoH", lib.cuMemcpyDtoH(ctypes.byref(host_value), buffer, 4)
+                            "cuMemcpyDtoH_v2",
+                            lib.cuMemcpyDtoH_v2(ctypes.byref(host_value), buffer, 4),
                         )
                     except OSError as exc:
-                        # Restricted environments (GPU paravirtualization) can
-                        # fault host-side result reads with an in-page error.
+                        # A driver call can raise an OS error instead of
+                        # returning a CUresult; preserve that failure detail.
                         return {
                             "status": FAIL,
                             "detail": {
@@ -373,7 +389,7 @@ def _kernel_launch_sequence(lib: ctypes.CDLL) -> dict:
                         return {
                             "status": FAIL,
                             "detail": {
-                                "reason": "cuMemcpyDtoH failed",
+                                "reason": "cuMemcpyDtoH_v2 failed",
                                 "memory": memory,
                                 "trace": trace,
                             },
@@ -388,29 +404,43 @@ def _kernel_launch_sequence(lib: ctypes.CDLL) -> dict:
                             },
                         }
                 finally:
-                    if memory == "device":
-                        lib.cuMemFree(buffer)
+                    step("cuMemFree_v2", lib.cuMemFree_v2(buffer))
             finally:
-                lib.cuModuleUnload(module)
+                step("cuModuleUnload", lib.cuModuleUnload(module))
         finally:
-            lib.cuDevicePrimaryCtxRelease(device)
+            step("cuDevicePrimaryCtxRelease_v2", lib.cuDevicePrimaryCtxRelease_v2(device))
     except Exception as exc:  # noqa: BLE001 - report the concrete failure
         return {
             "status": FAIL,
             "detail": {"reason": f"{type(exc).__name__}: {exc}", "trace": trace},
+        }
+    cleanup_failures = [
+        name
+        for name in ("cuMemFree_v2", "cuModuleUnload", "cuDevicePrimaryCtxRelease_v2")
+        if trace.get(name) != "0x0"
+    ]
+    if cleanup_failures:
+        return {
+            "status": FAIL,
+            "detail": {
+                "reason": f"CUDA cleanup failed: {', '.join(cleanup_failures)}",
+                "memory": memory,
+                "trace": trace,
+            },
         }
     return {
         "status": PASS,
         "detail": {
             "proof": f"PTX JIT kernel launched; device wrote 42 verified via {memory} round trip",
             "memory": memory,
+            "trace": trace,
         },
     }
 
 
 def _isolated_driver_check(mode: str) -> dict:
     """Run a driver check in a child process: driver libraries with broken
-    GPU paravirtualization are known to segfault on cuInit/allocation, and a
+    driver call may terminate the process rather than return a CUresult. A
     crash in the child must degrade to an explicit failed check instead of
     killing the whole probe."""
     child = Path(__file__).resolve()
@@ -430,12 +460,26 @@ def _isolated_driver_check(mode: str) -> dict:
             parsed = json.loads(out)
         except json.JSONDecodeError:
             parsed = None
-        if isinstance(parsed, dict) and "status" in parsed:
-            return parsed
-    return {
-        "status": FAIL,
-        "detail": {"reason": f"driver check child crashed (exit code {completed.returncode})"},
-    }
+        if (
+            isinstance(parsed, dict)
+            and parsed.get("status") in (PASS, FAIL, UNAVAILABLE)
+            and isinstance(parsed.get("detail"), dict)
+        ):
+            if completed.returncode == 0 or parsed["status"] == FAIL:
+                return parsed
+            return {
+                "status": FAIL,
+                "detail": {
+                    "reason": "driver check child returned nonzero while claiming "
+                    f"{parsed['status']} (exit code {completed.returncode})"
+                },
+            }
+    reason = (
+        f"driver check child crashed (exit code {completed.returncode})"
+        if completed.returncode != 0
+        else "driver check child returned invalid structured output"
+    )
+    return {"status": FAIL, "detail": {"reason": reason}}
 
 
 def check_driver_api() -> dict:

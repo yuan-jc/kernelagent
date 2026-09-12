@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import time
 from dataclasses import dataclass
 from typing import Mapping, Protocol, Sequence
@@ -16,6 +17,7 @@ from kernelagent.adapters.models.errors import RecordingMissError, TransientMode
 
 MODEL_CLIENT_PROTOCOL = "model-client-v1"
 _ROLES = ("system", "user", "assistant")
+_SHA256 = re.compile(r"[0-9a-f]{64}")
 
 
 def _canonical_bytes(payload: object) -> bytes:
@@ -60,7 +62,7 @@ class ModelRequest:
     def __post_init__(self) -> None:
         if not isinstance(self.model_id, str) or not self.model_id:
             raise ValueError("model_id must be a non-empty string")
-        if not self.messages:
+        if not isinstance(self.messages, tuple) or not self.messages:
             raise ValueError("messages must not be empty")
         for index, message in enumerate(self.messages):
             if (
@@ -82,6 +84,8 @@ class ModelRequest:
                 raise ValueError("max_tokens must be an integer or None")
             if self.max_tokens < 1:
                 raise ValueError(f"max_tokens must be >= 1; got {self.max_tokens!r}")
+        if not isinstance(self.purpose, str) or not self.purpose:
+            raise ValueError("purpose must be a non-empty string")
 
     @property
     def request_sha256(self) -> str:
@@ -103,10 +107,26 @@ class ModelResponse:
     usage: ModelUsage
 
     def __post_init__(self) -> None:
+        if not isinstance(self.request_sha256, str) or not _SHA256.fullmatch(self.request_sha256):
+            raise ValueError("request_sha256 must be a lowercase 64-hex sha256 string")
+        if not isinstance(self.model_id, str) or not self.model_id:
+            raise ValueError("model_id must be a non-empty string")
         if not isinstance(self.content, str) or not self.content:
             raise ValueError("content must be a non-empty string")
         if not isinstance(self.finish_reason, str) or not self.finish_reason:
             raise ValueError("finish_reason must be a non-empty string")
+        if not isinstance(self.usage, ModelUsage):
+            raise ValueError("usage must be a ModelUsage")
+
+
+def _validate_response_for_request(response: ModelResponse, request: ModelRequest) -> None:
+    if response.request_sha256 != request.request_sha256:
+        raise ValueError("response was built for a different request")
+    if response.model_id != request.model_id:
+        raise ValueError(
+            f"response model {response.model_id!r} does not match request model "
+            f"{request.model_id!r}"
+        )
 
 
 class ModelClient(Protocol):
@@ -130,8 +150,7 @@ class ScriptedModelClient:
         entry = self._script.pop(0)
         if isinstance(entry, Exception):
             raise entry
-        if entry.request_sha256 != request.request_sha256:
-            raise ValueError("scripted response was built for a different request")
+        _validate_response_for_request(entry, request)
         return entry
 
 
@@ -142,7 +161,16 @@ class RecordedModelClient:
     stand in for real generation capability."""
 
     def __init__(self, responses: Mapping[str, ModelResponse]):
-        self._responses = dict(responses)
+        self._responses: dict[str, ModelResponse] = {}
+        for key, response in responses.items():
+            if not isinstance(response, ModelResponse):
+                raise ValueError("recorded responses must be ModelResponse objects")
+            if key != response.request_sha256:
+                raise ValueError(
+                    "recording key must equal the response request_sha256 "
+                    f"({key!r} != {response.request_sha256!r})"
+                )
+            self._responses[key] = response
         self.hits = 0
 
     def complete(self, request: ModelRequest) -> ModelResponse:
@@ -152,8 +180,10 @@ class RecordedModelClient:
                 f"no recorded response for request {key[:12]}… "
                 f"({len(self._responses)} recording(s) available)"
             )
+        response = self._responses[key]
+        _validate_response_for_request(response, request)
         self.hits += 1
-        return self._responses[key]
+        return response
 
 
 class RetryingModelClient:

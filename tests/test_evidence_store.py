@@ -78,6 +78,12 @@ def test_existing_artifact_with_drifting_bytes_is_flagged_on_put(store):
         store.put_artifact(b"original", kind="k", producer_version="v")
 
 
+def test_same_bytes_with_different_metadata_are_rejected(store):
+    store.put_artifact(b"same", kind="timing", producer_version="v1")
+    with pytest.raises(Exception, match="one content hash has one indexed provenance"):
+        store.put_artifact(b"same", kind="profile", producer_version="v1")
+
+
 # -- experiments ------------------------------------------------------------
 
 
@@ -122,6 +128,39 @@ def test_evidence_must_reference_stored_artifacts(store):
             "exp-1", evaluation_key=key, implementation_id=HEX_A, status="passed", evidence=[ghost]
         )
     assert store.get_experiment("exp-1") is None
+
+
+def test_corrupted_artifact_cannot_be_registered_as_passed(store):
+    key = evaluation_key(HEX_A, HEX_B, HEX_C, HEX_D)
+    ref = store.put_artifact(b"trusted samples", kind="timing_samples", producer_version="t08")
+    target = store.objects_dir / ref.artifact_sha256[:2] / ref.artifact_sha256
+    target.write_bytes(b"corrupt")
+    with pytest.raises(ArtifactIntegrityError):
+        store.record_experiment("exp-corrupt", evidence=[ref], **record_args(key))
+    assert store.get_experiment("exp-corrupt") is None
+
+
+def test_corrupted_evidence_invalidates_record_and_cache_reads(store):
+    key, ref, record = populated_store(store)
+    target = store.objects_dir / ref.artifact_sha256[:2] / ref.artifact_sha256
+    target.write_bytes(b"corrupt after recording")
+    with pytest.raises(ArtifactIntegrityError):
+        store.get_experiment(record.experiment_id)
+    with pytest.raises(ArtifactIntegrityError):
+        store.latest_experiment(key)
+
+
+def test_record_hash_is_verified_when_consumed(store):
+    key, _ref, record = populated_store(store)
+    store._db.execute(
+        "UPDATE experiments SET status = ? WHERE experiment_id = ?",
+        ("incorrect", record.experiment_id),
+    )
+    store._db.commit()
+    with pytest.raises(ArtifactIntegrityError, match="record hashes to"):
+        store.get_experiment(record.experiment_id)
+    with pytest.raises(ArtifactIntegrityError):
+        store.latest_experiment(key)
 
 
 def test_invalid_status_rejected(store):

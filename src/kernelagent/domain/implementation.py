@@ -12,9 +12,12 @@ import json
 from dataclasses import dataclass
 
 from kernelagent.domain._validation import (
+    require_instance,
     require_relative_path,
     require_sha256,
+    require_string,
     require_text,
+    require_tuple,
     require_unique,
 )
 from kernelagent.domain.errors import ContractError
@@ -43,14 +46,16 @@ class BuildSpec:
 
     def __post_init__(self) -> None:
         require_text(self.toolchain, "toolchain")
+        require_tuple(self.flags, "flags")
         for index, flag in enumerate(self.flags):
             require_text(flag, f"flags[{index}]")
-        require_unique(tuple(key for key, _ in self.env), "env keys")
+        require_tuple(self.env, "env")
         for index, pair in enumerate(self.env):
             if not isinstance(pair, tuple) or len(pair) != 2:
                 raise ContractError(f"env[{index}] must be a (key, value) tuple; got {pair!r}")
             require_text(pair[0], f"env[{index}] key")
             require_text(pair[1], f"env[{index}] value")
+        require_unique(tuple(key for key, _ in self.env), "env keys")
 
 
 @dataclass(frozen=True, slots=True)
@@ -71,9 +76,17 @@ class Implementation:
         require_text(self.operator_id, "operator_id")
         require_text(self.backend, "backend")
         require_text(self.entry_point, "entry_point")
+        require_string(self.applicability_guard, "applicability_guard")
+        require_string(self.origin, "origin")
+        require_tuple(self.source_files, "source_files")
         if not self.source_files:
             raise ContractError("Implementation.source_files must not be empty")
+        for index, source_file in enumerate(self.source_files):
+            require_instance(source_file, SourceFile, f"source_files[{index}]")
         require_unique(tuple(f.path for f in self.source_files), "source file paths")
+        if self.build_spec is not None:
+            require_instance(self.build_spec, BuildSpec, "build_spec")
+        require_tuple(self.parent_ids, "parent_ids")
         for parent in self.parent_ids:
             require_sha256(parent, "parent_ids entry")
 

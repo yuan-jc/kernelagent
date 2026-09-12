@@ -7,7 +7,7 @@
 - 已完成：详细设计、任务计划、T00–T03、T08、T12a，已上传 GitHub 公开仓库 https://github.com/yuan-jc/kernelagent。
 - 已通过检查：本地 232 项 CPU 测试、ruff、wheel 干净安装含 models 功能验证；真实探测报告两份已入证据库（audit healthy）。
 - 被验证实现：T03 提交 937b564、T12a 提交见 docs/work-packages/T12a.md 与 docs/evidence/T12a.json。
-- 关键环境发现：本 Windows 会话是 VM（hypervisor 检出 + SMBIOS 不一致 + GPU-PV 症状），GPU 为 GPU-PV 透传（可查询/JIT/启动/同步，设备内存分配 0xc9、结果回读 0xc0000006）；嵌套 WSL 驱动执行层 SIGSEGV；WSL 的 ncu 是 Windows shim 不可用。用户计划安装实体 NVIDIA 卡并使用真实 Ubuntu 系统——到时复跑 `kernelagent probe`，kernel_launch=pass 即 T03 转 ACCEPTED 并解锁 T04。
+- 关键环境发现（2026-09-12 审查后修正）：GPT-6 审查发现 probe 把设备地址直接放进 kernelParams（缺一层间接）且绑定了旧内存 ABI 符号——此前"GPU-PV 拒绝回读/WSL 驱动 SIGSEGV"的结论均被该缺陷污染，已标记 SUPERSEDED。修复后探针实测：本机 Windows native 6/6 全 pass（设备内存往返写读 42），WSL kernel 启动也 pass（仅 nvcc 缺失、ncu shim 损坏）。T03 正式验收仍按冻结规格等待目标 Ubuntu + NVIDIA 环境复跑，本机通过不替代验收。审查修复详情见 docs/evidence/review-fixes-2026-09-12.json。
 - 尚未执行：T04–T07、T09–T11、T12 主体（真实模型闭环）、T13–T25；没有 GPU/模型实验。
 - 网络与工具：GitHub 走本机代理 127.0.0.1:7893（仓库级 git http.proxy）；CI 失败用"干净 clone + uv sync --locked + 复现 workflow 命令"本地诊断。
 - 活动作业：无。

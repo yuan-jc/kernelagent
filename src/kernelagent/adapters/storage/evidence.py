@@ -65,6 +65,33 @@ def _require_hex64(value: object, field: str) -> None:
         raise EvidenceStoreError(f"{field} must be a lowercase 64-hex sha256 string; got {value!r}")
 
 
+def _evidence_payload(refs: Sequence[EvidenceRef]) -> list[dict[str, str]]:
+    return [
+        {
+            "artifact_sha256": ref.artifact_sha256,
+            "kind": ref.kind,
+            "producer_version": ref.producer_version,
+        }
+        for ref in refs
+    ]
+
+
+def _record_identity(
+    experiment_id: str,
+    evaluation_key_value: str,
+    implementation_id: str,
+    status: str,
+    refs: Sequence[EvidenceRef],
+) -> dict[str, object]:
+    return {
+        "experiment_id": experiment_id,
+        "evaluation_key": evaluation_key_value,
+        "implementation_id": implementation_id,
+        "status": status,
+        "evidence": _evidence_payload(refs),
+    }
+
+
 def new_experiment_id() -> str:
     """A fresh identity for one independent execution."""
     return uuid.uuid4().hex
@@ -203,6 +230,14 @@ class EvidenceStore:
             staging = self.staging_dir / f"{uuid.uuid4().hex}.tmp"
             staging.write_bytes(data)
             os.replace(staging, target)
+        indexed = self._db.execute(
+            "SELECT size, kind, producer_version FROM artifacts WHERE sha256 = ?", (digest,)
+        ).fetchone()
+        if indexed is not None and indexed != (len(data), kind, producer_version):
+            raise EvidenceStoreError(
+                f"artifact {digest} is already indexed as kind={indexed[1]!r}, "
+                f"producer_version={indexed[2]!r}; one content hash has one indexed provenance"
+            )
         with self._db as db:
             db.execute(
                 "INSERT OR IGNORE INTO artifacts VALUES (?, ?, ?, ?, ?)",
@@ -240,6 +275,42 @@ class EvidenceStore:
             "created_at": row[3],
         }
 
+    def _validate_evidence_refs(self, evidence: Sequence[EvidenceRef]) -> tuple[EvidenceRef, ...]:
+        refs: list[EvidenceRef] = []
+        missing: list[str] = []
+        for index, ref in enumerate(evidence):
+            if not isinstance(ref, EvidenceRef):
+                raise EvidenceStoreError(
+                    f"evidence[{index}] must be an EvidenceRef; got {type(ref).__name__}"
+                )
+            try:
+                meta = self.artifact_meta(ref.artifact_sha256)
+                data = self.get_artifact(ref.artifact_sha256)
+            except UnknownArtifactError:
+                missing.append(ref.artifact_sha256)
+                continue
+            if meta["size"] != len(data):
+                raise ArtifactIntegrityError(
+                    f"artifact {ref.artifact_sha256} indexed size {meta['size']} "
+                    f"does not match stored size {len(data)}"
+                )
+            if meta["kind"] != ref.kind or meta["producer_version"] != ref.producer_version:
+                raise ArtifactIntegrityError(
+                    f"artifact {ref.artifact_sha256} reference metadata does not match its index"
+                )
+            refs.append(
+                EvidenceRef(
+                    artifact_sha256=ref.artifact_sha256,
+                    kind=ref.kind,
+                    producer_version=ref.producer_version,
+                )
+            )
+        if missing:
+            raise UnknownArtifactError(
+                f"evidence references unstored artifacts: {sorted(set(missing))}"
+            )
+        return tuple(refs)
+
     # -- experiments -------------------------------------------------------
 
     def record_experiment(
@@ -260,36 +331,9 @@ class EvidenceStore:
             raise EvidenceStoreError(
                 f"status must be one of {sorted(EVALUATION_STATUSES)}; got {status!r}"
             )
-        missing = [
-            ref.artifact_sha256 for ref in evidence if not self.has_artifact(ref.artifact_sha256)
-        ]
-        if missing:
-            raise UnknownArtifactError(
-                f"evidence references unstored artifacts: {sorted(set(missing))}"
-            )
-        refs = tuple(
-            EvidenceRef(
-                artifact_sha256=ref.artifact_sha256,
-                kind=ref.kind,
-                producer_version=ref.producer_version,
-            )
-            for ref in evidence
-        )
+        refs = self._validate_evidence_refs(evidence)
         created_at = _now()
-        identity = {
-            "experiment_id": experiment_id,
-            "evaluation_key": evaluation_key,
-            "implementation_id": implementation_id,
-            "status": status,
-            "evidence": [
-                {
-                    "artifact_sha256": ref.artifact_sha256,
-                    "kind": ref.kind,
-                    "producer_version": ref.producer_version,
-                }
-                for ref in refs
-            ],
-        }
+        identity = _record_identity(experiment_id, evaluation_key, implementation_id, status, refs)
         # Identity excludes created_at: a resubmission is judged on semantic
         # content, not on wall-clock time of arrival.
         record_sha256 = hashlib.sha256(_canonical_bytes(identity)).hexdigest()
@@ -344,14 +388,46 @@ class EvidenceStore:
         ).fetchone()
         if row is None:
             return None
-        evidence = tuple(
-            EvidenceRef(
-                artifact_sha256=item["artifact_sha256"],
-                kind=item["kind"],
-                producer_version=item["producer_version"],
+        try:
+            raw_evidence = json.loads(row[4])
+            if not isinstance(raw_evidence, list):
+                raise TypeError("evidence_json must decode to a list")
+            evidence_items: list[EvidenceRef] = []
+            expected_keys = {"artifact_sha256", "kind", "producer_version"}
+            for item in raw_evidence:
+                if not isinstance(item, dict) or set(item) != expected_keys:
+                    raise TypeError("evidence entry has invalid fields")
+                evidence_items.append(
+                    EvidenceRef(
+                        artifact_sha256=item["artifact_sha256"],
+                        kind=item["kind"],
+                        producer_version=item["producer_version"],
+                    )
+                )
+        except (json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
+            raise ArtifactIntegrityError(
+                f"experiment {row[0]!r} has invalid evidence_json: {exc}"
+            ) from exc
+        try:
+            require_text(row[0], "experiment_id")
+            _require_hex64(row[1], "evaluation_key")
+            _require_hex64(row[2], "implementation_id")
+            if row[3] not in EVALUATION_STATUSES:
+                raise EvidenceStoreError(f"invalid stored status {row[3]!r}")
+            require_text(row[5], "created_at")
+            _require_hex64(row[6], "record_sha256")
+        except ValueError as exc:
+            raise ArtifactIntegrityError(
+                f"experiment {row[0]!r} has invalid indexed fields: {exc}"
+            ) from exc
+        evidence = self._validate_evidence_refs(evidence_items)
+        identity = _record_identity(row[0], row[1], row[2], row[3], evidence)
+        actual_record_sha256 = hashlib.sha256(_canonical_bytes(identity)).hexdigest()
+        if actual_record_sha256 != row[6]:
+            raise ArtifactIntegrityError(
+                f"experiment {row[0]!r} record hashes to {actual_record_sha256}; "
+                f"indexed record_sha256 is {row[6]}"
             )
-            for item in json.loads(row[4])
-        )
         return ExperimentRecord(
             experiment_id=row[0],
             evaluation_key=row[1],

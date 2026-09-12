@@ -96,6 +96,39 @@ def test_tampered_field_fails_validation_on_load():
         from_payload(payload)
 
 
+def test_unknown_fields_are_rejected_at_envelope_and_nested_boundaries():
+    payload = json.loads(dumps(samples.make_workload()))
+    payload["data"]["strides"] = [[16, 1]]
+    with pytest.raises(DomainError, match="strides"):
+        from_payload(payload)
+
+    nested = json.loads(dumps(samples.make_task()))
+    nested["data"]["workloads"][0]["strides"] = [[16, 1]]
+    with pytest.raises(DomainError, match="strides"):
+        from_payload(nested)
+
+    envelope = json.loads(dumps(samples.make_workload()))
+    envelope["future_extension"] = True
+    with pytest.raises(DomainError, match="future_extension"):
+        from_payload(envelope)
+
+
+@pytest.mark.parametrize(
+    ("sample", "field", "bad_value"),
+    [
+        (samples.make_build_spec(), "flags", "-O3"),
+        (samples.make_workload(), "dtypes", "float32"),
+        (samples.make_workload(), "shapes", [[16, 16], "16x16"]),
+        (samples.make_implementation(), "source_files", "kernel.py"),
+    ],
+)
+def test_json_collection_fields_reject_non_arrays(sample, field, bad_value):
+    payload = json.loads(dumps(sample))
+    payload["data"][field] = bad_value
+    with pytest.raises(DomainError, match=field):
+        from_payload(payload)
+
+
 def test_content_sha256_changes_only_with_content():
     base = samples.make_workload()
     same = samples.make_workload()

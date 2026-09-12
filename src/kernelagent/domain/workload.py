@@ -9,6 +9,7 @@ from kernelagent.domain._validation import (
     require_finite_number,
     require_non_negative_int,
     require_text,
+    require_tuple,
 )
 from kernelagent.domain.errors import ContractError
 
@@ -31,6 +32,8 @@ class Workload:
     def __post_init__(self) -> None:
         require_text(self.workload_id, "workload_id")
         require_text(self.operator_id, "operator_id")
+        require_tuple(self.shapes, "shapes")
+        require_tuple(self.dtypes, "dtypes")
         if len(self.shapes) != len(self.dtypes):
             raise ContractError(
                 f"shapes and dtypes must have the same length; got {len(self.shapes)} and "

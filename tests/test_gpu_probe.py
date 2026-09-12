@@ -1,6 +1,7 @@
 """GPU probe: check statuses, report schema, transports, evidence flow."""
 
 import argparse
+import ctypes
 import json
 import subprocess
 import sys
@@ -11,12 +12,15 @@ import pytest
 from kernelagent import cli
 from kernelagent.adapters.storage import EvidenceStore
 from kernelagent.probe import (
+    _ARGTYPES,
     FAIL,
     PASS,
     UNAVAILABLE,
+    _CUdeviceptr,
     _driver_api_sequence,
     _isolated_driver_check,
     _kernel_launch_sequence,
+    _run_command,
     build_report,
     check_ncu,
     check_nvcc,
@@ -89,9 +93,26 @@ def test_ncu_version_parsed(fake_run):
 
 
 class FakeCudaLib:
-    def __init__(self, init=0, count=1, retain=0, load=0, launch=0, written=42):
+    def __init__(
+        self,
+        init=0,
+        count=1,
+        retain=0,
+        load=0,
+        alloc=0,
+        managed=0,
+        launch=0,
+        written=42,
+        free=0,
+        unload=0,
+        release=0,
+    ):
         self.init, self.count, self.retain = init, count, retain
-        self.load, self.launch, self.written = load, launch, written
+        self.load, self.alloc, self.managed = load, alloc, managed
+        self.launch, self.written = launch, written
+        self.free, self.unload, self.release = free, unload, release
+        self.cleanup_calls = []
+        self.launched_device_pointer = None
 
     def cuInit(self, flags):
         return self.init
@@ -126,70 +147,103 @@ class FakeCudaLib:
     def cuModuleGetFunction(self, fn, module, name):
         return 0
 
-    def cuMemAlloc(self, ptr, size):
+    def cuMemAlloc_v2(self, ptr, size):
         ptr._obj.value = 999
-        return 0
+        return self.alloc
+
+    def cuMemAllocManaged(self, ptr, size, flags):
+        ptr._obj.value = 1001
+        return self.managed
 
     def cuLaunchKernel(self, fn, gx, gy, gz, bx, by, bz, shared, stream, params, extra):
+        # kernelParams[0] must point to host storage containing CUdeviceptr.
+        # The buggy implementation put the device address (999) here directly.
+        assert params[0] not in (999, 1001)
+        argument = ctypes.cast(params[0], ctypes.POINTER(_CUdeviceptr)).contents
+        self.launched_device_pointer = argument.value
         return self.launch
 
     def cuCtxSynchronize(self):
         return 0
 
-    def cuMemcpyDtoH(self, dst, src, size):
+    def cuMemcpyDtoH_v2(self, dst, src, size):
+        assert isinstance(src, _CUdeviceptr)
         dst._obj.value = self.written
         return 0
 
-    def cuMemFree(self, ptr):
-        return 0
+    def cuMemFree_v2(self, ptr):
+        self.cleanup_calls.append("free")
+        return self.free
 
     def cuModuleUnload(self, module):
-        return 0
+        self.cleanup_calls.append("unload")
+        return self.unload
 
-    def cuDevicePrimaryCtxRelease(self, device):
-        return 0
-
-
-@pytest.fixture()
-def fake_lib(monkeypatch):
-    def install(lib):
-        monkeypatch.setattr("kernelagent.probe._load_cuda_driver_lib", lambda: lib)
-
-    return install
+    def cuDevicePrimaryCtxRelease_v2(self, device):
+        self.cleanup_calls.append("release")
+        return self.release
 
 
-def test_driver_api_pass_reports_device(fake_lib):
-    fake_lib(FakeCudaLib())
+def test_driver_api_pass_reports_device():
     check = _driver_api_sequence(FakeCudaLib())
     assert check["status"] == PASS
     assert check["detail"]["device_0"] == "FakeGPU"
     assert check["detail"]["compute_capability"] == "8.9"
 
 
-def test_driver_api_zero_devices_is_unavailable(fake_lib):
+def test_driver_api_zero_devices_is_unavailable():
     assert _driver_api_sequence(FakeCudaLib(count=0))["status"] == UNAVAILABLE
 
 
-def test_driver_api_init_failure_is_fail(fake_lib):
+def test_driver_api_init_failure_is_fail():
     assert _driver_api_sequence(FakeCudaLib(init=0x200))["status"] == FAIL
 
 
-def test_kernel_launch_pass_on_real_round_trip(fake_lib):
-    fake_lib(FakeCudaLib())
-    check = _kernel_launch_sequence(FakeCudaLib())
+def test_kernel_launch_simulated_round_trip_checks_argument_indirection():
+    lib = FakeCudaLib()
+    check = _kernel_launch_sequence(lib)
     assert check["status"] == PASS
     assert "42" in check["detail"]["proof"]
+    assert lib.launched_device_pointer == 999
+    assert lib.cleanup_calls == ["free", "unload", "release"]
 
 
-def test_kernel_launch_wrong_device_value_is_fail(fake_lib):
-    fake_lib(FakeCudaLib(written=7))
+def test_kernel_launch_uses_modern_device_pointer_abi():
+    assert _ARGTYPES["cuMemAlloc_v2"] == [ctypes.POINTER(_CUdeviceptr), ctypes.c_size_t]
+    assert _ARGTYPES["cuMemcpyDtoH_v2"] == [ctypes.c_void_p, _CUdeviceptr, ctypes.c_size_t]
+    assert "cuMemAlloc" not in _ARGTYPES
+    assert ctypes.sizeof(_CUdeviceptr) == ctypes.sizeof(ctypes.c_void_p)
+
+
+def test_kernel_launch_cleans_up_after_launch_failure():
+    lib = FakeCudaLib(launch=1)
+    check = _kernel_launch_sequence(lib)
+    assert check["status"] == FAIL
+    assert lib.cleanup_calls == ["free", "unload", "release"]
+
+
+def test_kernel_launch_reports_cleanup_failure():
+    check = _kernel_launch_sequence(FakeCudaLib(free=1))
+    assert check["status"] == FAIL
+    assert "cleanup failed" in check["detail"]["reason"]
+
+
+def test_managed_allocation_is_also_freed():
+    lib = FakeCudaLib(alloc=1)
+    check = _kernel_launch_sequence(lib)
+    assert check["status"] == PASS
+    assert check["detail"]["memory"] == "managed"
+    assert lib.launched_device_pointer == 1001
+    assert "free" in lib.cleanup_calls
+
+
+def test_kernel_launch_wrong_device_value_is_fail():
     check = _kernel_launch_sequence(FakeCudaLib(written=7))
     assert check["status"] == FAIL
     assert "7" in check["detail"]["reason"]
 
 
-def test_kernel_launch_ptx_jit_failure_is_fail(fake_lib):
-    fake_lib(FakeCudaLib(load=0x219))
+def test_kernel_launch_ptx_jit_failure_is_fail():
     check = _kernel_launch_sequence(FakeCudaLib(load=0x219))
     assert check["status"] == FAIL
     assert "0x219" in json.dumps(check["detail"])
@@ -216,12 +270,49 @@ def test_isolated_check_reports_child_crash(monkeypatch):
     assert "crashed" in result["detail"]["reason"]
 
 
+def test_isolated_check_rejects_nonzero_child_claiming_pass(monkeypatch):
+    payload = "KERNELAGENT_PROBE_JSON_BEGIN\n" + '{"status": "pass", "detail": {}}'
+
+    def fake_run(command, capture_output=True, text=True, timeout=None):
+        return subprocess.CompletedProcess(command, 1, stdout=payload, stderr="")
+
+    monkeypatch.setattr("kernelagent.probe.subprocess.run", fake_run)
+    result = _isolated_driver_check("kernel_launch")
+    assert result["status"] == FAIL
+    assert "nonzero" in result["detail"]["reason"]
+
+
+def test_isolated_check_rejects_malformed_detail(monkeypatch):
+    payload = "KERNELAGENT_PROBE_JSON_BEGIN\n" + '{"status": "pass", "detail": "ok"}'
+
+    def fake_run(command, capture_output=True, text=True, timeout=None):
+        return subprocess.CompletedProcess(command, 0, stdout=payload, stderr="")
+
+    monkeypatch.setattr("kernelagent.probe.subprocess.run", fake_run)
+    result = _isolated_driver_check("driver_api")
+    assert result["status"] == FAIL
+    assert "invalid structured output" in result["detail"]["reason"]
+
+
+def test_run_command_turns_timeout_into_failed_result(monkeypatch):
+    monkeypatch.setattr("kernelagent.probe.shutil.which", lambda name, path=None: name)
+
+    def timeout(*args, **kwargs):
+        raise subprocess.TimeoutExpired(args[0], 60)
+
+    monkeypatch.setattr("kernelagent.probe.subprocess.run", timeout)
+    assert _run_command(["nvidia-smi"])[0] == -1
+
+
 # -- report, schema, exit semantics -----------------------------------------
 
 
 def test_report_matches_schema_and_summary(monkeypatch):
-    monkeypatch.setattr("kernelagent.probe._load_cuda_driver_lib", lambda: None)
     monkeypatch.setattr("kernelagent.probe._run_command", lambda argv: None)
+    monkeypatch.setattr(
+        "kernelagent.probe._isolated_driver_check",
+        lambda mode: {"status": UNAVAILABLE, "detail": {"reason": "synthetic CPU test"}},
+    )
     report = build_report()
     jsonschema.validate(report, SCHEMA)
     counted = {status: 0 for status in (PASS, FAIL, UNAVAILABLE)}

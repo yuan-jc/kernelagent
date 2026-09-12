@@ -165,6 +165,34 @@ def test_build_spec_rejects_duplicate_env_and_bad_pairs():
 @pytest.mark.parametrize(
     "builder",
     [
+        lambda: samples.make_implementation(source_files=[samples.make_source_file()]),
+        lambda: samples.make_implementation(source_files=("kernel.py",)),
+        lambda: samples.make_implementation(build_spec={"toolchain": "triton"}),
+        lambda: samples.make_implementation(applicability_guard=[]),
+        lambda: samples.make_implementation(origin=[]),
+        lambda: BuildSpec(toolchain="triton", flags=["-O3"]),
+        lambda: BuildSpec(toolchain="triton", env=[["A", "1"]]),
+        lambda: samples.make_workload(shapes=[(16, 16), (16, 16)]),
+        lambda: samples.make_workload(dtypes=["float32", "float32"]),
+        lambda: samples.make_operator(inputs=[samples.make_io_port()]),
+        lambda: samples.make_operator(outputs=("output",)),
+        lambda: samples.make_operator(notes=[]),
+        lambda: samples.make_task(workloads=[samples.make_workload()]),
+        lambda: samples.make_hypothesis(predicted_observations=["faster"]),
+        lambda: samples.make_hypothesis(supporting_evidence=("artifact",)),
+        lambda: samples.make_method_proposal(target_workload_ids=["w1"]),
+        lambda: samples.make_evaluation_result(evidence=[samples.make_evidence_ref()]),
+        lambda: samples.make_task_result(evidence=[samples.make_evidence_ref()]),
+    ],
+)
+def test_frozen_contracts_reject_mutable_containers_and_wrong_child_types(builder):
+    with pytest.raises(ContractError):
+        builder()
+
+
+@pytest.mark.parametrize(
+    "builder",
+    [
         lambda: samples.make_method_proposal(estimated_gpu_seconds=-1.0),
         lambda: samples.make_method_proposal(estimated_gpu_seconds=float("nan")),
         lambda: samples.make_method_proposal(parameter_space_sha256="short"),
