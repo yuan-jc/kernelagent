@@ -17,7 +17,7 @@
     "N/A"
   ],
   "notes": [
-    "Target: Ubuntu + NVIDIA; T03-T07 (T04a,T04,T05,T06), T09, T10 ACCEPTED by 2026-09-13; G1 gate (trusted experiment machine) closed; T11/T12/T13/T14/T15/T18/T19/T20 deps now open.",
+    "Target: Ubuntu + NVIDIA; T03-T07, T09, T10, T15 ACCEPTED by 2026-09-13; G1 closed; G2 wave: T11/T12/T13/T14 next (T12 LIVE_MODEL needs user provider credentials).",
     "Current evidence is consolidated in docs/evidence/current.json; pre-cleanup history remains at Git commit 1b4a306.",
     "T04a is process mechanics, not a sandbox; T12a is offline model plumbing, not live generation.",
     "No target GPU or live model acceptance is implied by CPU tests or CI. Preserve parent package gates."
@@ -372,15 +372,19 @@
         "T04",
         "T08"
       ],
-      "status": "TODO",
+      "status": "ACCEPTED",
       "checks": {
-        "CPU": "NOT_RUN",
-        "GPU": "NOT_RUN",
+        "CPU": "PASS",
+        "GPU": "PASS",
         "LIVE_MODEL": "N/A",
-        "REVIEW": "NOT_RUN"
+        "REVIEW": "PASS"
       },
-      "evidence": [],
-      "work_package_record": null,
+      "evidence": [
+        "docs/work-packages/T15.md",
+        "docs/adr/0003-ncu-diagnostic-profiling-lease.md",
+        "artifacts/t15/ncu-evidence.json"
+      ],
+      "work_package_record": "docs/work-packages/T15.md",
       "blocker": null
     },
     {

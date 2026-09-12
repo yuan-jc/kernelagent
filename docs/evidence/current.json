@@ -15,8 +15,9 @@
     "T12a"
   ],
   "pending": {
-    "T11-T22": "G2 wave: T15 dependency-satisfied (needs ncu counter permission for in-container profiling); T11/T12/T13/T14 need nothing beyond T10",
-    "LIVE_MODEL": "NOT_RUN (T12 requires real provider credentials from user)"
+    "T11/T13/T14": "G2 wave, deps satisfied by T10",
+    "T12": "LIVE_MODEL requires real provider credentials from user (offline layer T12a already ACCEPTED)",
+    "LIVE_MODEL": "NOT_RUN"
   },
   "target_ubuntu_t04": {
     "status": "ACCEPTED",
@@ -484,5 +485,41 @@
       }
     },
     "scope_note": "Sequential actions only; remote transport/job IDs belong to T22."
+  },
+  "target_ubuntu_t15": {
+    "status": "ACCEPTED",
+    "accepted_at": "2026-09-13",
+    "adr": "docs/adr/0003-ncu-diagnostic-profiling-lease.md",
+    "gpu_checks": {
+      "status": "PASS",
+      "command": "uv run --locked python examples/ncu_evidence_smoke.py --output artifacts/t15",
+      "exit_code": 0,
+      "report": {
+        "path": "artifacts/t15/ncu-evidence.json",
+        "sha256": "15d39a86709667cd1b190589606174834c1f58e8bfa44cd7c100a203d09a35fd"
+      },
+      "real_report": "artifacts/t15/t15_two_kernels.ncu-rep (172166 bytes, 3 launches: saxpy 1 + scale 2, CC 8.9)",
+      "blocker_observation": "ERR_NVGPUCTRPERM for non-root host AND default-container profiling (recorded honestly, ADR-0003); privileged diagnostic lease used for parent-authored fixed binaries only"
+    },
+    "cpu_checks": {
+      "status": "PASS",
+      "unit_tests": "9/9 (parsing, missing-metric semantics, launch association, blocker mapping, source tags)",
+      "full_check": {
+        "command": "uv run --locked kernelagent check --output artifacts/t15-cpu",
+        "exit_code": 0,
+        "counts": {
+          "total": 385,
+          "passed": 382,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 3
+        },
+        "report": {
+          "path": "artifacts/t15-cpu/f12a0364b3a14ce2a8bf083188a10b25/report.json",
+          "sha256": "e47a51d4e7c67d51e749f91b8d914a5e3565fadb62211f71a6d1e79760f36a9d"
+        }
+      }
+    },
+    "scope_note": "Profiling evidence source-tagged ncu_profile; never merges with T07 timing."
   }
 }
