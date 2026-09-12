@@ -8,7 +8,17 @@
 | T03 | ACCEPTED（2026-09-12）：目标 Ubuntu/NVIDIA 真机验收通过；探针 4 pass / 0 fail / 2 unavailable（nvcc、ncu 不在 PATH） |
 | T04a | ACCEPTED（2026-09-13）：Ubuntu 复核通过——check 315 项 312 pass / 3 Windows 专用 skip / 0 fail，worker_smoke completed；仅进程机制，不是沙箱 |
 | T04 | ACCEPTED（2026-09-13）：容器边界（Docker+CDI、禁网、只读输入、非 root、cgroup 限额）+ 真实 GPU 请求通路（PTX JIT 写 42 验证通过、写 43 负例被父端拒绝）；ADR-0001 |
-| T05–T25（除 T08 及 T12a 子包） | 按任务计划依赖推进，未实现完整自动优化闭环 |
+| T05 | ACCEPTED（2026-09-13）：pinned 上游 evaluator 经容器边界在真实 GPU 上通过三类别正反例（matmul/LayerNorm/Conv2d+ReLU+BiasAdd，correct 全过、wrong 全拒）+ torch.compile 基线；correctness-only 赛道；ADR-0002 |
+| T06/T07–T25（除 T08 及 T12a 子包） | 按任务计划依赖推进，未实现完整自动优化闭环 |
+
+## 本次移交内容（2026-09-13，ZCode/GLM，第二轮）
+
+- T05 实现并转 ACCEPTED：
+  - KernelBench 快照经代理恢复（273 文件，manifest 校验 PASS，上游 commit `423217d9…`）；`bench verify` PASS。
+  - ADR-0002：锁定评测镜像（pytorch 2.5.1-cuda12.4-devel 按 digest + 提交的 `configs/eval-image/Dockerfile`，image ID `sha256:b598274a…`）；dev manifest 仅追加 `src/kernelbench/utils.py` 协议引用（同一 pinned commit；题集/容差/files-manifest 绑定不变）。
+  - 控制端适配器（不导入 torch）+ 冻结容器驱动：判定只从上游序列化 `KernelExecResult` 派生，缺失判定永不为 pass。GPU 冒烟 7/7 接受（三类别 correct 全过 / wrong 全拒 / compile 基线过），报告 sha256 `5d59e859…`；全量回归 343 项 340 过 / 0 失败（sha256 `5bb1729a…`）。
+  - 实证修订两处：① 首次 GPU 运行暴露镜像缺 litellm → 补齐并重建镜像（换新 image ID）；② Docker tmpfs 默认 noexec 阻断 triton/inductor JIT → ADR-0001 修订二（/tmp 显式 exec）。
+  - 与宿主工具链章节的关系：T05 评测在锁定容器镜像内完成（镜像自带 CUDA 12.4 nvcc），不依赖宿主工具链；宿主 CUDA 13.0.2/ncu 供后续原生路径与 T15。
 
 ## 本次移交内容（2026-09-13，ZCode/GLM，宿主 CUDA 工具链安装）
 
@@ -47,7 +57,7 @@
 
 ## 下一步
 
-进入 [T05](../../docs/开发任务与验收计划.md)：上游 KernelBench 基线与原生评测（依赖 T02/T03/T04 均已 ACCEPTED）。前置条件：宿主 nvcc/ncu 已就绪（CUDA 13.0.2 用户级，`CUDA_HOME=~/toolchains/cuda`）；KernelBench 快照恢复（`research/fetch_kernelbench_problems.py --proxy http://127.0.0.1:7890`）。验收要求：至少三个不同类别问题，已知正确候选通过、错误候选失败、与直接上游调用对照。
+T05 已验收。按依赖推进 **T06（增强正确性）** 与 **T07（正式计时协议）**（两者均只依赖 T05，可任选先后；T09 晋升依赖 T07）。注意：T07 之前所有评测保持 correctness-only；ncu 非 root profiling 的一条 sudo 配置在 T15 前完成即可。
 
 本地调研/实验缓存未随 Git 分发。清理前记录可在提交 `1b4a306` 查阅；不要将历史摘要当作当前验收事实。每包收尾替换本页的当前状态、活动作业、结果位置与下一步，避免追加聊天流水。
 

@@ -32,3 +32,7 @@ T04 要求候选代码在 OS 强制边界内执行：禁网、只读可信输入
 ## 修订（2026-09-13，实现期实证）
 
 决定 3/5 中"输出=tmpfs size 强制"改为"输出=宿主 bind 目录 + 父端监视限额"。原因（本机实测，保留在测试历史中）：容器退出即销毁自身 mount namespace，tmpfs 内容随之消失——对已停止容器执行 `docker cp container:/out/.` 返回 0 但得到空目录，单文件 cp 直接报 "Could not find the file"，结果不可恢复且具欺骗性（静默空输出）。因此 `/out` 改为父端私有目录的读写 bind mount（目录 0777、容器 uid 20000 写入、父端持有目录所有权），大小限额由父端 0.5 s 监视循环强制，超限 kill 并记 `failed`；内核 memory/pids 限额在轮询间隙兜底。`/tmp` 仍为 size 受限 tmpfs（容器内、随容器销毁）。此修订不放松验收：输出超限仍是结构化失败，不转成正确分数。
+
+## 修订二（2026-09-13，T05 实现期实证）
+
+/tmp tmpfs 挂载显式加 `exec`。原因：triton/inductor JIT 需要从缓存目录 dlopen 编译出的 .so，Docker tmpfs 默认 noexec 使 torch.compile 候选在正确性评测中报 "failed to map segment from shared object"。对本威胁模型（候选本就是任意可执行代码，容器边界由 namespace/cgroup/能力剥离提供）noexec 不构成额外防线；移除后不放松任何验收约束。

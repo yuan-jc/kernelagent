@@ -17,7 +17,7 @@
     "N/A"
   ],
   "notes": [
-    "Target: Ubuntu + NVIDIA; T03 target GPU acceptance ACCEPTED 2026-09-12 (RTX 4060 Laptop); T04a process-mechanics Ubuntu recheck ACCEPTED 2026-09-13; T04 container worker ACCEPTED 2026-09-13 with real-GPU container path; next is T05.",
+    "Target: Ubuntu + NVIDIA; T03 (2026-09-12), T04a + T04 (2026-09-13) and T05 (2026-09-13) ACCEPTED on the target machine; next per dependency: T06/T07.",
     "Current evidence is consolidated in docs/evidence/current.json; pre-cleanup history remains at Git commit 1b4a306.",
     "T04a is process mechanics, not a sandbox; T12a is offline model plumbing, not live generation.",
     "No target GPU or live model acceptance is implied by CPU tests or CI. Preserve parent package gates."
@@ -148,15 +148,19 @@
         "T03",
         "T04"
       ],
-      "status": "TODO",
+      "status": "ACCEPTED",
       "checks": {
-        "CPU": "NOT_RUN",
-        "GPU": "NOT_RUN",
+        "CPU": "PASS",
+        "GPU": "PASS",
         "LIVE_MODEL": "N/A",
-        "REVIEW": "NOT_RUN"
+        "REVIEW": "PASS"
       },
-      "evidence": [],
-      "work_package_record": null,
+      "evidence": [
+        "docs/work-packages/T05.md",
+        "docs/adr/0002-eval-image-and-protocol-references.md",
+        "artifacts/t05/kernelbench-eval-report.json"
+      ],
+      "work_package_record": "docs/work-packages/T05.md",
       "blocker": null
     },
     {

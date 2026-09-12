@@ -265,8 +265,11 @@ def _run_args(
         str(spec.cpus),
         "--pids-limit",
         str(spec.pids_limit),
-        "--mount",
-        f"type=tmpfs,dst={TMP_MOUNT_POINT},tmpfs-size={spec.tmp_tmpfs_bytes},tmpfs-mode=01777",
+        # exec is required on /tmp: triton/inductor JIT dlopens compiled
+        # caches from it; the payload is arbitrary code anyway, so noexec
+        # added no boundary while breaking legitimate compilation.
+        "--tmpfs",
+        f"{TMP_MOUNT_POINT}:exec,rw,nosuid,size={spec.tmp_tmpfs_bytes},mode=1777",
         "--mount",
         f"type=bind,src={output_host},dst={OUTPUT_MOUNT_POINT}",
         "--workdir",
@@ -281,7 +284,7 @@ def _run_args(
         args += ["--env", f"{env_name}={env_value}"]
     for device in spec.gpu_devices:
         args += ["--device", device]
-    args.append(f"{spec.image}@{spec.image_digest}")
+    args.append(spec.reference)
     args.extend(request.argv)
     return args
 

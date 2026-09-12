@@ -1,11 +1,13 @@
 """KernelBench upstream evaluation driver (T05, ADR-0002).
 
-Runs INSIDE the ADR-0001 container boundary; the trusted parent stages:
-  /task/...                   pinned snapshot root (src/kernelbench/*,
-                              KernelBench/levelN/*.py), read-only
-  /case/candidate.py          the candidate whose correctness is judged
-  /case/case.json             explicit run configuration
-  /case/eval_driver.py        this driver
+Runs INSIDE the ADR-0001 container boundary; the trusted parent stages a
+single read-only mount at /task containing exactly the staged evaluator
+subset, the problem file, and the case inputs:
+  /task/src/kernelbench/*.py   pinned upstream evaluator files
+  /task/KernelBench/levelN/..  the pinned problem file for this case
+  /task/candidate.py           the candidate whose correctness is judged
+  /task/case.json              explicit run configuration
+  /task/eval_driver.py         this driver
 and expects the serialized upstream verdict at /out/result.json.
 
 The driver adds nothing to the verdict: it calls the pinned
@@ -19,11 +21,10 @@ import os
 import sys
 
 TASK_ROOT = "/task"
-CASE_ROOT = "/case"
 
 
 def main() -> int:
-    case = json.load(open(f"{CASE_ROOT}/case.json"))
+    case = json.load(open(f"{TASK_ROOT}/case.json"))
     os.environ["TORCH_EXTENSIONS_DIR"] = "/tmp/torch_ext"
     os.environ["TRITON_CACHE_DIR"] = "/tmp/triton_cache"
     os.environ["TORCHINDUCTOR_CACHE_DIR"] = "/tmp/inductor_cache"
@@ -36,7 +37,7 @@ def main() -> int:
 
     with open(f"{TASK_ROOT}/{case['problem_path']}") as handle:
         original_model_src = handle.read()
-    with open(f"{CASE_ROOT}/candidate.py") as handle:
+    with open(f"{TASK_ROOT}/candidate.py") as handle:
         candidate_src = handle.read()
 
     result = eval_kernel_against_ref(

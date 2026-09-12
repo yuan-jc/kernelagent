@@ -15,9 +15,8 @@
     "T12a"
   ],
   "pending": {
-    "T05": "Upstream KernelBench baseline and native evaluation (host nvcc/ncu toolchain now installed; see target_ubuntu_toolchain)",
-    "LIVE_MODEL": "NOT_RUN",
-    "NCU_COUNTER_PERMISSION": "Non-root ncu profiling needs one sudo action: options nvidia NVreg_RestrictProfilingToAdminUsers=0 in /etc/modprobe.d/nvidia-profiling.conf then reboot; until then ncu works under sudo (artifacts/ubuntu/toolchain/ncu_permission_test.txt)"
+    "T06/T07": "Next per dependency (both depend on T05); T07 formal timing protocol required before T09",
+    "LIVE_MODEL": "NOT_RUN"
   },
   "target_ubuntu_t04": {
     "status": "ACCEPTED",
@@ -307,5 +306,57 @@
   "publication_ci": {
     "status": "PENDING",
     "note": "Will bind the implementation commit after push; CPU only. GPU NOT_RUN."
+  },
+  "target_ubuntu_t05": {
+    "status": "ACCEPTED",
+    "accepted_at": "2026-09-13",
+    "commit": "see docs/work-packages/T05.md running evidence (contract+implementation db7e4a1, acceptance commit this one)",
+    "adr": "docs/adr/0002-eval-image-and-protocol-references.md",
+    "snapshot": {
+      "upstream_commit": "423217d9fda91e0c2d67e4a43bf62f96f6d104f1",
+      "files_restored": 273,
+      "fetch_status": "PASS (proxy fetch, manifest-verified)",
+      "bench_verify": "PASS",
+      "protocol_reference_added": "src/kernelbench/utils.py sha256 c421bf34... (pinned commit, problems/tolerances/binding unchanged)"
+    },
+    "eval_image": {
+      "dockerfile": "configs/eval-image/Dockerfile",
+      "base": "docker.m.daocloud.io/pytorch/pytorch@sha256:14611869895df612b7b07227d5925f30ec3cd6673bad58ce3d84ed107950e014 (2.5.1-cuda12.4-cudnn9-devel)",
+      "image_id": "sha256:b598274a22a0954f455ee0c22b44aa74808022553cc32886459efcb6b7e059ef",
+      "added_pip": "pydantic==2.9.2 requests==2.32.3 python-dotenv==1.0.1 tqdm==4.66.5 litellm==1.53.1 (litellm added after first GPU run exposed the missing import)"
+    },
+    "gpu_checks": {
+      "status": "PASS",
+      "command": "uv run --locked python examples/kernelbench_eval_smoke.py --output artifacts/t05",
+      "exit_code": 0,
+      "protocol": "t05-kernelbench-eval-v1 (correctness only, measure_performance=False)",
+      "report": {
+        "path": "artifacts/t05/kernelbench-eval-report.json",
+        "sha256": "5d59e859e9ee71b4dd483605ce93b2869918d9cb41737650d754f90cdac568e8"
+      },
+      "cases": "7/7 accepted: 3 categories x correct/wrong (l1 p001 matmul, l1 p040 LayerNorm, l2 p001 Conv2d+ReLU+BiasAdd) + torch.compile baseline; adapter verdict == upstream KernelExecResult in every case",
+      "boundary": "ADR-0001 container (network none, read-only staged inputs incl. pinned evaluator subset, non-root uid, GPU by CDI UUID)"
+    },
+    "cpu_checks": {
+      "status": "PASS",
+      "adapter_unit_tests": "9/9 (no-torch import boundary, verdict derivation)",
+      "full_check": {
+        "command": "uv run --locked kernelagent check --output artifacts/t05-cpu",
+        "exit_code": 0,
+        "counts": {
+          "total": 343,
+          "passed": 340,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 3,
+          "skip_reason": "tests/test_worker_boundary.py Windows Job Object path (3 cases)"
+        },
+        "report": {
+          "path": "artifacts/t05-cpu/18856d2c6a5848c0ba5bb8e77add363e/report.json",
+          "sha256": "5bb1729a1baaed7be9891259193c95fa728c232348ab33a8b938ddbf004cc7ee"
+        }
+      }
+    },
+    "scope_note": "Correctness track only; formal timing protocol is T07. Single-GPU serialized."
   }
 }

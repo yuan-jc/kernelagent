@@ -25,11 +25,11 @@ from kernelagent.worker import ContainerSpec, WorkerRequest, execute_container
 EVAL_IMAGE_REPO = "kernelagent-eval"
 # ADR-0002: locally built from configs/eval-image/Dockerfile on the pinned
 # pytorch base; pinned by content-addressed image ID (no registry digest).
-EVAL_IMAGE_ID = "sha256:bb4ddb1e04d2662ef5c684d8ce12bda1ad8b87c87d9979dedb0642c749c16874"
+EVAL_IMAGE_ID = "sha256:b598274a22a0954f455ee0c22b44aa74808022553cc32886459efcb6b7e059ef"
 EVAL_MEMORY_BYTES = 8 * 1024 * 1024 * 1024
 EVAL_TMP_TMPFS_BYTES = 512 * 1024 * 1024
 EVAL_OUTPUT_LIMIT_BYTES = 128 * 1024 * 1024
-_DRIVER_PATH = Path(__file__).resolve().parents[3] / "configs" / "kernelbench" / "eval_driver.py"
+_DRIVER_PATH = Path(__file__).resolve().parents[4] / "configs" / "kernelbench" / "eval_driver.py"
 
 
 @dataclass(frozen=True, slots=True)
@@ -133,15 +133,30 @@ def evaluate_case(
         "device": case.device,
         "measure_performance": False,
     }
+    # Stage exactly the evaluator subset this case needs (upstream harness
+    # files + the one problem file + case inputs), all inside the run
+    # workspace so the ADR-0001 mount rule holds; every staged file is
+    # content-hashed into the evidence.
     inputs = workspace_root / f"case-inputs-{case.case_id}"
-    inputs.mkdir(parents=True, exist_ok=True)
+    evaluator_dir = inputs / "src" / "kernelbench"
+    problem_dir = inputs / case.problem_path.rsplit("/", 1)[0]
+    evaluator_dir.mkdir(parents=True, exist_ok=True)
+    problem_dir.mkdir(parents=True, exist_ok=True)
+    staged: dict[str, str] = {}
+    for harness in ("dataset.py", "eval.py", "timing.py", "utils.py"):
+        source = (snapshot_root / "src" / "kernelbench" / harness).read_bytes()
+        (evaluator_dir / harness).write_bytes(source)
+        staged[f"src/kernelbench/{harness}"] = _sha256_bytes(source)
+    (problem_dir / case.problem_name).write_bytes(problem_file.read_bytes())
+    staged[case.problem_path] = _sha256_bytes(problem_source.encode("utf-8"))
     (inputs / "case.json").write_text(json.dumps(case_config, indent=2), encoding="utf-8")
     (inputs / "candidate.py").write_text(case.candidate_source, encoding="utf-8")
+    staged["candidate.py"] = _sha256_bytes(case.candidate_source.encode("utf-8"))
     (inputs / "eval_driver.py").write_text(driver_source, encoding="utf-8")
 
     request = WorkerRequest(
         request_id=f"eval-{case.case_id}"[:64],
-        argv=("python3", "/case/eval_driver.py"),
+        argv=("python3", "/task/eval_driver.py"),
         timeout_seconds=timeout_seconds,
         workspace_root=workspace_root,
     )
@@ -151,10 +166,7 @@ def evaluate_case(
         memory_bytes=EVAL_MEMORY_BYTES,
         tmp_tmpfs_bytes=EVAL_TMP_TMPFS_BYTES,
         output_limit_bytes=EVAL_OUTPUT_LIMIT_BYTES,
-        read_only_mounts=(
-            ("/task", snapshot_root),
-            ("/case", inputs),
-        ),
+        read_only_mounts=(("/task", inputs),),
         gpu_devices=gpu_devices,
     )
     outcome = execute_container(request, spec, docker_command=docker_command)
@@ -195,6 +207,7 @@ def evaluate_case(
             "num_correct_trials": case.num_correct_trials,
             "expect_pass": case.expect_pass,
             "parse_note": parse_note,
+            "staged_files_sha256": staged,
             "stderr_tail": outcome.stderr_tail[-1500:],
         },
     )

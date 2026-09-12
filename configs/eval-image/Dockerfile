@@ -13,4 +13,4 @@ RUN pip install --no-cache-dir \
         requests==2.32.3 \
         python-dotenv==1.0.1 \
         tqdm==4.66.5 \
-        openai==1.54.4
+        litellm==1.53.1
