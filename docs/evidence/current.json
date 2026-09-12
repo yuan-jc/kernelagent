@@ -15,7 +15,7 @@
     "T12a"
   ],
   "pending": {
-    "T06/T10/T11": "T10 deps (T05/T08/T09) satisfied; T06 depends on T05; T11 opens G2 once its deps land",
+    "T10/T15": "Both dependency-satisfied; T10 closes the G1 gate, T15 needs host ncu counter permission (sudo config pending)",
     "LIVE_MODEL": "NOT_RUN"
   },
   "target_ubuntu_t04": {
@@ -322,7 +322,7 @@
     "eval_image": {
       "dockerfile": "configs/eval-image/Dockerfile",
       "base": "docker.m.daocloud.io/pytorch/pytorch@sha256:14611869895df612b7b07227d5925f30ec3cd6673bad58ce3d84ed107950e014 (2.5.1-cuda12.4-cudnn9-devel)",
-      "image_id": "sha256:b598274a22a0954f455ee0c22b44aa74808022553cc32886459efcb6b7e059ef",
+      "image_id": "sha256:cb7a9f4cfab8943aa29bdbdf531db4617daf736e8388e97eb77d62998ebd973b",
       "added_pip": "pydantic==2.9.2 requests==2.32.3 python-dotenv==1.0.1 tqdm==4.66.5 litellm==1.53.1 (litellm added after first GPU run exposed the missing import)"
     },
     "gpu_checks": {
@@ -416,5 +416,40 @@
       }
     },
     "scope_note": "Multiple-comparison handling deferred to real multi-candidate confirm campaigns."
+  },
+  "target_ubuntu_t06": {
+    "status": "ACCEPTED",
+    "accepted_at": "2026-09-13",
+    "gpu_checks": {
+      "status": "PASS",
+      "command": "uv run --locked python examples/correctness_pro_smoke.py --output artifacts/t06",
+      "exit_code": 0,
+      "report": {
+        "path": "artifacts/t06/correctness-pro-report.json",
+        "sha256": "e6956c6112d42b69b2a470e4f67ff69218179087509cd96d6441ad72337aab47"
+      },
+      "cases": "6/6 matched: legal candidate all-green with sanitizer pass; constant-output, input-mutation, wrong-tail, stale-state counterexamples each rejected; sanitizer not_run recorded as coverage gap (never a pass)"
+    },
+    "eval_image": "third build sha256:cb7a9f4cfab8943aa29bdbdf531db4617daf736e8388e97eb77d62998ebd973b (numpy==1.26.4 fixes compute-sanitizer dispatcher conflict; pro cases pids-limit 256)",
+    "cpu_checks": {
+      "status": "PASS",
+      "unit_tests": "7/7 verdict semantics",
+      "full_check": {
+        "command": "uv run --locked kernelagent check --output artifacts/t06-cpu",
+        "exit_code": 0,
+        "counts": {
+          "total": 368,
+          "passed": 365,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 3
+        },
+        "report": {
+          "path": "artifacts/t06-cpu/a809d31004214c0487f13f78ae0d1782/report.json",
+          "sha256": "d13a9825db12985b61d46b43a4a32efda04835a3d184c32a0af3065ac40f9739"
+        }
+      }
+    },
+    "scope_note": "Extended track is reported separately and never rewrites the upstream (T05) verdict."
   }
 }

@@ -25,7 +25,7 @@ from kernelagent.worker import ContainerSpec, WorkerRequest, execute_container
 EVAL_IMAGE_REPO = "kernelagent-eval"
 # ADR-0002: locally built from configs/eval-image/Dockerfile on the pinned
 # pytorch base; pinned by content-addressed image ID (no registry digest).
-EVAL_IMAGE_ID = "sha256:b598274a22a0954f455ee0c22b44aa74808022553cc32886459efcb6b7e059ef"
+EVAL_IMAGE_ID = "sha256:cb7a9f4cfab8943aa29bdbdf531db4617daf736e8388e97eb77d62998ebd973b"
 EVAL_MEMORY_BYTES = 8 * 1024 * 1024 * 1024
 EVAL_TMP_TMPFS_BYTES = 512 * 1024 * 1024
 EVAL_OUTPUT_LIMIT_BYTES = 128 * 1024 * 1024

@@ -165,7 +165,7 @@ def main() -> int:
         "commit": commit,
         "snapshot_root": str(args.snapshot_root),
         "gpu_device": gpu_device,
-        "image_id": "sha256:b598274a22a0954f455ee0c22b44aa74808022553cc32886459efcb6b7e059ef",
+        "image_id": "sha256:cb7a9f4cfab8943aa29bdbdf531db4617daf736e8388e97eb77d62998ebd973b",
         "note": "correctness only (measure_performance=False); formal timing is T07",
         "cases": cases,
         "accepted": all_accepted,

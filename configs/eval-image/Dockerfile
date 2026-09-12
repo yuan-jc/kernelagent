@@ -13,4 +13,5 @@ RUN pip install --no-cache-dir \
         requests==2.32.3 \
         python-dotenv==1.0.1 \
         tqdm==4.66.5 \
-        litellm==1.53.1
+        litellm==1.53.1 \
+        numpy==1.26.4
