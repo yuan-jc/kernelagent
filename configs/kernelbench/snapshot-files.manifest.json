@@ -1,0 +1,1628 @@
+{
+  "schema_version": "1.0",
+  "repository": "ScalingIntelligence/KernelBench",
+  "commit": "423217d9fda91e0c2d67e4a43bf62f96f6d104f1",
+  "note": "Problem file inventory at the pinned research commit; files stay in the local gitignored research/sources cache. The public repo keeps hashes only.",
+  "files": [
+    {
+      "path": "KernelBench/level1/100_HingeLoss.py",
+      "git_blob_sha1": "0b733a0595518c3d054b4479ab3e0eaa650be726",
+      "sha256": "8e7ab261247e266e1b765957db04ea6972ac5dc9544607c059848d2417d5d3a1",
+      "size": 566
+    },
+    {
+      "path": "KernelBench/level1/10_3D_tensor_matrix_multiplication.py",
+      "git_blob_sha1": "2048d0f59eadd5c3170f94667cf63ac6c7c2aef5",
+      "sha256": "bd4013a4d5563e3a0a7da6c055dd9c83fbedb5fdd2842e8610a84a510f75e0af",
+      "size": 825
+    },
+    {
+      "path": "KernelBench/level1/11_4D_tensor_matrix_multiplication.py",
+      "git_blob_sha1": "aae74fb45439656495be8c6cc13b137cff7c4c66",
+      "sha256": "f4e0b2e7721b68c8cf3d7109ae24690b0761eb01c79601f4330bbeffe8471bc8",
+      "size": 1052
+    },
+    {
+      "path": "KernelBench/level1/12_Matmul_with_diagonal_matrices_.py",
+      "git_blob_sha1": "0e36c27541fc8be47a70b87b2f107c67e2b6e67c",
+      "sha256": "868bc16b165dd00232690d06ff7f50578ee64769b16b9c53b7069b2df1b36cf3",
+      "size": 1006
+    },
+    {
+      "path": "KernelBench/level1/13_Matmul_for_symmetric_matrices.py",
+      "git_blob_sha1": "e594c6007f0c5efecca542e1d8bf8c2c9ae53ea6",
+      "sha256": "5ee7c49134f3ed1d0af9a54ddcb3c00f57c91e1e3d28f1c1c9bbeb79e448c9cb",
+      "size": 1128
+    },
+    {
+      "path": "KernelBench/level1/14_Matmul_for_upper_triangular_matrices.py",
+      "git_blob_sha1": "5bf5c5d3e6ff86d27540321aa05d6539d34e1172",
+      "sha256": "b661589687579a277b660c781f6f1e65921f7005e5fe85fb3de87e4cf9ea73aa",
+      "size": 1126
+    },
+    {
+      "path": "KernelBench/level1/15_Matmul_for_lower_triangular_matrices.py",
+      "git_blob_sha1": "49b9e40b549ef470f0fb6059f135491be1fe23f6",
+      "sha256": "eb1491ef5450d332f680c390e23fb6bed47bb09702f0027168ce5b121b6077d3",
+      "size": 909
+    },
+    {
+      "path": "KernelBench/level1/16_Matmul_with_transposed_A.py",
+      "git_blob_sha1": "c523f80da23925966ec5811078f720ed075af7ec",
+      "sha256": "d3b2abe010f0732a889c8ccf21ac56885e7e013957a421c197de3681d56b4be9",
+      "size": 763
+    },
+    {
+      "path": "KernelBench/level1/17_Matmul_with_transposed_B.py",
+      "git_blob_sha1": "9922d1c11f2081bb1c6f57116e1a968e969a96ca",
+      "sha256": "00ef34b7e76d97b7cc95599fd2ff93d4d90f53c348fcc3c4cb657c2126f026b1",
+      "size": 763
+    },
+    {
+      "path": "KernelBench/level1/18_Matmul_with_transposed_both.py",
+      "git_blob_sha1": "a40e19820e380a06831171b129ec60fba093f790",
+      "sha256": "58f61b728890855d009329dbdbd0da4ac7d9390e46f7199b27dc353dd512ad19",
+      "size": 765
+    },
+    {
+      "path": "KernelBench/level1/19_ReLU.py",
+      "git_blob_sha1": "1f370caec96f53a2d86fc1a8050f5002f8a8c80b",
+      "sha256": "cbbfc9409662168ee7a5d3e7f7a59bf56e0faf9d763197e7f6a41fb5942dd63a",
+      "size": 707
+    },
+    {
+      "path": "KernelBench/level1/1_Square_matrix_multiplication_.py",
+      "git_blob_sha1": "963a3f87b1f98a7636c96a7f8284b3b7b483f96b",
+      "sha256": "7626d611b8f2c97a71ae40d731da8cb7ba067dc43cc2f3e8185ad85c68533f30",
+      "size": 796
+    },
+    {
+      "path": "KernelBench/level1/20_LeakyReLU.py",
+      "git_blob_sha1": "fff5aa11f1306cbbccb3c4470c58d96d97e1b7bf",
+      "sha256": "5dea58d2392f446e0139e6cfb58bec3a1ac23cee90bb5c3e8a6ddab2909b7fbf",
+      "size": 1045
+    },
+    {
+      "path": "KernelBench/level1/21_Sigmoid.py",
+      "git_blob_sha1": "2da3a601881c5893bfd7b7c876cee1a378ff37f3",
+      "sha256": "8f3ae78284ddd70b5c2fff66e066e967780245dee262fbf8cd2432498833796a",
+      "size": 719
+    },
+    {
+      "path": "KernelBench/level1/22_Tanh.py",
+      "git_blob_sha1": "22fc1126ad35e6bc4787ebbc6ad7e457275e16d0",
+      "sha256": "8d47a07cbd045c944bb0bbd613e9375ca8032f7062e36f7a5d3c427c30e88490",
+      "size": 707
+    },
+    {
+      "path": "KernelBench/level1/23_Softmax.py",
+      "git_blob_sha1": "77821d84ec773782992861a7b8dff7010edf6552",
+      "sha256": "c9fa418447f2d64d5aeb4763d817137c1cb5a6b411a580f0b6291a7b29301d75",
+      "size": 749
+    },
+    {
+      "path": "KernelBench/level1/24_LogSoftmax.py",
+      "git_blob_sha1": "989f6a03a40040323f93d9d515a61702241b2a4c",
+      "sha256": "2aa5cac0c12474ed17fad018fee6ccbb09ca7d200ece7981bb8a608200b81fb8",
+      "size": 797
+    },
+    {
+      "path": "KernelBench/level1/25_Swish.py",
+      "git_blob_sha1": "18d9b739ab5118e7ccefc6395f0960448b05ddd3",
+      "sha256": "dbc25cc89be043065594c2882809b129a442af34ecdc280b9be2bc04597d653a",
+      "size": 717
+    },
+    {
+      "path": "KernelBench/level1/26_GELU_.py",
+      "git_blob_sha1": "6b3cdc75e60cd539971ca7ea3c2697b13c8cf0d1",
+      "sha256": "6c08367ffb8a4153714fb8390ece47d8f0294f9e2152245840f3a9764ac8b69b",
+      "size": 721
+    },
+    {
+      "path": "KernelBench/level1/27_SELU_.py",
+      "git_blob_sha1": "a1292b891b8e438cb218c0f0f3a747ea5f90873f",
+      "sha256": "21aad8c91144bee2c507d134ffc9c365d555a6035dfea71e3044a9cdad8adf99",
+      "size": 711
+    },
+    {
+      "path": "KernelBench/level1/28_HardSigmoid.py",
+      "git_blob_sha1": "62ab26cd78778ee832ab424fc49bf4797f7a0153",
+      "sha256": "fc773884c6c52af0fd6d41c610ca5bd15f66c4c47f0d4e9fad24564afea4c50a",
+      "size": 749
+    },
+    {
+      "path": "KernelBench/level1/29_Softplus.py",
+      "git_blob_sha1": "0e547c39641cef73a28d18c64ceac1995f9909f6",
+      "sha256": "dadaed23e8f0194fc4840b5af4d10d397f96f2034eca0e36653078b270ce8539",
+      "size": 737
+    },
+    {
+      "path": "KernelBench/level1/2_Standard_matrix_multiplication_.py",
+      "git_blob_sha1": "e751dbfff4dee08138eec06ea075dea07f41c40f",
+      "sha256": "136a33c4d598d07cd7931ef8c0eff4e683c221af6fc43c2d89b6632d3f9902a0",
+      "size": 761
+    },
+    {
+      "path": "KernelBench/level1/30_Softsign.py",
+      "git_blob_sha1": "e76a5ec763919184639e1102e6da165b139377b6",
+      "sha256": "1c7b8e7dd71284dbfbcc33bf87b94c962b3cca6da90bbd2b5c5e8900b1354a75",
+      "size": 728
+    },
+    {
+      "path": "KernelBench/level1/31_ELU.py",
+      "git_blob_sha1": "ac871b7e577c964034c42d9e664029c975cd0e6e",
+      "sha256": "295e84c51758555d26571f14353c8c4a02a1c7eb213406129e6ea601385e6fd8",
+      "size": 969
+    },
+    {
+      "path": "KernelBench/level1/32_HardTanh.py",
+      "git_blob_sha1": "2f088d77c5cbf76bd8bf53e4b28bffd904a44fff",
+      "sha256": "b73a2ed250f2d9fec69a5899ddae3a15f41a9225b73a20ef6de5b8f8ef05fcf5",
+      "size": 776
+    },
+    {
+      "path": "KernelBench/level1/33_BatchNorm.py",
+      "git_blob_sha1": "0afd9c8ce822b3919a3a69fbd9e7046cecd3e3b5",
+      "sha256": "0b7f5ca58d6ec76a6faef2f583fa84ab2c14c0bfd09e7faf8c6289187a56cfc4",
+      "size": 981
+    },
+    {
+      "path": "KernelBench/level1/34_InstanceNorm.py",
+      "git_blob_sha1": "3af796024fdd3abe8fe803b0ffc8cd337e719895",
+      "sha256": "2e0d8b3c14a731ba9051a7487949e6bcb52e36eee6b707499cdc670332aedcad",
+      "size": 1035
+    },
+    {
+      "path": "KernelBench/level1/35_GroupNorm_.py",
+      "git_blob_sha1": "f89da2cf83aac43f2621e7a875f20446a290d791",
+      "sha256": "e4462f85b3eaadd05bdce8655305f5bcddc49dd31ef0a3bba1b85a1cbb2d19bb",
+      "size": 1151
+    },
+    {
+      "path": "KernelBench/level1/36_RMSNorm_.py",
+      "git_blob_sha1": "0281c2bc630f421aacb2f9cda7d138403e39a8a7",
+      "sha256": "8f6ee1b9ee212f3cee1069eff2b7935482713c99596b1024801868065e5a2b1d",
+      "size": 1300
+    },
+    {
+      "path": "KernelBench/level1/37_FrobeniusNorm_.py",
+      "git_blob_sha1": "20d172c2eb7ccc595622b274d65725d1612dcdf3",
+      "sha256": "cf45f93a2a75102fdcc78a77833cbf6a2f40080fec5c7437ff1471b4092360ba",
+      "size": 870
+    },
+    {
+      "path": "KernelBench/level1/38_L1Norm_.py",
+      "git_blob_sha1": "f2d5774421eef9ae0acd87f82f09dd75450082ca",
+      "sha256": "02d29f98ba28001a4274fe713bf0b985ffc088aef1e83581ad11e4dbe239dfda",
+      "size": 820
+    },
+    {
+      "path": "KernelBench/level1/39_L2Norm_.py",
+      "git_blob_sha1": "f101d6584bf4fa5d7b5e5a318ea7e3d083dc17f3",
+      "sha256": "fb8153fbe2a50679fcbbc3114f46c4157547138679fb6ecbabec0497e90a55c3",
+      "size": 874
+    },
+    {
+      "path": "KernelBench/level1/3_Batched_matrix_multiplication.py",
+      "git_blob_sha1": "f3f807bf47581f01233740fa12f3522d3d8da33a",
+      "sha256": "310fb3bdf4f69ea178a5b5868bf204e83196cba71e4750be3fbbcb68b78d37f7",
+      "size": 873
+    },
+    {
+      "path": "KernelBench/level1/40_LayerNorm.py",
+      "git_blob_sha1": "01c062e7edf969c6c35bbe8ca1f2056ba4ec83ee",
+      "sha256": "8d975d7cee6946513dcfb6ba84c971e53a890f9d9c6f0a4fb828904941f25975",
+      "size": 1009
+    },
+    {
+      "path": "KernelBench/level1/41_Max_Pooling_1D.py",
+      "git_blob_sha1": "1e743f118bc090d2df2f106537bb0b4754358030",
+      "sha256": "65bbc7b4b8c999990dacd9be04823886fecfec981a5d7484ddcf53302b04584d",
+      "size": 1751
+    },
+    {
+      "path": "KernelBench/level1/42_Max_Pooling_2D.py",
+      "git_blob_sha1": "09b11e5e6361d305c590304e4269c4c7776160cd",
+      "sha256": "615a5a6d6baa0d13774cc17b305dd0588625e13a829bdef16395f5cd101e06bc",
+      "size": 1366
+    },
+    {
+      "path": "KernelBench/level1/43_Max_Pooling_3D.py",
+      "git_blob_sha1": "e1d30495a6ce7e2bdcdf2e5d4953ab80586807ab",
+      "sha256": "c684de6a8afdb3e555952e692f07744531394f2ccd8ea5f34b68793f7f71b709",
+      "size": 1841
+    },
+    {
+      "path": "KernelBench/level1/44_Average_Pooling_1D.py",
+      "git_blob_sha1": "337708791f92c07e7d26db323596a07441dd59db",
+      "sha256": "2c55c057fff2439d7bf30ad1cd33b9e72da6b9996cfc2f2bbde981e114a5b774",
+      "size": 1325
+    },
+    {
+      "path": "KernelBench/level1/45_Average_Pooling_2D.py",
+      "git_blob_sha1": "60070378575007b491a8b939751066987c1c2c43",
+      "sha256": "3abae4a4776630cc55e066f3878c268e9338b4a936d50a38d8bd62d3bdefe1ba",
+      "size": 1258
+    },
+    {
+      "path": "KernelBench/level1/46_Average_Pooling_3D.py",
+      "git_blob_sha1": "46487b04c16872d00f5b258fa473f42f3d62c438",
+      "sha256": "bb683a01c421e1e289b7cd765a7c199317984f4fccad885e69acf32fa97ce3d3",
+      "size": 1379
+    },
+    {
+      "path": "KernelBench/level1/47_Sum_reduction_over_a_dimension.py",
+      "git_blob_sha1": "0231be980bb928a6f4e83f78b71f939a106bfaa9",
+      "sha256": "537d2ff381740bdb54b5208f82187564f6733a30df918edbbf7a49d64bef17ab",
+      "size": 959
+    },
+    {
+      "path": "KernelBench/level1/48_Mean_reduction_over_a_dimension.py",
+      "git_blob_sha1": "df5c9511afdef8978ae7939683e106ae16b9c10f",
+      "sha256": "5fedf7c91096731d6d0edf00ade5b31b835c07e39be159512446fb4479fd5b35",
+      "size": 1025
+    },
+    {
+      "path": "KernelBench/level1/49_Max_reduction_over_a_dimension.py",
+      "git_blob_sha1": "bc1d55af68db368cf3539081d3cfbcd35370e3b9",
+      "sha256": "12982f0f62a711d355a4f037edff6b92581032bec387e5b40f3e0d8c384f9b9f",
+      "size": 969
+    },
+    {
+      "path": "KernelBench/level1/4_Matrix_vector_multiplication_.py",
+      "git_blob_sha1": "fb6a59ca9d7e6fdd395b77031f2b7fa958323ae4",
+      "sha256": "5f1476dfcbd291f393d469a2645ff628f1e393bd720c2fe36d5fa4f9181dd8a1",
+      "size": 772
+    },
+    {
+      "path": "KernelBench/level1/50_conv_standard_2D__square_input__square_kernel.py",
+      "git_blob_sha1": "bc84b338fcf228391e2739f598d810a5aa2d888a",
+      "sha256": "86ecad0e77b2c9f81d6c171f1325e85f4f23ae9ad4410bbfd096fca62e84d673",
+      "size": 511
+    },
+    {
+      "path": "KernelBench/level1/51_Argmax_over_a_dimension.py",
+      "git_blob_sha1": "11859e43d0a0ba1ce67602e3780cacc61829d5f5",
+      "sha256": "d6a2057c4c95a9737985b2b8ffda23595f812557c26a2263fec8edd594c61fbe",
+      "size": 937
+    },
+    {
+      "path": "KernelBench/level1/52_Argmin_over_a_dimension.py",
+      "git_blob_sha1": "8cfde908a2474ef035c500382e55e4c7d652771e",
+      "sha256": "e1764caddce33679126f225b4da455a95978be85ccf79a372e3ef549ee35ba8f",
+      "size": 996
+    },
+    {
+      "path": "KernelBench/level1/53_Min_reduction_over_a_dimension.py",
+      "git_blob_sha1": "0118b340905aa39b9300ca4098b69d68d36b237b",
+      "sha256": "db0c4b3f62e99ffc3a2cacd10c919db886f49c6ec9d97b9fc1ce14ff1e0925a7",
+      "size": 969
+    },
+    {
+      "path": "KernelBench/level1/54_conv_standard_3D__square_input__square_kernel.py",
+      "git_blob_sha1": "b7e0dd4f4de4550063417607e8c358881f53eda3",
+      "sha256": "98b074edf89802ed79b9b99c37d94eb1d781ab46037614390046ebf92a1f2f0d",
+      "size": 1976
+    },
+    {
+      "path": "KernelBench/level1/55_conv_standard_2D__asymmetric_input__square_kernel.py",
+      "git_blob_sha1": "a4a653096718aee879b7da19ea6f2c770d9d8a10",
+      "sha256": "47145a97c980da1d78d88da5b63d2c6aab9a4b172509f3b3663137865b9485ee",
+      "size": 2048
+    },
+    {
+      "path": "KernelBench/level1/56_conv_standard_2D__asymmetric_input__asymmetric_kernel.py",
+      "git_blob_sha1": "139025accce36b80e8c61be4eb729d44ab0fce81",
+      "sha256": "c04ef3c4088981e9d3547eed0a0620e8ede3d0af4bff935e4a3e7ba9ba9aa652",
+      "size": 2172
+    },
+    {
+      "path": "KernelBench/level1/57_conv_transposed_2D__square_input__square_kernel.py",
+      "git_blob_sha1": "a386430526982b013f754b19ea4947cb70a0c110",
+      "sha256": "9e84df45806e4fa36bef9b8ef98f255d86470ff81735e9ee98d2c721634fde52",
+      "size": 2047
+    },
+    {
+      "path": "KernelBench/level1/58_conv_transposed_3D__asymmetric_input__asymmetric_kernel.py",
+      "git_blob_sha1": "bca05c270ad1bf5c7a6cb7a4883292981e6561a2",
+      "sha256": "1673075fe1a9d3fa00f625f0059011c9aa7aa864d8030311673dab91fb9b3564",
+      "size": 2340
+    },
+    {
+      "path": "KernelBench/level1/59_conv_standard_3D__asymmetric_input__square_kernel.py",
+      "git_blob_sha1": "2f4e31d72c967d3706f0d2cc9c93ca7efe39aa87",
+      "sha256": "fc6c48ace0b1c31d0eedd3c9ff5eca70dd5c84c0b50b9ce01a27eb8df51ca684",
+      "size": 2005
+    },
+    {
+      "path": "KernelBench/level1/5_Matrix_scalar_multiplication.py",
+      "git_blob_sha1": "6b46f8b5ff406e1b150fb350544224999b444f6e",
+      "sha256": "f4d52425a8f72b4b22375494064f2ab1675e2caf29376c47a102211ce66d6987",
+      "size": 711
+    },
+    {
+      "path": "KernelBench/level1/60_conv_standard_3D__square_input__asymmetric_kernel.py",
+      "git_blob_sha1": "c86a8480902e6e3d73ab878034617edc77b3399a",
+      "sha256": "3f7204c138ec6d09c25c38f39be1d5b7f43f4fa5270d68fe0323ad9b3149ffb9",
+      "size": 2045
+    },
+    {
+      "path": "KernelBench/level1/61_conv_transposed_3D__square_input__square_kernel.py",
+      "git_blob_sha1": "68c9686085cc13fed99b99ceb14c91a24d24ad0a",
+      "sha256": "e60fffd91a6a43eeefb5069f4dd0f2316c7114f5bd3ca5264723b5d0531e9c76",
+      "size": 2066
+    },
+    {
+      "path": "KernelBench/level1/62_conv_standard_2D__square_input__asymmetric_kernel.py",
+      "git_blob_sha1": "f515967c7ea8a2cdf40507f62c20a0dd38e1c686",
+      "sha256": "033e91bf69225f07e61484d14450903e3d67e7cee1a119abd8b19d3e73a0c849",
+      "size": 1959
+    },
+    {
+      "path": "KernelBench/level1/63_conv_standard_2D__square_input__square_kernel.py",
+      "git_blob_sha1": "2addcda2eaea88ae030b6cd65bbb57a86c222f45",
+      "sha256": "18b1d4ea7b3a52714f3607268b8a38b7457b2adcce2dc918bcdbf33cc267b463",
+      "size": 1935
+    },
+    {
+      "path": "KernelBench/level1/64_conv_transposed_1D.py",
+      "git_blob_sha1": "161ab8393808b23d4b3438a6a24dd163083569cf",
+      "sha256": "0ad1a7811c8916691ae516c366a1ac888b011cf5699dd8b2e2a569cbef697c75",
+      "size": 1976
+    },
+    {
+      "path": "KernelBench/level1/65_conv_transposed_2D__square_input__asymmetric_kernel.py",
+      "git_blob_sha1": "683f3d57a48d52dad23847a0066a8fceb16c1c70",
+      "sha256": "5a2f6a47e83931e2c3d1e78cff3f6793415f963308ba0c2eb5c1a27596c3cfde",
+      "size": 2057
+    },
+    {
+      "path": "KernelBench/level1/66_conv_standard_3D__asymmetric_input__asymmetric_kernel.py",
+      "git_blob_sha1": "4659b36a34d55ebe98ede35d5b713696d8852772",
+      "sha256": "649fc141b68b3cd3fa83cdd3dda9a0e02f0367eb0a8307fe7fbe8b5968a305eb",
+      "size": 2239
+    },
+    {
+      "path": "KernelBench/level1/67_conv_standard_1D.py",
+      "git_blob_sha1": "95091b366e1a270c1d2cd19391bd9f35c92b8c94",
+      "sha256": "d0ddb9f06cbe48f3930a31062b12514fb23eb9bb23500160f1085f795044b205",
+      "size": 1839
+    },
+    {
+      "path": "KernelBench/level1/68_conv_transposed_3D__square_input__asymmetric_kernel.py",
+      "git_blob_sha1": "03e7428706905c6fa48b9ac5da52d45614dfbfca",
+      "sha256": "eb318ee386ec2d3581938f4099366a8872936949104eabe312ec325ffdc0abbc",
+      "size": 2264
+    },
+    {
+      "path": "KernelBench/level1/69_conv_transposed_2D__asymmetric_input__asymmetric_kernel.py",
+      "git_blob_sha1": "ca71c3f350168db51e4d55fb6aec1fb328ff0d8a",
+      "sha256": "6014891f7ba7a66ef05c012ab98e086b042fc10ec8a2d6af4f89b00f95861095",
+      "size": 2374
+    },
+    {
+      "path": "KernelBench/level1/6_Matmul_with_large_K_dimension_.py",
+      "git_blob_sha1": "1e7b72662c24b4e439d3dc3d3f0842cdfae0f097",
+      "sha256": "18287323c43d000af0eaf384d8e142424182fb48e17cc317fc7009bb345bd7b0",
+      "size": 786
+    },
+    {
+      "path": "KernelBench/level1/70_conv_transposed_3D__asymmetric_input__square_kernel.py",
+      "git_blob_sha1": "caced58888a5ca8ea9638610badd4db49db2da23",
+      "sha256": "8b56475485149dc43e7475f12434b687dbd9f05fa10738cf7595337aff7adff3",
+      "size": 2411
+    },
+    {
+      "path": "KernelBench/level1/71_conv_transposed_2D__asymmetric_input__square_kernel.py",
+      "git_blob_sha1": "f4b002dd1db4df3c9dedaa2a9feaa93cd5aca7bc",
+      "sha256": "02bb0b2e7744eb4c7d6576e135400b03da21efa4b999cef2ab4e5a44f49fd295",
+      "size": 2042
+    },
+    {
+      "path": "KernelBench/level1/72_conv_transposed_3D_asymmetric_input_asymmetric_kernel___strided_padded_grouped_.py",
+      "git_blob_sha1": "3cf00bc44eefb5db64cc0136a68832478609eafe",
+      "sha256": "e157db716a0915aa5ce7a23dc4c4b249e856cba1980cfd21c335630577382dc1",
+      "size": 2378
+    },
+    {
+      "path": "KernelBench/level1/73_conv_transposed_3D_asymmetric_input_square_kernel__strided_padded__grouped.py",
+      "git_blob_sha1": "d8634831624d94f617f1cbc0adcc708cb7719486",
+      "sha256": "4622db3c59f819c43af8ac286c1e5b52d5464d0a502745688fe07c5cac087a9a",
+      "size": 1970
+    },
+    {
+      "path": "KernelBench/level1/74_conv_transposed_1D_dilated.py",
+      "git_blob_sha1": "5d3c784cdd93103a10a70df4facaa6705f16c811",
+      "sha256": "25c5106ef9f520916e0d8e778aad984fc6e88008951f0c9458f90dec80976e5e",
+      "size": 1791
+    },
+    {
+      "path": "KernelBench/level1/75_conv_transposed_2D_asymmetric_input_asymmetric_kernel_strided__grouped____padded____dilated__.py",
+      "git_blob_sha1": "366c825aaf2f14f71202c7480e8c86b98eb68dd4",
+      "sha256": "1926419776cf1be2030acb76de1e4a78d3cb8b8f172ffa74786bf3947a4c2bca",
+      "size": 2133
+    },
+    {
+      "path": "KernelBench/level1/76_conv_standard_1D_dilated_strided__.py",
+      "git_blob_sha1": "4898212ef65ab8b0c986f452f49f98df432020f1",
+      "sha256": "83736e4c38632e0f72bcba6b3b74065b2dba668913e1b1161f9b5ad8b37e64e3",
+      "size": 1648
+    },
+    {
+      "path": "KernelBench/level1/77_conv_transposed_3D_square_input_square_kernel___padded____dilated____strided__.py",
+      "git_blob_sha1": "3a4c5b360166cc8d23c79f3038cf4f33490f8408",
+      "sha256": "a16f0026c2249c9f6e3a151fbf3b42db29dd17640a0ef9f001cbd1d09d5f9444",
+      "size": 1951
+    },
+    {
+      "path": "KernelBench/level1/78_conv_transposed_2D_asymmetric_input_asymmetric_kernel___padded__.py",
+      "git_blob_sha1": "4d0120e2d6917889e4a670328f819f326f131e38",
+      "sha256": "0044003d489f732f5679fe7ea162d4a8a10a647503d097826b53fc3e255a8a51",
+      "size": 1767
+    },
+    {
+      "path": "KernelBench/level1/79_conv_transposed_1D_asymmetric_input_square_kernel___padded____strided____dilated__.py",
+      "git_blob_sha1": "f0db96c1c4cf668ab1c9a406ec58e3134ebd3c14",
+      "sha256": "9e1baebd13c14f9b6883023e6ca7881f8d95aa529f01b4c95e54ad713295cc89",
+      "size": 1834
+    },
+    {
+      "path": "KernelBench/level1/7_Matmul_with_small_K_dimension_.py",
+      "git_blob_sha1": "d24386f44ad2af71b6c653c5292feee92fbe354d",
+      "sha256": "66b12b830db873ab706900ffb52abd9fa43321829eee40a27d395441db2f2966",
+      "size": 786
+    },
+    {
+      "path": "KernelBench/level1/80_conv_standard_2D_square_input_asymmetric_kernel___dilated____padded__.py",
+      "git_blob_sha1": "e5bbc457ae62fdd1c008ec7f4c4fa52eb8016f75",
+      "sha256": "4706128a7dfef02da3d2ebb72874eb81db833c6b6369b5413d40985e8ad0ea39",
+      "size": 1888
+    },
+    {
+      "path": "KernelBench/level1/81_conv_transposed_2D_asymmetric_input_square_kernel___dilated____padded____strided__.py",
+      "git_blob_sha1": "22da04eac1769d82ad8840e3ea8ad0b6118cfe9b",
+      "sha256": "8f292796522673552a00abd3f89843964ea9e60b06770c4554c9cba602c3499e",
+      "size": 1887
+    },
+    {
+      "path": "KernelBench/level1/82_conv_depthwise_2D_square_input_square_kernel.py",
+      "git_blob_sha1": "242ad03bb770afec64bdba8e948fecc47e51d5d4",
+      "sha256": "23578d4c1257ee9c2b86ab8969eb91292aca2b9699ab15b2b72ea7e8d438078f",
+      "size": 1512
+    },
+    {
+      "path": "KernelBench/level1/83_conv_depthwise_2D_square_input_asymmetric_kernel.py",
+      "git_blob_sha1": "ec46e8a5211a6c3c3b3f7c639d3fdadf878b85bf",
+      "sha256": "09f5690aceba6d92769440e5a2698a76aec7b1f45d63e3198af5884c4d40ea10",
+      "size": 1670
+    },
+    {
+      "path": "KernelBench/level1/84_conv_depthwise_2D_asymmetric_input_square_kernel.py",
+      "git_blob_sha1": "345bdf0222b599df70f31c82ac41b6aa265661b1",
+      "sha256": "1af31dab803ef4f4e5b94f7bbe54260ef23930715610d1cbd8e7cdcd88e5c45c",
+      "size": 1681
+    },
+    {
+      "path": "KernelBench/level1/85_conv_depthwise_2D_asymmetric_input_asymmetric_kernel.py",
+      "git_blob_sha1": "5f49b88b2d125acefb3b5443c4298028977165da",
+      "sha256": "5538e14c57c791611e5e6a663cbed1051af510257a603100a25cbebc78b7a8aa",
+      "size": 2651
+    },
+    {
+      "path": "KernelBench/level1/86_conv_depthwise_separable_2D.py",
+      "git_blob_sha1": "fad4c50a123af40105221819849f5fc646f8bf0a",
+      "sha256": "cee48ffdb13900385835c6390154a3886bd9ad8b84154ae1d37f0148cd8feabe",
+      "size": 1906
+    },
+    {
+      "path": "KernelBench/level1/87_conv_pointwise_2D.py",
+      "git_blob_sha1": "e8d975661b88961cdf2ac08927224206b3fc48e0",
+      "sha256": "5608fbde926998ce10992790b9c1b09a15481cbd005472b0ad54d70db41eb1d8",
+      "size": 1238
+    },
+    {
+      "path": "KernelBench/level1/88_MinGPTNewGelu.py",
+      "git_blob_sha1": "9a4e2421b49c1f38d30a0597b47ac3928759f9b9",
+      "sha256": "4c715023579e2edc7d7af2a6799ea6cb9ef1b9278670cfbe2d0e61d111003c4f",
+      "size": 716
+    },
+    {
+      "path": "KernelBench/level1/89_cumsum.py",
+      "git_blob_sha1": "8088d2b73d62514e771a1982c46acb82c76b998a",
+      "sha256": "24eea19436dc41aa36ae3364b422d784c4f20175903f894e06beeb9cff15c02d",
+      "size": 1593
+    },
+    {
+      "path": "KernelBench/level1/8_Matmul_with_irregular_shapes_.py",
+      "git_blob_sha1": "518bbfb3b7dd031675175d6213ac7a2607835ea5",
+      "sha256": "717f98e135d8c11b5005bd869b36843960de2c06151beb3d7dd6a760a987223c",
+      "size": 791
+    },
+    {
+      "path": "KernelBench/level1/90_cumprod.py",
+      "git_blob_sha1": "7bc3cda4b1d3690019ef7060be9db9136ed67d9c",
+      "sha256": "17408793b4846d75bef22fff5c2a16c7d836409eabc0476c8060f75183a64665",
+      "size": 1133
+    },
+    {
+      "path": "KernelBench/level1/91_cumsum_reverse.py",
+      "git_blob_sha1": "19ad6fd8cda26c0356980f2eebab28b19e8bbeed",
+      "sha256": "170f4bb30f01abdec9b149d78a816e66bdc93967253ade8244dca1b8372038fd",
+      "size": 621
+    },
+    {
+      "path": "KernelBench/level1/92_cumsum_exclusive.py",
+      "git_blob_sha1": "e68dacaddbbee86e3633100e82549a78e36a8683",
+      "sha256": "ec1551c196130f5d7fae707f0750016c35b988e76aa3f1657da4347f463ced86",
+      "size": 766
+    },
+    {
+      "path": "KernelBench/level1/93_masked_cumsum.py",
+      "git_blob_sha1": "87e5d56d06798cbf62768fb3e34a9c7b7ba75b4a",
+      "sha256": "8b1591c5c8242968acc0677a4a1308b7a704534724782c3858b4cb0b10828769",
+      "size": 977
+    },
+    {
+      "path": "KernelBench/level1/94_MSELoss.py",
+      "git_blob_sha1": "2dc77eed18166d5881e639edfe69a02e06c79320",
+      "sha256": "1bc23c8534d817cd5acff184eb8d3849f43b96b6dffcde6ab78a1c71a8fe64f3",
+      "size": 575
+    },
+    {
+      "path": "KernelBench/level1/95_CrossEntropyLoss.py",
+      "git_blob_sha1": "fa4a224562336d1ad1f099ea8a28a51cc9a02b5e",
+      "sha256": "4cdfaaf1c2118369987c7a0c24b4487fee4bb90fdce50f592bded59cf61ae9bd",
+      "size": 597
+    },
+    {
+      "path": "KernelBench/level1/96_HuberLoss.py",
+      "git_blob_sha1": "5e60d5df3b1110fb0c53466b0298b672b0c01b39",
+      "sha256": "51a7c78a527206ba8da2b24cbbfd3c8a043146a9d690d4304c5e95a199425747",
+      "size": 586
+    },
+    {
+      "path": "KernelBench/level1/97_ScaledDotProductAttention.py",
+      "git_blob_sha1": "ba4bd02bb2f44ece594fed0f03b1c19bd29c1e6e",
+      "sha256": "a07ca5135657c2ea29f7b7a66ec1815560858ad69fa88221bfc0f82bd5648091",
+      "size": 703
+    },
+    {
+      "path": "KernelBench/level1/98_KLDivLoss.py",
+      "git_blob_sha1": "7043a992463b8c3f41f80845b2f8ef876761fcfb",
+      "sha256": "ff13e10c26851cc7262cd993dd289ad21b18dbb1dd65bb2159d7052582b1ccd5",
+      "size": 668
+    },
+    {
+      "path": "KernelBench/level1/99_TripletMarginLoss.py",
+      "git_blob_sha1": "3ca0b4467e43ffcbb9831fc5021f35ba432e5894",
+      "sha256": "07fce40303b9ba5fdc3e5b6ae61c35ed47ac291e9e0f4e62c21a8ba2763cea0c",
+      "size": 782
+    },
+    {
+      "path": "KernelBench/level1/9_Tall_skinny_matrix_multiplication_.py",
+      "git_blob_sha1": "dc8f28c99a220b7854571b4b15010bbf56798a29",
+      "sha256": "06a133f60f0d704b70014b210031e3937d7a183c90ea11800357ce6b55c89c18",
+      "size": 890
+    },
+    {
+      "path": "KernelBench/level2/100_ConvTranspose3d_Clamp_Min_Divide.py",
+      "git_blob_sha1": "f4212cd67e98c866178245f201f777c7f4514899",
+      "sha256": "1f9ce1ae75f5e9986156c1d6e40b525db04d89c11e825c159ef2cc108f7e132e",
+      "size": 1057
+    },
+    {
+      "path": "KernelBench/level2/10_ConvTranspose2d_MaxPool_Hardtanh_Mean_Tanh.py",
+      "git_blob_sha1": "c2b490f53b175d2e44667212b1f85160afbf07dd",
+      "sha256": "a8f0fab54e125017083473ddee3bcff6546b4eda28ba98cacbebfbe14ae8130b",
+      "size": 1339
+    },
+    {
+      "path": "KernelBench/level2/11_ConvTranspose2d_BatchNorm_Tanh_MaxPool_GroupNorm.py",
+      "git_blob_sha1": "6855825949bd4bacfd57a1b7721244aade1c9cf0",
+      "sha256": "e10fa44d0dbc6f6d9b7fff411dae2730502c2b15236d9ec1097e7deff37f1981",
+      "size": 1281
+    },
+    {
+      "path": "KernelBench/level2/12_Gemm_Multiply_LeakyReLU.py",
+      "git_blob_sha1": "2564103787ce2abaa8631294bda2cb23177b35a5",
+      "sha256": "0150537a4e53a29b1436d22667aa05b26c30301dd865d5ccf0f929b2c0cc29f6",
+      "size": 816
+    },
+    {
+      "path": "KernelBench/level2/13_ConvTranspose3d_Mean_Add_Softmax_Tanh_Scaling.py",
+      "git_blob_sha1": "40a564fb5889de2ed6f0595f3d609e73ffeac657",
+      "sha256": "f33a027962c4ffa7b73bc48fe1e26e38d878c21b084e0c2a0a94c0bc290bd4f3",
+      "size": 1607
+    },
+    {
+      "path": "KernelBench/level2/14_Gemm_Divide_Sum_Scaling.py",
+      "git_blob_sha1": "85a88ec3f99ad660b616c5a1169e868cfece96c9",
+      "sha256": "8bd6a36d6dafc8916d9b47d413f668fb7a4c25444378717a4c09f495b3891cd2",
+      "size": 1042
+    },
+    {
+      "path": "KernelBench/level2/15_ConvTranspose3d_BatchNorm_Subtract.py",
+      "git_blob_sha1": "e840deae560f1d149b953469b9e5636e83a3c3a8",
+      "sha256": "43f63a8c7edfdde89349af7fb8c8820a73586cb28d6057c46d5e562f374cef6a",
+      "size": 999
+    },
+    {
+      "path": "KernelBench/level2/16_ConvTranspose2d_Mish_Add_Hardtanh_Scaling.py",
+      "git_blob_sha1": "9a44ca6c740fe20a1bfa9de93ca1afc65bf71216",
+      "sha256": "3a5a97178dad5b980b33f35b7712826a08a92a5fd8a486a22cdabc84b97dcc15",
+      "size": 1241
+    },
+    {
+      "path": "KernelBench/level2/17_Conv2d_InstanceNorm_Divide.py",
+      "git_blob_sha1": "2ed101217886eab53c5608038d7139a6b5845f51",
+      "sha256": "bf60129922d425401714b89cf7568b2b6a793ab4303273b24d1d00ed41ed3565",
+      "size": 877
+    },
+    {
+      "path": "KernelBench/level2/18_Matmul_Sum_Max_AvgPool_LogSumExp_LogSumExp.py",
+      "git_blob_sha1": "974fdad305d02036e5e9e0bfc793bcfc67854184",
+      "sha256": "0a7391a12a0c88164045b68580b57f51efee843465aa0060d86fbb5f00f65861",
+      "size": 1234
+    },
+    {
+      "path": "KernelBench/level2/19_ConvTranspose2d_GELU_GroupNorm.py",
+      "git_blob_sha1": "ba7382bad967a5b283f2e17e19874991f2be23e6",
+      "sha256": "b7b68e7498c80dfe9491981ef97feb07aa684ce7229943d2cc701fdb83fb509c",
+      "size": 975
+    },
+    {
+      "path": "KernelBench/level2/1_Conv2D_ReLU_BiasAdd.py",
+      "git_blob_sha1": "7f455cf93aa6d5fa694217593701b11497aef364",
+      "sha256": "45ee3a3db038396c982207b36812086bf1b94472ebbf229c5e76c5ea0b90f89f",
+      "size": 822
+    },
+    {
+      "path": "KernelBench/level2/20_ConvTranspose3d_Sum_ResidualAdd_Multiply_ResidualAdd.py",
+      "git_blob_sha1": "22f480b871d292577084c05be55a83fd0c633899",
+      "sha256": "d5977ca8e549aac43aa5b4fd78dcbfc11784961891668ed5008fb0978d3e4a61",
+      "size": 1187
+    },
+    {
+      "path": "KernelBench/level2/21_Conv2d_Add_Scale_Sigmoid_GroupNorm.py",
+      "git_blob_sha1": "54f4a863e170862b77c3c6b4e40266b08e42217e",
+      "sha256": "c6488d1d4bebd1b43893cd490871dea02f97c7962e25aa79f9f70530926ac454",
+      "size": 1135
+    },
+    {
+      "path": "KernelBench/level2/22_Matmul_Scale_ResidualAdd_Clamp_LogSumExp_Mish.py",
+      "git_blob_sha1": "8f2998e2fab9a3c0adeb7ceecba8d7143ed51dab",
+      "sha256": "3ff6a8c5da733c978b3c86bbbba3190e487ae959b63d4501715e60489b6baab9",
+      "size": 1306
+    },
+    {
+      "path": "KernelBench/level2/23_Conv3d_GroupNorm_Mean.py",
+      "git_blob_sha1": "f3d4f8ae548f366124d6dfb83366b6e6b7a2b591",
+      "sha256": "9677116401cf1ec4ac00eb19cb6f08762d63b87b137e6ed10f2c8ec3741310fb",
+      "size": 1078
+    },
+    {
+      "path": "KernelBench/level2/24_Conv3d_Min_Softmax.py",
+      "git_blob_sha1": "3b78f80805c1f79b3614f6445cbbb42c9ae3b1f9",
+      "sha256": "1aad5ff832f3cd5ec353df0d9c040daea4fcddd1bcd6391189a81b94e3fba19a",
+      "size": 1241
+    },
+    {
+      "path": "KernelBench/level2/25_Conv2d_Min_Tanh_Tanh.py",
+      "git_blob_sha1": "a4bcabc9a26e989c80c500d92e6f29d98ca35420",
+      "sha256": "15e3e645a6012d772f1197e988d8a0ea4f191ad2459229fecdbe3f1d9ae344b3",
+      "size": 810
+    },
+    {
+      "path": "KernelBench/level2/26_ConvTranspose3d_Add_HardSwish.py",
+      "git_blob_sha1": "f47c6f9d1c6d49883cf073e486a54aa7b39b5f10",
+      "sha256": "807660889baed4d0c4abade85efaec7f9c1c0c2897b812a281c6f8d0d3748852",
+      "size": 1540
+    },
+    {
+      "path": "KernelBench/level2/27_Conv3d_HardSwish_GroupNorm_Mean.py",
+      "git_blob_sha1": "717fae2c37a362a7e8b909d1b5a652a2798088e6",
+      "sha256": "29f0c5f4ddc5b3b7db30e61402fcb6aee535e03274b616a11218893a7c7546bb",
+      "size": 1166
+    },
+    {
+      "path": "KernelBench/level2/28_BMM_InstanceNorm_Sum_ResidualAdd_Multiply.py",
+      "git_blob_sha1": "baa0cabe0319c168ec370a7e49bcccc65e1c7b48",
+      "sha256": "5ed41cc50c8b2dfe65d03e642cc471dc3ad7cf6858608c65b911c235946ef00e",
+      "size": 1251
+    },
+    {
+      "path": "KernelBench/level2/29_Matmul_Mish_Mish.py",
+      "git_blob_sha1": "4b992eb7c5c704732a5b5fd216cba20929d759cf",
+      "sha256": "f7b1c4c4c90d56de3dbd3605ed285d3e68efe5f6d98a245417533371c692b3ec",
+      "size": 657
+    },
+    {
+      "path": "KernelBench/level2/2_ConvTranspose2d_BiasAdd_Clamp_Scaling_Clamp_Divide.py",
+      "git_blob_sha1": "b6b77f99f58f909582f86e5814a79c27102c0eec",
+      "sha256": "2b69e31d12d28d291fb5b56634176269ba6513e8d240fc01d6f8a7b706abc109",
+      "size": 1279
+    },
+    {
+      "path": "KernelBench/level2/30_Gemm_GroupNorm_Hardtanh.py",
+      "git_blob_sha1": "4523c0b610293b51407f936bdf623d3a2c11ef2f",
+      "sha256": "461335ed064d25b193afd8cee6645eb12b37540ce15baa5170f3d61b765d2a90",
+      "size": 1117
+    },
+    {
+      "path": "KernelBench/level2/31_Conv2d_Min_Add_Multiply.py",
+      "git_blob_sha1": "9cf4f06b2b968184d0b58b9c848006ff67f733b3",
+      "sha256": "c66711246404f71123a6edf5ddcd5c0a01e2cd986725d21401424ca0669c85a5",
+      "size": 1135
+    },
+    {
+      "path": "KernelBench/level2/32_Conv2d_Scaling_Min.py",
+      "git_blob_sha1": "94b1763e6752bb08b8d7af77cbf04674d3948d87",
+      "sha256": "61653138241c49110250399f1544bf07db3eafa939ed6dbdab77d7f96c0e76e7",
+      "size": 1108
+    },
+    {
+      "path": "KernelBench/level2/33_Gemm_Scale_BatchNorm.py",
+      "git_blob_sha1": "595037d9b609ea39c591b1295364579169595899",
+      "sha256": "50f77c555d65b3cfc908bce9ee4e13fdf2f1ee82f5bbb3c34d9e544e92b1509b",
+      "size": 867
+    },
+    {
+      "path": "KernelBench/level2/34_ConvTranspose3d_LayerNorm_GELU_Scaling.py",
+      "git_blob_sha1": "0ed244cf222c13b804d769e7cb29735092975a96",
+      "sha256": "81095e0048e53905573b62f7e2bb37b77505a9fe4913fd8fe736669ffce3f23c",
+      "size": 1350
+    },
+    {
+      "path": "KernelBench/level2/35_Conv2d_Subtract_HardSwish_MaxPool_Mish.py",
+      "git_blob_sha1": "3e3b4e8646ef69226347193bdaf8cdb2daee7794",
+      "sha256": "40a9db82d8b092243d85dce2406c29c087f3bccb371019f8b89a68eb84769b4b",
+      "size": 1035
+    },
+    {
+      "path": "KernelBench/level2/36_ConvTranspose2d_Min_Sum_GELU_Add.py",
+      "git_blob_sha1": "b76d16c8d922767e346d754d010a6926fc510f83",
+      "sha256": "e8a14171f06b41a2bb5067e1397d2b1afd928c95272916b3c16dfff811f98316",
+      "size": 1224
+    },
+    {
+      "path": "KernelBench/level2/37_Matmul_Swish_Sum_GroupNorm.py",
+      "git_blob_sha1": "69c5198d89ab1e2206414bc36354e93de4752e61",
+      "sha256": "fe2e8dc5418f1549cb3b6e34535b6f3dee0fc37ecce1b6be19a57ed8733156d4",
+      "size": 1152
+    },
+    {
+      "path": "KernelBench/level2/38_ConvTranspose3d_AvgPool_Clamp_Softmax_Multiply.py",
+      "git_blob_sha1": "328a879546ee0257a64f0733accd84aa77c60f87",
+      "sha256": "913b9a28fa2c866a5f62c06b02aab327728679f3139783053e5872ce5e8e99b6",
+      "size": 1800
+    },
+    {
+      "path": "KernelBench/level2/39_Gemm_Scale_BatchNorm.py",
+      "git_blob_sha1": "52ee43bfec34938d1a9bf0c7e6f9fc0fd2c9bb85",
+      "sha256": "6f7733e04363f470d27a26eadc7c8ab7b94e9c9a4efc3066e42c4e0df4e53e6f",
+      "size": 853
+    },
+    {
+      "path": "KernelBench/level2/3_ConvTranspose3d_Sum_LayerNorm_AvgPool_GELU.py",
+      "git_blob_sha1": "d39cd9f8c3d9cd66774e59a81abf57c1dbcf90f5",
+      "sha256": "43613691d1dec5ccfab8b70311ec83621c1f305ecceea490a053859d3c5b10a5",
+      "size": 1424
+    },
+    {
+      "path": "KernelBench/level2/40_Matmul_Scaling_ResidualAdd.py",
+      "git_blob_sha1": "89db29f16440aeaa227f99e512b5f2cb273083cd",
+      "sha256": "333bf992fd77297a4c43f4287b44662dcc43c8036be69d486b28e7a9db7bffd5",
+      "size": 1220
+    },
+    {
+      "path": "KernelBench/level2/41_Gemm_BatchNorm_GELU_ReLU.py",
+      "git_blob_sha1": "a53accd462bf61d258841249b8620ac5d7e4e819",
+      "sha256": "e95f261a671d1b5a425ee132a8975f682420c861b97453340131579d212fc7db",
+      "size": 914
+    },
+    {
+      "path": "KernelBench/level2/42_ConvTranspose2d_GlobalAvgPool_BiasAdd_LogSumExp_Sum_Multiply.py",
+      "git_blob_sha1": "a35901edcf00c779e0054882468a80459ad443b0",
+      "sha256": "0eeb1e46e5bacfed11e5bfddffe6f4fdfd981332e0fb56c4e67b219d6faba3a6",
+      "size": 1097
+    },
+    {
+      "path": "KernelBench/level2/43_Conv3d_Max_LogSumExp_ReLU.py",
+      "git_blob_sha1": "388b6b4de6f33105aa36d75f74882009f6825b15",
+      "sha256": "e274319f222a8938fe0fe51c0f9093bedc7c90f00f1b684ba9be8f39e5db6b19",
+      "size": 1159
+    },
+    {
+      "path": "KernelBench/level2/44_ConvTranspose2d_Multiply_GlobalAvgPool_GlobalAvgPool_Mean.py",
+      "git_blob_sha1": "dc4d51a6e6be3328ac16f541b3e41779455574de",
+      "sha256": "8b08cbe307167cb006a00e6f8309bce56dad016b9bc5346c4484b315cfdb411d",
+      "size": 1190
+    },
+    {
+      "path": "KernelBench/level2/45_Gemm_Sigmoid_LogSumExp.py",
+      "git_blob_sha1": "347af8eb7142204023055e6bc59fb142f1fa770d",
+      "sha256": "c206fcec5ac6b6253fb2f86992a865ea2f560fe54ebfd7a7bf542fc9852cd2c4",
+      "size": 852
+    },
+    {
+      "path": "KernelBench/level2/46_Conv2d_Subtract_Tanh_Subtract_AvgPool.py",
+      "git_blob_sha1": "e01a4efdbf70fadcf7c05f2d917fa725709cf12f",
+      "sha256": "b52e744528e32863da06d5a713a9932fc51798c93ee252b57fbde10d769bc0ce",
+      "size": 1117
+    },
+    {
+      "path": "KernelBench/level2/47_Conv3d_Mish_Tanh.py",
+      "git_blob_sha1": "d22edafd221e0f37d96b2d2e6419f6bec8e3cf53",
+      "sha256": "dad33b133cc3a085e46d7237887e872c4c7c05dd34b48d742f6edabc87aa8b44",
+      "size": 1011
+    },
+    {
+      "path": "KernelBench/level2/48_Conv3d_Scaling_Tanh_Multiply_Sigmoid.py",
+      "git_blob_sha1": "bd511c618482e71c6d4749ca0f766dfc10edb8b8",
+      "sha256": "a2f6bc6b97dfff819695956bdfb21f3a1c6873f81eb6c31e19377b1079a0a157",
+      "size": 1069
+    },
+    {
+      "path": "KernelBench/level2/49_ConvTranspose3d_Softmax_Sigmoid.py",
+      "git_blob_sha1": "ff337bc0831f39fda71d952b7a91dd2d36d3fa0b",
+      "sha256": "9386889fc80859671b9ef7f3bd3dd182bd0fb5b51067f88407c4e48fb1107f79",
+      "size": 1225
+    },
+    {
+      "path": "KernelBench/level2/4_Conv2d_Mish_Mish.py",
+      "git_blob_sha1": "a543fb5deda8d4e4c2089cbdd3eda2e2726f6f82",
+      "sha256": "7a234db325da9476ea44646c12e54dab1a84d8d16d993fa1061564e7f5ec0afa",
+      "size": 732
+    },
+    {
+      "path": "KernelBench/level2/50_ConvTranspose3d_Scaling_AvgPool_BiasAdd_Scaling.py",
+      "git_blob_sha1": "91f1cae7d9c0bb70192e6a4e38bff4a21a36b608",
+      "sha256": "c094d9151eed193c99c1854706203e33d32c7a0e536abf04c81790f873763765",
+      "size": 1263
+    },
+    {
+      "path": "KernelBench/level2/51_Gemm_Subtract_GlobalAvgPool_LogSumExp_GELU_ResidualAdd.py",
+      "git_blob_sha1": "329c501df131d16ed81d6a30a57606c20a0e4c2e",
+      "sha256": "0a777c0d54e91a3a20d5cc2781e1678b90e4fcda8ed2c1f5e33009e010792b03",
+      "size": 1035
+    },
+    {
+      "path": "KernelBench/level2/52_Conv2d_Activation_BatchNorm.py",
+      "git_blob_sha1": "8c846af5f7e8b5d362642aaee9e982f8cec124e1",
+      "sha256": "e9b0070822d17b3ba2e80c05f20e8bfd70bcde2f92a21d6d6ef811d8f4ddc898",
+      "size": 870
+    },
+    {
+      "path": "KernelBench/level2/53_Gemm_Scaling_Hardtanh_GELU.py",
+      "git_blob_sha1": "5843d0445b09409daf0f2e5d21861bf5f17ab56c",
+      "sha256": "d296d0b49a0a620b3528506997f600dd7c5635551a13c95b418428bbed50010e",
+      "size": 940
+    },
+    {
+      "path": "KernelBench/level2/54_Conv2d_Multiply_LeakyReLU_GELU.py",
+      "git_blob_sha1": "cd820f030dc324990bf6871a82421b92e9122718",
+      "sha256": "863895c0021967f1c4976bbe0f7c408a6d3e19c92e65255e13c214978c2e67d8",
+      "size": 966
+    },
+    {
+      "path": "KernelBench/level2/55_Matmul_MaxPool_Sum_Scale.py",
+      "git_blob_sha1": "2c29dce1889ebd4cfcd24ca0cf50aac3bd5ed023",
+      "sha256": "ef3a425677ff103d6080f3f3eddf89cee25f5b54cfa13777de51bc0ab39b41e6",
+      "size": 1073
+    },
+    {
+      "path": "KernelBench/level2/56_Matmul_Sigmoid_Sum.py",
+      "git_blob_sha1": "caef4dd1f0e2b54ab104cc5296ee7c31b0134adc",
+      "sha256": "00070bf8cc6a0d0ff1c4cbb78729620575164e67cb03ef1d646bbab332ae1fa3",
+      "size": 815
+    },
+    {
+      "path": "KernelBench/level2/57_Conv2d_ReLU_HardSwish.py",
+      "git_blob_sha1": "77362e1f19c52cbac4233be98c1432ca2052a39e",
+      "sha256": "6c3068e8639d0fce90e78d72027434237594eafe9e1c0919b56c30edeae9ff88",
+      "size": 735
+    },
+    {
+      "path": "KernelBench/level2/58_ConvTranspose3d_LogSumExp_HardSwish_Subtract_Clamp.py",
+      "git_blob_sha1": "662f2f7647b98cbc2c100c2b08708342c774ea2d",
+      "sha256": "d89693a52be9080caf580e0a21691a19d1cf9ef44c31a9466b6df97178ac9c21",
+      "size": 1081
+    },
+    {
+      "path": "KernelBench/level2/59_Matmul_Swish_Scaling.py",
+      "git_blob_sha1": "8ed88f42ae48117fae036feaa35a170b586059c7",
+      "sha256": "af4bfb47631eb3eee01055c0ae090e7452edacb0aa35fa40d117de2675bc2720",
+      "size": 776
+    },
+    {
+      "path": "KernelBench/level2/5_ConvTranspose2d_Subtract_Tanh.py",
+      "git_blob_sha1": "3fb041e941091e056c892988f243b4a34ab894f7",
+      "sha256": "442f35521753e48196379d5a4659d13d979817fd605cfb1a1a205b536faa90cc",
+      "size": 972
+    },
+    {
+      "path": "KernelBench/level2/60_ConvTranspose3d_Swish_GroupNorm_HardSwish.py",
+      "git_blob_sha1": "e685c1509ad9dbde7f9c96cd36316052f3af72b5",
+      "sha256": "b5f0476a56ce409c0293a0b68bd9f24ac3558916acdc15576890f8665b551bb6",
+      "size": 1155
+    },
+    {
+      "path": "KernelBench/level2/61_ConvTranspose3d_ReLU_GroupNorm.py",
+      "git_blob_sha1": "2de549e39ae189d7e509f8eddee9544661d5e4ea",
+      "sha256": "6ba34e37873d2f6221865d43dc9e73fe1b0f8db4b5ad82f2d9071a38beae9a22",
+      "size": 1163
+    },
+    {
+      "path": "KernelBench/level2/62_Matmul_GroupNorm_LeakyReLU_Sum.py",
+      "git_blob_sha1": "84a6121298ebd940715a8a476d0d80ba627ddbd5",
+      "sha256": "9ac23a8651df7ef366e1a9928886bb3fa116fa97d62e5eeba0bc6c138d6bb91e",
+      "size": 1117
+    },
+    {
+      "path": "KernelBench/level2/63_Gemm_ReLU_Divide.py",
+      "git_blob_sha1": "62dcb84ce16e5574bf87e1ad9f8dd27153915d7b",
+      "sha256": "d4013c4cf5639bd56d28fd036c10c7c9103a6bd3573c3f6f79fd93a79bfc2a5a",
+      "size": 698
+    },
+    {
+      "path": "KernelBench/level2/64_Gemm_LogSumExp_LeakyReLU_LeakyReLU_GELU_GELU.py",
+      "git_blob_sha1": "8f798f5b0a94d3d8eed9c27d3c28fef327553e75",
+      "sha256": "3cb78d4eb7f710768b801f0081fef85a5fb5f119a3e49a00ad97bf4baea33a83",
+      "size": 1010
+    },
+    {
+      "path": "KernelBench/level2/65_Conv2d_AvgPool_Sigmoid_Sum.py",
+      "git_blob_sha1": "33eb2c3fc82706d787825fe3061346378024be42",
+      "sha256": "7bd02c41c99f336d8515c06cd299fcd95dcc575f3aa1114b4de84b81cadbe7d4",
+      "size": 904
+    },
+    {
+      "path": "KernelBench/level2/66_Matmul_Dropout_Softmax.py",
+      "git_blob_sha1": "4a126c5e7d9c07f8932b979e50130db117636190",
+      "sha256": "7a8bcefb75586bbf0acfcdeb0e8391c8881548fe9b55844c0033a96e9f898a29",
+      "size": 961
+    },
+    {
+      "path": "KernelBench/level2/67_Conv2d_GELU_GlobalAvgPool.py",
+      "git_blob_sha1": "439161e54b8f40de9d19b22797a5b81273ccd55a",
+      "sha256": "3a9572034d80dd060bb523e1d265aa941113a8044ecd30c614e764fdf029d94a",
+      "size": 1001
+    },
+    {
+      "path": "KernelBench/level2/68_Matmul_Min_Subtract.py",
+      "git_blob_sha1": "8bd38b63f313f406ba27bac2b24f50722c2344a5",
+      "sha256": "89b99c3df1d7d0fa49981c9f5aae7755df1d7dfd1e49b85b09d166e486d2670a",
+      "size": 749
+    },
+    {
+      "path": "KernelBench/level2/69_Conv2d_HardSwish_ReLU.py",
+      "git_blob_sha1": "bca0104af92c9f369e766a374bc5b9dc5d397fd1",
+      "sha256": "442df07c27315075294d997dcd7ce61310a7d41a8dff4033c33ef4cf61b4727e",
+      "size": 954
+    },
+    {
+      "path": "KernelBench/level2/6_Conv3d_Softmax_MaxPool_MaxPool.py",
+      "git_blob_sha1": "a712994c6bb3970b297c7976d63ff161ca4289b6",
+      "sha256": "55322b483d9bf27e0fefcdfd0e25f53172c194da6b47154d40bd39f781c60a46",
+      "size": 1224
+    },
+    {
+      "path": "KernelBench/level2/70_Gemm_Sigmoid_Scaling_ResidualAdd.py",
+      "git_blob_sha1": "cdc2f94c9157bbdfdc6b6201a73f29776c22a670",
+      "sha256": "a1544425f96477bad2814578d9ba2d928568d952527af98bd6acbbd0c2170fbc",
+      "size": 1000
+    },
+    {
+      "path": "KernelBench/level2/71_Conv2d_Divide_LeakyReLU.py",
+      "git_blob_sha1": "e5448f2ba5bdb298f14c1c72ffb60094dcf863db",
+      "sha256": "412f9c4244239814ab3cc6d58c0837c7ffbc94e5d63453c88f8388fb28309fad",
+      "size": 817
+    },
+    {
+      "path": "KernelBench/level2/72_ConvTranspose3d_BatchNorm_AvgPool_AvgPool.py",
+      "git_blob_sha1": "d0e99bcabbb6ff073c1524e094f6967ebf81ed9b",
+      "sha256": "cc65e3beca217d11df994ed6beb6476909c234b5b5282a1cbfee0c5312908ea6",
+      "size": 1136
+    },
+    {
+      "path": "KernelBench/level2/73_Conv2d_BatchNorm_Scaling.py",
+      "git_blob_sha1": "5564a22647b162effb24e8663253d61bc28a70e6",
+      "sha256": "5c2d1c40a5ba00505f8c18579b377052c92ecce39bb3c405dba42ee05a1d7740",
+      "size": 870
+    },
+    {
+      "path": "KernelBench/level2/74_ConvTranspose3d_LeakyReLU_Multiply_LeakyReLU_Max.py",
+      "git_blob_sha1": "d86943fc00da03ee9e25d9b7d6ff027b7bb53aff",
+      "sha256": "7d05e9bcc2a444487b190089498e25fdcfd236ea00b844a5459ac13ce8121833",
+      "size": 1344
+    },
+    {
+      "path": "KernelBench/level2/75_Gemm_GroupNorm_Min_BiasAdd.py",
+      "git_blob_sha1": "6a3748960ec679a89001362e9f3f7108842d34dd",
+      "sha256": "5485a335508d1a92464b644e2be1d166a9072bb0f62d3e2c3426dd4768e06342",
+      "size": 902
+    },
+    {
+      "path": "KernelBench/level2/76_Gemm_Add_ReLU.py",
+      "git_blob_sha1": "a072f56a6df8b9437a70e1dcf7be7ece72ccb134",
+      "sha256": "88e932ace4f16e0477574c5c99b8d5665393e02f82f664dc99f2e22a2674ea42",
+      "size": 961
+    },
+    {
+      "path": "KernelBench/level2/77_ConvTranspose3d_Scale_BatchNorm_GlobalAvgPool.py",
+      "git_blob_sha1": "61922cd07ecbfcfd03d8377ac064883120f630d9",
+      "sha256": "cc3dcfba9cd5526d515917bbae7ee2af7d7694322a91a96a4461e73ec8a6278b",
+      "size": 1122
+    },
+    {
+      "path": "KernelBench/level2/78_ConvTranspose3d_Max_Max_Sum.py",
+      "git_blob_sha1": "233552154e8f530003d9470eb51cbf3704ae3552",
+      "sha256": "72724f4f417c8e598702d327ecb7f22356bde897235b2ac93f0f303b6d9bfefe",
+      "size": 1024
+    },
+    {
+      "path": "KernelBench/level2/79_Conv3d_Multiply_InstanceNorm_Clamp_Multiply_Max.py",
+      "git_blob_sha1": "3274956d8b2affdee0934333b9fef2f54a7aa5c1",
+      "sha256": "9355597767e42b73adda3ce5f8d60d70a4d8cd823438b782c88b1270d91a3e2d",
+      "size": 1261
+    },
+    {
+      "path": "KernelBench/level2/7_Conv3d_ReLU_LeakyReLU_GELU_Sigmoid_BiasAdd.py",
+      "git_blob_sha1": "498103a26775a309cff7fa32544154203f0a25f8",
+      "sha256": "cd0390e07dda478af0316a61bd1a407677992229ffdf3fa857d143e40a8533d7",
+      "size": 1007
+    },
+    {
+      "path": "KernelBench/level2/80_Gemm_Max_Subtract_GELU.py",
+      "git_blob_sha1": "486376a986b2141a77bdef108534184dec928a22",
+      "sha256": "44dff2e3c3e9b014df3f41f40e3678aa17830ecc7b161d2f142f556f87ee134c",
+      "size": 964
+    },
+    {
+      "path": "KernelBench/level2/81_Gemm_Swish_Divide_Clamp_Tanh_Clamp.py",
+      "git_blob_sha1": "1aeca85ab69988ef0d1f2b71d7917566f0359272",
+      "sha256": "291d748f061f23d3bf97e012c69cf321cb8821159cce45e403af7cfaee7f14ed",
+      "size": 1063
+    },
+    {
+      "path": "KernelBench/level2/82_Conv2d_Tanh_Scaling_BiasAdd_Max.py",
+      "git_blob_sha1": "dfbd913cc728c70fba14c526a27e596fd2f8f654",
+      "sha256": "1085dcf3a5845103c4dcdec8b8d3932ca48c729502fb101654bec085dae1dd8d",
+      "size": 1225
+    },
+    {
+      "path": "KernelBench/level2/83_Conv3d_GroupNorm_Min_Clamp_Dropout.py",
+      "git_blob_sha1": "d29fa6770ff66808ded0d874c719cb4219fccbd6",
+      "sha256": "223d45d8423c55369bd0b1277abca1d358a28ad77cf7661f1c6e602c856a694a",
+      "size": 1102
+    },
+    {
+      "path": "KernelBench/level2/84_Gemm_BatchNorm_Scaling_Softmax.py",
+      "git_blob_sha1": "68e127c2d46aaa8c8d4e8efd2cdecd05d17ae0e8",
+      "sha256": "e6f588ca44598dc81bbd2d626d3c40bda2287a1d1cc644f8afe01b288f1babfe",
+      "size": 1181
+    },
+    {
+      "path": "KernelBench/level2/85_Conv2d_GroupNorm_Scale_MaxPool_Clamp.py",
+      "git_blob_sha1": "cee378c437e501ba8c4a8606282590703bfe6207",
+      "sha256": "ba63b5b156a347f2f92a607c4a612e2bb1963dbcb9e7f04b3e4f0cb4a294fff3",
+      "size": 1528
+    },
+    {
+      "path": "KernelBench/level2/86_Matmul_Divide_GELU.py",
+      "git_blob_sha1": "2c2e9a9a7fa295bc24da7b897ada17d929ca357b",
+      "sha256": "d6fc788bd7aa852d0740320aa786189d89a6489ed9634ee0b28f488d809b335a",
+      "size": 917
+    },
+    {
+      "path": "KernelBench/level2/87_Conv2d_Subtract_Subtract_Mish.py",
+      "git_blob_sha1": "221a6d21d564ae0761567068b6a91a5de10d9a3b",
+      "sha256": "ab44c31f27a7265867d3842b7b8e5b2ba9d555d597efe6804d474e45c15aa621",
+      "size": 986
+    },
+    {
+      "path": "KernelBench/level2/88_Gemm_GroupNorm_Swish_Multiply_Swish.py",
+      "git_blob_sha1": "8fa09c55834684402132168aa41de65178684ea4",
+      "sha256": "eda8a47c825eb3fc49836d6cc0c9cd6ba596cc35ece1d22c871bba198009c6e7",
+      "size": 1302
+    },
+    {
+      "path": "KernelBench/level2/89_ConvTranspose3d_MaxPool_Softmax_Subtract_Swish_Max.py",
+      "git_blob_sha1": "a4f0e8060e03d095c522dadf4c49e769b14d14e0",
+      "sha256": "300030609984e750550fcf6b263c5fe8bba73389cb644cd48085c30be109b0df",
+      "size": 1621
+    },
+    {
+      "path": "KernelBench/level2/8_Conv3d_Divide_Max_GlobalAvgPool_BiasAdd_Sum.py",
+      "git_blob_sha1": "695db007eb31236a5a5a2ccd704f75acd90a24ac",
+      "sha256": "80e0126cbb0f9287f7118cba2e8bfa73c1c3401b6f590e10bc240bdd0223d06a",
+      "size": 1340
+    },
+    {
+      "path": "KernelBench/level2/90_Conv3d_LeakyReLU_Sum_Clamp_GELU.py",
+      "git_blob_sha1": "a5ad059c409062d4ffc18e54ec60ebf3b3d02492",
+      "sha256": "bd2eaa246f1176ad3bfb887b2ca27666f2f801a648cd4ffe5cf6aae49278dcb2",
+      "size": 1035
+    },
+    {
+      "path": "KernelBench/level2/91_ConvTranspose2d_Softmax_BiasAdd_Scaling_Sigmoid.py",
+      "git_blob_sha1": "efc266dc46f774098b756c822b3fa67810d55d66",
+      "sha256": "3b571801aec40ec4214ffd9ae7dc4a099560a6bc35564c792280331951023c71",
+      "size": 1235
+    },
+    {
+      "path": "KernelBench/level2/92_Conv2d_GroupNorm_Tanh_HardSwish_ResidualAdd_LogSumExp.py",
+      "git_blob_sha1": "16fa65caab449d5e99150c52661dd94d99b76f81",
+      "sha256": "d5732faa8c80a56b551b28f064ced01ed0fe640a57f72b117ee19e01dc71952d",
+      "size": 1248
+    },
+    {
+      "path": "KernelBench/level2/93_ConvTranspose2d_Add_Min_GELU_Multiply.py",
+      "git_blob_sha1": "2b23bbc86c16ec7d2d90ab318386bdacf0b9b056",
+      "sha256": "3f9c3e542afa320508390c00b28bb407b3999caa919a5885bbd03e2c8f1df547",
+      "size": 1102
+    },
+    {
+      "path": "KernelBench/level2/94_Gemm_BiasAdd_Hardtanh_Mish_GroupNorm.py",
+      "git_blob_sha1": "dcae5798dbf9710bbeed88dbb9095943f73f8262",
+      "sha256": "649fe2a6aaefeffcd6209c6afb873586c35751756585a9c1a7ab2a11a546c8d3",
+      "size": 1206
+    },
+    {
+      "path": "KernelBench/level2/95_Matmul_Add_Swish_Tanh_GELU_Hardtanh.py",
+      "git_blob_sha1": "de9ccb407a7d0d236e2dc2b5bae270e95c964bb6",
+      "sha256": "0c5123322ffe7a5436f194147612833f0c1ae0ecbd21788515718d720c8e5d96",
+      "size": 975
+    },
+    {
+      "path": "KernelBench/level2/96_ConvTranspose3d_Multiply_Max_GlobalAvgPool_Clamp.py",
+      "git_blob_sha1": "f401d4aef4daf080e39928432150d9c31b3e0d4b",
+      "sha256": "164edd0135adff496adade63a772074630ebf2c13feaa450307d98a9728da2e6",
+      "size": 1315
+    },
+    {
+      "path": "KernelBench/level2/97_Matmul_BatchNorm_BiasAdd_Divide_Swish.py",
+      "git_blob_sha1": "6ab7eb9b8dbf5ea4c1c8f3054399aa45800d2d48",
+      "sha256": "49ed9c680b1764ddc4b7dfe42a328923ab5b6685afd7dfa702c0587d1cb59685",
+      "size": 1077
+    },
+    {
+      "path": "KernelBench/level2/98_Matmul_AvgPool_GELU_Scale_Max.py",
+      "git_blob_sha1": "df2cca07f4a8c7294635b321cdf7b82338611f31",
+      "sha256": "8e5df29ff246f69cde03ab21ab53c706d58cd082014184641332cbb157607eb7",
+      "size": 1144
+    },
+    {
+      "path": "KernelBench/level2/99_Matmul_GELU_Softmax.py",
+      "git_blob_sha1": "5c0f46af9d0ccac5e972d410cd5c6b94f805cc86",
+      "sha256": "a27769675f355605c1931433193bbf36a309e050c4b27d3e6375938f22329709",
+      "size": 669
+    },
+    {
+      "path": "KernelBench/level2/9_Matmul_Subtract_Multiply_ReLU.py",
+      "git_blob_sha1": "789980a134e9de8c1a2d187e99cb8299e18ad071",
+      "sha256": "110e75834cd898f532262ce516e318b8e7a9e85acda705baefcebe687ff85b21",
+      "size": 876
+    },
+    {
+      "path": "KernelBench/level3/10_ResNet101.py",
+      "git_blob_sha1": "fa286dab00c6753db7b2eab798fbdb68ceb7e3dd",
+      "sha256": "ab5fab154c73fe7ab056c534c820286ce7ad8e0fc0b3e6bdefb27ffa10f81380",
+      "size": 4203
+    },
+    {
+      "path": "KernelBench/level3/11_VGG16.py",
+      "git_blob_sha1": "faea573f8d3d37eabf10952d4df2d7f7044144b5",
+      "sha256": "61f70e59d41e85a9b54fa9d060ef1aba3f144d2e4af5859ccba5f82f560a9c81",
+      "size": 2963
+    },
+    {
+      "path": "KernelBench/level3/12_VGG19.py",
+      "git_blob_sha1": "07194fefa0a9b0fd6b475a2baef8db2d0e264904",
+      "sha256": "688113e05dedf10a1881e549d86559e3cc5b32be1259e976bf98b020f503340e",
+      "size": 3168
+    },
+    {
+      "path": "KernelBench/level3/13_DenseNet121TransitionLayer.py",
+      "git_blob_sha1": "84cb012eb4eedf79361c979769894c761f6cda5b",
+      "sha256": "bcfebd2d217074b24616b4b4c35ec9a717620b491c296ff40344452f55869429",
+      "size": 1146
+    },
+    {
+      "path": "KernelBench/level3/14_DenseNet121DenseBlock.py",
+      "git_blob_sha1": "3f8f8a33a2f0542642a3ff22087f4cf27c19a85c",
+      "sha256": "ddaeba7851ccbe7ff08bf5188a7c3471a503e9a54b4f1c7e4d5e30deb975fb27",
+      "size": 1799
+    },
+    {
+      "path": "KernelBench/level3/15_DenseNet121.py",
+      "git_blob_sha1": "39489cd99fc9171ce1a2eff82f0d989e1ef67428",
+      "sha256": "06bc981e52eeffd0d48dd86346711a68b392b2d4cf962f75277e0efd788835f5",
+      "size": 4838
+    },
+    {
+      "path": "KernelBench/level3/16_DenseNet201.py",
+      "git_blob_sha1": "206f66e064625ce2e2a2928b55b2469dcb255f51",
+      "sha256": "576b877998f189f731e1dbf06e7189ce34aa2166ea66303d8726ee48ef5c409e",
+      "size": 4838
+    },
+    {
+      "path": "KernelBench/level3/17_SqueezeNetFireModule.py",
+      "git_blob_sha1": "6859f1cfef044372a8c56e921aaa4a906cfa2015",
+      "sha256": "99864d7e0e7e3b7c06fc4316dd25c2422fec8ba4413d7e2a55c2c5964f89737b",
+      "size": 1845
+    },
+    {
+      "path": "KernelBench/level3/18_SqueezeNet.py",
+      "git_blob_sha1": "22d16b8a1d4ca05705147705a07fb9c7945741c7",
+      "sha256": "690a7f3e49ad8e329e9915b116f834b5cb7223493cff7c04be56416738064638",
+      "size": 3082
+    },
+    {
+      "path": "KernelBench/level3/19_MobileNetV1.py",
+      "git_blob_sha1": "ee286b2d896e6658d889cf0942e57b9f842ac2e4",
+      "sha256": "7c18cb9e79f8fa0e5442b64a472c1a5bfc1b3b5098f4e11fdf1d1c271fe4ce5a",
+      "size": 2673
+    },
+    {
+      "path": "KernelBench/level3/1_MLP.py",
+      "git_blob_sha1": "1d9318f97f8b3cf6557c8a882f34bfbed68b0345",
+      "sha256": "3fabb8e6bb6f0f5a9524a62226ce25fc3a8f5289464e809a29a85919536c4efc",
+      "size": 1270
+    },
+    {
+      "path": "KernelBench/level3/20_MobileNetV2.py",
+      "git_blob_sha1": "f21049a7aff040e181d3f9a8278e01b101ed5ec0",
+      "sha256": "919ef276726fa3c68f3733fbc818085721bc309513f3b44ddd315773e9a15b85",
+      "size": 4427
+    },
+    {
+      "path": "KernelBench/level3/21_EfficientNetMBConv.py",
+      "git_blob_sha1": "a4915908d9be7df4c425f0c4d1f5d165acec5454",
+      "sha256": "24e555726c4856120cceaa8dad2dbbca798a56c0a99313c77fbe84c16e37c20b",
+      "size": 2303
+    },
+    {
+      "path": "KernelBench/level3/22_EfficientNetB0.py",
+      "git_blob_sha1": "2edcc62c1a0911c4bd31f940b575296d3b065229",
+      "sha256": "4c87c629cfa01ee15ec7142ba6ae9d03e8f6e950290e3998c7a7966fab6d68c4",
+      "size": 4855
+    },
+    {
+      "path": "KernelBench/level3/23_EfficientNetB1.py",
+      "git_blob_sha1": "61a9c3bf950d79ae1ce58708edb5cdb1abee4497",
+      "sha256": "c71964547b244e26ac4205a46032fe69b8f425cefbf3f92503f5641668a2d34f",
+      "size": 3119
+    },
+    {
+      "path": "KernelBench/level3/24_EfficientNetB2.py",
+      "git_blob_sha1": "2fe261ba202947debbaea850e393325d5eab9312",
+      "sha256": "643b34d676eaf2a9367050c3c550aad7bc6669dfb35637f9936bef18331e0de4",
+      "size": 3754
+    },
+    {
+      "path": "KernelBench/level3/25_ShuffleNetUnit.py",
+      "git_blob_sha1": "a4f81e69d433412d2d2dfdf5b2aa99d262e0fdea",
+      "sha256": "420d20f4b43329d6eafe3fd01faddb0efc08dfe7568fe20dcf8f362a712dcdc8",
+      "size": 3352
+    },
+    {
+      "path": "KernelBench/level3/26_ShuffleNet.py",
+      "git_blob_sha1": "e41a702aba1090be252f440c85b44ea1fc78999d",
+      "sha256": "85a6fbc528ae1cfc55b0040a49e87525fac3ad8a2fa707e2fd34bded17da4f9b",
+      "size": 5946
+    },
+    {
+      "path": "KernelBench/level3/27_RegNet.py",
+      "git_blob_sha1": "d1a399e8ccf5212d5e9bec9b72615961e58f4e52",
+      "sha256": "bd51db0cd40f9e3c334f3360500d6ffef66dfd8d1935b76c71700329c77118d3",
+      "size": 2688
+    },
+    {
+      "path": "KernelBench/level3/28_VisionTransformer.py",
+      "git_blob_sha1": "3eef225222f6e8b338e9ba3b9b907cbf30a4bbc2",
+      "sha256": "f537369b6a72f9e5b976927a74944a272443c509c3db23e1216fd5c8bb2fef8f",
+      "size": 3086
+    },
+    {
+      "path": "KernelBench/level3/29_SwinMLP.py",
+      "git_blob_sha1": "a635a4d0823f0b01c8592769f56dc568bc55bab5",
+      "sha256": "7ad16631ae633d196f2464e40dc7f5786696421eace938cef23c287e3b61042f",
+      "size": 15937
+    },
+    {
+      "path": "KernelBench/level3/2_ShallowWideMLP.py",
+      "git_blob_sha1": "46090a14e5433d46d8957513fad9766187b8a032",
+      "sha256": "d14b777049a7795a02cf7a3c79438541698692dd512538909908547e39335624",
+      "size": 1309
+    },
+    {
+      "path": "KernelBench/level3/30_SwinTransformerV2.py",
+      "git_blob_sha1": "f221ae62e20f1010c17f6afa3ac4b6ff2d9fb5a3",
+      "sha256": "7d1c6195d4f15a88380d5e7e38582361b50b38080f9bb70aff097a9048cd5bd7",
+      "size": 23170
+    },
+    {
+      "path": "KernelBench/level3/31_VisionAttention.py",
+      "git_blob_sha1": "4e0e04dfff1767a4dccbe7a69def6111eeb7eaeb",
+      "sha256": "96c0d2c7a18b4219266b002728e8d03dddba25e9537ee4c5b74598e9857de64a",
+      "size": 1256
+    },
+    {
+      "path": "KernelBench/level3/32_ConvolutionalVisionTransformer.py",
+      "git_blob_sha1": "5771f5b61faa47940bd290c13fe91dc0ef3dda98",
+      "sha256": "8ec3e9e2bc98ea22d26857774b1bae578c7c6cf9a0b7f2df3dbdd8469a1033f9",
+      "size": 2755
+    },
+    {
+      "path": "KernelBench/level3/33_VanillaRNN.py",
+      "git_blob_sha1": "c725983ff084f65683fa1ad1ecbe836b00fa9e08",
+      "sha256": "00cebeed898faa796b965b29e7031422231a7da4d0a2b609d8f1d73a6988abd2",
+      "size": 2005
+    },
+    {
+      "path": "KernelBench/level3/34_VanillaRNNHidden.py",
+      "git_blob_sha1": "04df3201423d1d4ffb2dab451d39fa447a58e0d3",
+      "sha256": "6c7ff403e45c644e7d5bc829eb3c950c38edabdca22ffae90276426dd4815749",
+      "size": 2062
+    },
+    {
+      "path": "KernelBench/level3/35_LSTM.py",
+      "git_blob_sha1": "7423ad188e2ee7cd813cf0c087031feaea558bf6",
+      "sha256": "6bd5d8260dbba650dfd57809e125fc4df10e93db3c6a8c2608e0425075319698",
+      "size": 2119
+    },
+    {
+      "path": "KernelBench/level3/36_LSTMHn.py",
+      "git_blob_sha1": "b3365931a12c5fa52a421e657fb21fb2e50ad057",
+      "sha256": "a6737470247611cf52a96c375e9566f967104ba8f8ab017b9e15a793d4efa37b",
+      "size": 1920
+    },
+    {
+      "path": "KernelBench/level3/37_LSTMCn.py",
+      "git_blob_sha1": "06f4a326893f5c693d030eb82d2a58afe5802610",
+      "sha256": "b612d96b0e926560ac48e8766d913dd977fb2f78ac1af62dd85cf3c06c2134cd",
+      "size": 1922
+    },
+    {
+      "path": "KernelBench/level3/38_LSTMBidirectional.py",
+      "git_blob_sha1": "df2906a31b0b74bc3c7dd1124b0d23ec75e29e4b",
+      "sha256": "84fa50c2d83976b92ef3c0add2b81d08485297afdbd2e4f96702864ec7cd6005",
+      "size": 1910
+    },
+    {
+      "path": "KernelBench/level3/39_GRU.py",
+      "git_blob_sha1": "e66ea4116b0325916adf19505040e3bff2d56750",
+      "sha256": "6aabf4586f15af75dd6a429b4ff1ba9b3fdc22604d6bff2315ced96a06d3f88e",
+      "size": 1886
+    },
+    {
+      "path": "KernelBench/level3/3_DeepNarrowMLP.py",
+      "git_blob_sha1": "78ca0d2ab61be86a07c0c4fbe9621c390f6561c0",
+      "sha256": "6945a0e90da524f41fd2f228e6ba1a23f0d6d670feb65f260e6e628f5aacfb1e",
+      "size": 1339
+    },
+    {
+      "path": "KernelBench/level3/40_GRUHidden.py",
+      "git_blob_sha1": "c55d726cdcf30d7a932632e235ef76aa4091165b",
+      "sha256": "7638f1c7f65a235d3c45d105531d0b5037fa13656d0ef6812c1a23b4f741f45b",
+      "size": 1883
+    },
+    {
+      "path": "KernelBench/level3/41_GRUBidirectional.py",
+      "git_blob_sha1": "07ebef31329ca8b107e13677f10883131dce5273",
+      "sha256": "617286deb7371cef38786280af5f7efd5c867fe0d855ee6df99ef39bd86ac350",
+      "size": 1960
+    },
+    {
+      "path": "KernelBench/level3/42_GRUBidirectionalHidden.py",
+      "git_blob_sha1": "266ad3118da65bb3afe83db14f7503de19f33ea9",
+      "sha256": "0f06b7ef896abbfe304bca92e7c9e873df09821609efb1db33d7415cec7007b6",
+      "size": 1884
+    },
+    {
+      "path": "KernelBench/level3/43_MinGPTCausalAttention.py",
+      "git_blob_sha1": "f04205f5f5328d8c74ecfb7942d4b34e02caedd2",
+      "sha256": "9d280c98c015edca0e7e521594380f9def43fdea7bbd95f5f71ff83689632900",
+      "size": 2614
+    },
+    {
+      "path": "KernelBench/level3/44_MiniGPTBlock.py",
+      "git_blob_sha1": "079df4241b93d75074d82889cc9ed23807bd14fb",
+      "sha256": "e73093b5d6648474f161cc62c60f121a1468cdacb855cd5ae5ed3056a12ac58e",
+      "size": 3887
+    },
+    {
+      "path": "KernelBench/level3/45_UNetSoftmax.py",
+      "git_blob_sha1": "7003010ae9f9ef1797426840084f7cb311429aa9",
+      "sha256": "e97cb50d77b1da3040581a3aee376b97e20b3b1dda26f261c5baa0ba1171b9aa",
+      "size": 3377
+    },
+    {
+      "path": "KernelBench/level3/46_NetVladWithGhostClusters.py",
+      "git_blob_sha1": "101793efe281064e2cbd00e457d7e20fcc3bc800",
+      "sha256": "2d2f73d0075a94a2655af1ed1c642363627f9be22c1c5b6dc6149ce3e6b27e2d",
+      "size": 3484
+    },
+    {
+      "path": "KernelBench/level3/47_NetVladNoGhostClusters.py",
+      "git_blob_sha1": "79365df00c63fd26146b418e8bf0ae73d036a754",
+      "sha256": "c6e7431519d6cb2e974ad354e955674c91f92e96dfef099aa20be1d7148faaea",
+      "size": 3483
+    },
+    {
+      "path": "KernelBench/level3/48_Mamba2ReturnY.py",
+      "git_blob_sha1": "6dba1403b1292297052fa641a4cc051a53c25d31",
+      "sha256": "9d002dee6313689d0ba60694e68a5c352e6afec82d1971408dfcd71382ff8e5c",
+      "size": 3859
+    },
+    {
+      "path": "KernelBench/level3/49_Mamba2ReturnFinalState.py",
+      "git_blob_sha1": "e0d70bf00585e55550e0b4876defe3762f57216c",
+      "sha256": "d3ab760329c78d78540af79aec556ef9e73c908f3a9e42dadfa84d79bde11e3d",
+      "size": 3474
+    },
+    {
+      "path": "KernelBench/level3/4_LeNet5.py",
+      "git_blob_sha1": "ad96d114672be747534e9209346cb9bdee9bb1e1",
+      "sha256": "517275f989a3c3b7bb8a9e5a9bf63b843b167bf2c7fb93db147f64ff2c1e16de",
+      "size": 1932
+    },
+    {
+      "path": "KernelBench/level3/50_ReLUSelfAttention.py",
+      "git_blob_sha1": "838f085a871a617937a397ff89dd4ea0b68edd5d",
+      "sha256": "08768b53a425354ef974509119705759398c9cbd3ee8b2553210f73bea223820",
+      "size": 2842
+    },
+    {
+      "path": "KernelBench/level3/5_AlexNet.py",
+      "git_blob_sha1": "bd18143d30ed71b56efdb8e0b0df75546715267b",
+      "sha256": "021d44956638c6a4f77eb3a60b0fdb4a3cdc50540e0268eb86fb9d22d8dd971e",
+      "size": 2837
+    },
+    {
+      "path": "KernelBench/level3/6_GoogleNetInceptionModule.py",
+      "git_blob_sha1": "7d69175c5388770504c7723bb3c54cf7a6f1aca4",
+      "sha256": "a3d863c2a2c6f54ca5509ab39bd4c9f2ad31c960a0bb4200ad1acbede9f3ee85",
+      "size": 2412
+    },
+    {
+      "path": "KernelBench/level3/7_GoogleNetInceptionV1.py",
+      "git_blob_sha1": "3c3a36ecc725d1fef6b03aa2b1843a60d84edd48",
+      "sha256": "4b9270e248132f8d15215a69f3395b292e25584b89f6054915bfad37d4388c0d",
+      "size": 4625
+    },
+    {
+      "path": "KernelBench/level3/8_ResNetBasicBlock.py",
+      "git_blob_sha1": "8758f835774739f8bd27c41ebba416017cde83d8",
+      "sha256": "8e1ae06aca5126c9d75e213da14d660b83f2a335059d049cc659b9f0f101a36e",
+      "size": 1860
+    },
+    {
+      "path": "KernelBench/level3/9_ResNet18.py",
+      "git_blob_sha1": "0c6ae06325da774c45e89984e283edf5752b9ea7",
+      "sha256": "7458bb2ffb7e81fe8d9d8bf192e8249f887d6d2436c958480be272629f22be00",
+      "size": 3705
+    },
+    {
+      "path": "KernelBench/level4/10_google-bigbird-roberta-base_bs1024_seq32.py",
+      "git_blob_sha1": "498796bf9c98c083b1655bcb019251538cd39e61",
+      "sha256": "62bbb820e3de0402916d08a79aaae0c3900ae945b6510d02fb907aa48cd30e0e",
+      "size": 727
+    },
+    {
+      "path": "KernelBench/level4/11_google-electra-small-discriminator_bs1_seq511.py",
+      "git_blob_sha1": "49832f0ee596141cb70ff36d00b8d19c9ea4a6d1",
+      "sha256": "48967a688158efb570bbe40c20704a7e626d74d7476dc3a7c2d4e04caff71553",
+      "size": 732
+    },
+    {
+      "path": "KernelBench/level4/12_google-electra-small-discriminator_bs1024_seq32.py",
+      "git_blob_sha1": "743463d5bb25340f77423c35756d7a222f1f0b00",
+      "sha256": "a85b2815ea9c41b3ba090cd1ea61c2db8cd13f54e4e42ce2cb388c8e97443bac",
+      "size": 734
+    },
+    {
+      "path": "KernelBench/level4/13_google-reformer-enwik8_bs32_seq256.py",
+      "git_blob_sha1": "ed2229cd5b2f64effffb2502acf4cdee635f8a91",
+      "sha256": "95041f969288ea8fd50ee02c19604c0597e1c7fab5131020fa6b5863acf21225",
+      "size": 721
+    },
+    {
+      "path": "KernelBench/level4/14_google-electra-small-discriminator_bs32_seq256.py",
+      "git_blob_sha1": "2897406b76bc80ecb9bf86b0ef8551a7fa20f12a",
+      "sha256": "d3e7eca0904e692b5b0653ae0cf81d2c80e45a6d8e05bdb1b76878bbb08db618",
+      "size": 733
+    },
+    {
+      "path": "KernelBench/level4/15_google-reformer-enwik8_bs1024_seq32.py",
+      "git_blob_sha1": "b238ba60b7e16cb3568f80d166e6f4526a5ecc4f",
+      "sha256": "facb5344a3d2b225d96c9e09eb7ff9e8b3a061c2a55442d3873f0de81a84340a",
+      "size": 722
+    },
+    {
+      "path": "KernelBench/level4/16_gpt2_bs1_seq1023.py",
+      "git_blob_sha1": "0bae5106d8b8f404ee5891c1f0749d0edf1916b8",
+      "sha256": "e64d046602bc5f17c920af61d03652a372fd998feb8f9070f63ee4a9cc8b411f",
+      "size": 703
+    },
+    {
+      "path": "KernelBench/level4/17_facebook-bart-large_bs1024_seq32.py",
+      "git_blob_sha1": "6e897285faf7d4f16dd473568a77286b6c8c838b",
+      "sha256": "0b70fcb271bb4d9fc8656a6410145683bf0d71c940d8111a812de9a8b3274746",
+      "size": 719
+    },
+    {
+      "path": "KernelBench/level4/18_EleutherAI-gpt-neo-2p7B_bs512_seq32.py",
+      "git_blob_sha1": "e8b9c7111d2a48c591c73f83a7057c163072ca9e",
+      "sha256": "52fc79a58ffcd187272bde73a746e34777c0d47facfb5bc25db5a08dfffdcd11",
+      "size": 722
+    },
+    {
+      "path": "KernelBench/level4/19_gpt2_bs1024_seq32.py",
+      "git_blob_sha1": "2e512769d4da6c3ec65cad77f92e026578fb0d2a",
+      "sha256": "60f4647daa97b582726d8b1efaedb83794a85933eb625aa65610b9c142e01876",
+      "size": 704
+    },
+    {
+      "path": "KernelBench/level4/1_EleutherAI-gpt-neo-2p7B_bs32_seq256.py",
+      "git_blob_sha1": "ac9178476b138cb699821c60b395a635c9c543e6",
+      "sha256": "99bf1b201f1a0a016f9f3df1df3d64db1ced867d0b1df749c4b3229bfcaa9f71",
+      "size": 722
+    },
+    {
+      "path": "KernelBench/level4/20_facebook-bart-large_bs32_seq256.py",
+      "git_blob_sha1": "0c024a4d0c996a21d181d72b5a0f635af4080bc0",
+      "sha256": "4a46a20fe40b408aa88d639e94ef1a77942323309b49203081e71daa2d78fd28",
+      "size": 718
+    },
+    {
+      "path": "KernelBench/level4/2_facebook-opt-1p3b_bs1_seq2047.py",
+      "git_blob_sha1": "a24489b5d94180184ac10ae53a96ae9b3d1a44d4",
+      "sha256": "ecb829bf6bca237d13e4c003765c44a048f13ec656f74d8dafd884ba41c99130",
+      "size": 716
+    },
+    {
+      "path": "KernelBench/level4/3_EleutherAI-gpt-neo-2p7B_bs1_seq2047.py",
+      "git_blob_sha1": "c129610936f60b4acfdeaaf2dcf82e104f715fbf",
+      "sha256": "181b54f17b7829bd978f4303ef7649adf27adb0ed0ca0c0ccd260ac301e7bee5",
+      "size": 722
+    },
+    {
+      "path": "KernelBench/level4/4_facebook-opt-1p3b_bs32_seq256.py",
+      "git_blob_sha1": "59d8f8ecea6b906184a4e9a6c10cd943f1284e0e",
+      "sha256": "4abc443ecae526cecc16a0cbc7211d46533e6f269e965f627598bb6868713433",
+      "size": 716
+    },
+    {
+      "path": "KernelBench/level4/5_google-bigbird-roberta-base_bs1_seq4095.py",
+      "git_blob_sha1": "9a5ce7d8c8af0e7f61267f103cdfdc2b1d235945",
+      "sha256": "a774df1d428ef76473873ed0f28735c57e25cf7f9fe4a2cd3e0537532d1a76a2",
+      "size": 726
+    },
+    {
+      "path": "KernelBench/level4/6_facebook-bart-large_bs1_seq1023.py",
+      "git_blob_sha1": "5f0d493b3b006ddff81991b8ea26891f69c5b7e7",
+      "sha256": "5ef3eca4ea590318496a8a89268fc3cc500161586273a67fc24c114c83de5c57",
+      "size": 718
+    },
+    {
+      "path": "KernelBench/level4/7_gpt2_bs32_seq256.py",
+      "git_blob_sha1": "a73590f72a7441f844a24fc572ef5cacfb630ef5",
+      "sha256": "fc5d978c970150ad3aeec35485728cb9e1d7cb7b31c07220da6aa26b7d3bd5b3",
+      "size": 703
+    },
+    {
+      "path": "KernelBench/level4/8_facebook-opt-1p3b_bs512_seq32.py",
+      "git_blob_sha1": "ebd1b42e0ebd9bb0d4d18f43a339187f3b6b2c0c",
+      "sha256": "25123758a228a40011738467654a32e3f0e79076f7a1002e99c92220f34c7fff",
+      "size": 716
+    },
+    {
+      "path": "KernelBench/level4/9_google-bigbird-roberta-base_bs32_seq256.py",
+      "git_blob_sha1": "ca1692c0d055a14e3aa001af932fb989da6a771e",
+      "sha256": "84e355d941df691238873b2406ba892ff7741edfe10e5bef445eb7a67a61fc8b",
+      "size": 726
+    }
+  ]
+}

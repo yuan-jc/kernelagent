@@ -69,15 +69,18 @@
       "dependencies": [
         "T01"
       ],
-      "status": "TODO",
+      "status": "IN_PROGRESS",
       "checks": {
         "CPU": "NOT_RUN",
         "GPU": "N/A",
         "LIVE_MODEL": "N/A",
         "REVIEW": "NOT_RUN"
       },
-      "evidence": [],
-      "work_package_record": null,
+      "evidence": [
+        "docs/work-packages/T02.md",
+        "configs/kernelbench/snapshot-files.manifest.json"
+      ],
+      "work_package_record": "docs/work-packages/T02.md",
       "blocker": null
     },
     {
