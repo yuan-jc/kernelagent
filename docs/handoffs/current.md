@@ -6,9 +6,14 @@
 |---|---|
 | T00/T01/T02/T08/T12a | ACCEPTED：工程、纯契约、静态基准适配、证据存储、离线模型客户端；当前 CPU 回归持续覆盖 |
 | T03 | ACCEPTED（2026-09-12）：目标 Ubuntu/NVIDIA 真机验收通过；探针 4 pass / 0 fail / 2 unavailable（nvcc、ncu 不在 PATH） |
-| T04a | READY_FOR_ACCEPTANCE：进程执行机制与失败回归可用；目标运行时已由 T03 确认，Ubuntu 复核待做 |
-| T04 | TODO：可信容器边界、资源控制、真实 GPU 请求尚未实现/验收 |
+| T04a | ACCEPTED（2026-09-13）：Ubuntu 复核通过——check 315 项 312 pass / 3 Windows 专用 skip / 0 fail，worker_smoke completed；仅进程机制，不是沙箱 |
+| T04 | IN_PROGRESS：可信容器边界、资源控制、真实 GPU 请求实现中 |
 | T05–T25（除 T08 及 T12a 子包） | 按任务计划依赖推进，未实现完整自动优化闭环 |
+
+## 本次移交内容（2026-09-13，ZCode/GLM）
+
+- T04a 完成 Ubuntu 目标复核并转 ACCEPTED：`kernelagent check`（315 项：312 过 / 3 跳过均为 Windows Job Object 专用 / 0 失败，报告 `artifacts/worker-cpu/31bd…/report.json`）与 `examples/worker_smoke.py`（status=completed）均通过。
+- T04 环境事实：Docker 28.2.2 服务可用（cgroup v2、systemd 驱动），`nvidia` runtime 已注册，CDI 设备 `nvidia.com/gpu=0`/`GPU-ea248ec5-…` 已发现；nvidia-container-cli 1.19.1。Docker Hub 直连超时、无密码 sudo；国内镜像 `docker.m.daocloud.io` 直连可用，`ubuntu:24.04`（digest `sha256:224a1869…`）已锁定拉取。
 
 ## 本次移交内容（2026-09-12，ZCode/GLM）
 
@@ -28,7 +33,7 @@
 
 ## 下一步
 
-进入 [T04](../work-packages/T04.md)：复用容器与 NVIDIA Container Toolkit（已确认 `nvidia-container-cli` 1.19.1、Docker 28.2.2），落实可信 evaluator 与候选分离、禁网、只读可信输入、限额及进程回收。随后 T04a 在 Ubuntu 复核进程机制，再 T05 原生基线。
+推进 [T04](../work-packages/T04.md)：复用 Docker + NVIDIA Container Toolkit（`nvidia` runtime、CDI 设备已确认），落实可信 evaluator 与候选分离、禁网、只读可信输入、限额及进程回收；按卡片先 CPU 隔离子步、再 GPU 请求通路。T04a Ubuntu 复核已完成。随后 T05 原生基线（依赖 nvcc 就绪）。
 
 本地调研/实验缓存未随 Git 分发。清理前记录可在提交 `1b4a306` 查阅；不要将历史摘要当作当前验收事实。每包收尾替换本页的当前状态、活动作业、结果位置与下一步，避免追加聊天流水。
 

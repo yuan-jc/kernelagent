@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "kind": "ubuntu_development_handoff",
-  "updated_at": "2026-09-12",
+  "updated_at": "2026-09-13",
   "history_before_cleanup": {
     "commit": "1b4a3066954317beff7a7b03b51048e7c94d834a",
     "note": "Historical working cards, evidence and research collection records remain in Git at this commit."
@@ -10,13 +10,38 @@
     "T00",
     "T01",
     "T02",
+    "T04a",
     "T08",
     "T12a"
   ],
   "pending": {
-    "T04a": "Process-mechanics recheck on the now-confirmed Ubuntu target per the work-package card",
     "T04": "Container/OS-enforced worker and real GPU requests TODO",
     "LIVE_MODEL": "NOT_RUN"
+  },
+  "target_ubuntu_t04a": {
+    "status": "ACCEPTED",
+    "accepted_at": "2026-09-13",
+    "base_commit": "8c3bf2b83a8422f29bce658f049c5e8e4522addb",
+    "recheck": {
+      "command_check": "uv run --locked kernelagent check --output artifacts/worker-cpu",
+      "exit_code": 0,
+      "counts": {
+        "total": 315,
+        "passed": 312,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 3,
+        "skip_reason": "tests/test_worker_boundary.py Windows Job Object path (3 cases)"
+      },
+      "report": {
+        "path": "artifacts/worker-cpu/31bd5d46653f4f8c82ba25207f8a708a/report.json",
+        "sha256": "f5f98fb051ff539efe442fe6b7987f39d978ff7c89bf2cb1832fef9a984844b8"
+      },
+      "command_smoke": "uv run --locked python examples/worker_smoke.py",
+      "smoke_exit_code": 0,
+      "smoke_status": "completed"
+    },
+    "scope_note": "Process mechanics only; OS-enforced boundaries (network/files/resources/GPU) belong to T04."
   },
   "target_ubuntu_t03": {
     "status": "ACCEPTED",

@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "updated_at": "2026-09-12",
+  "updated_at": "2026-09-13",
   "design_baseline": "docs/NVIDIA算子优化Agent设计文档.md",
   "plan": "docs/开发任务与验收计划.md",
   "status_values": [
@@ -17,7 +17,7 @@
     "N/A"
   ],
   "notes": [
-    "Target: Ubuntu + NVIDIA; T03 target GPU acceptance ACCEPTED 2026-09-12 (RTX 4060 Laptop); next is T04.",
+    "Target: Ubuntu + NVIDIA; T03 target GPU acceptance ACCEPTED 2026-09-12 (RTX 4060 Laptop); T04a process-mechanics Ubuntu recheck ACCEPTED 2026-09-13; next is T04.",
     "Current evidence is consolidated in docs/evidence/current.json; pre-cleanup history remains at Git commit 1b4a306.",
     "T04a is process mechanics, not a sandbox; T12a is offline model plumbing, not live generation.",
     "No target GPU or live model acceptance is implied by CPU tests or CI. Preserve parent package gates."
@@ -122,7 +122,7 @@
       "dependencies": [
         "T01"
       ],
-      "status": "READY_FOR_ACCEPTANCE",
+      "status": "ACCEPTED",
       "checks": {
         "CPU": "PASS",
         "GPU": "N/A",
@@ -134,7 +134,7 @@
         "docs/work-packages/T04a.md"
       ],
       "work_package_record": "docs/work-packages/T04a.md",
-      "blocker": "Target runtime confirmed by T03; process-mechanics recheck on Ubuntu pending per the work-package card."
+      "blocker": null
     },
     {
       "id": "T05",
