@@ -17,7 +17,7 @@
     "N/A"
   ],
   "notes": [
-    "Target: Ubuntu + NVIDIA; T03 target GPU acceptance ACCEPTED 2026-09-12 (RTX 4060 Laptop); T04a process-mechanics Ubuntu recheck ACCEPTED 2026-09-13; next is T04.",
+    "Target: Ubuntu + NVIDIA; T03 target GPU acceptance ACCEPTED 2026-09-12 (RTX 4060 Laptop); T04a process-mechanics Ubuntu recheck ACCEPTED 2026-09-13; T04 container worker ACCEPTED 2026-09-13 with real-GPU container path; next is T05.",
     "Current evidence is consolidated in docs/evidence/current.json; pre-cleanup history remains at Git commit 1b4a306.",
     "T04a is process mechanics, not a sandbox; T12a is offline model plumbing, not live generation.",
     "No target GPU or live model acceptance is implied by CPU tests or CI. Preserve parent package gates."
@@ -105,16 +105,20 @@
         "T01",
         "T03"
       ],
-      "status": "TODO",
+      "status": "ACCEPTED",
       "checks": {
-        "CPU": "NOT_RUN",
-        "GPU": "NOT_RUN",
+        "CPU": "PASS",
+        "GPU": "PASS",
         "LIVE_MODEL": "N/A",
-        "REVIEW": "NOT_RUN"
+        "REVIEW": "PASS"
       },
-      "evidence": [],
+      "evidence": [
+        "docs/work-packages/T04.md",
+        "docs/adr/0001-trusted-worker-container-boundary.md",
+        "artifacts/t04-gpu/container-gpu-smoke.json"
+      ],
       "work_package_record": "docs/work-packages/T04.md",
-      "blocker": "Target T03 acceptance complete; containers, enforced resource isolation and real GPU requests remain TODO."
+      "blocker": null
     },
     {
       "id": "T04a",

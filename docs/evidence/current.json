@@ -15,8 +15,62 @@
     "T12a"
   ],
   "pending": {
-    "T04": "Container/OS-enforced worker and real GPU requests TODO",
+    "T05": "Upstream KernelBench baseline and native evaluation (needs nvcc on host, being installed separately)",
     "LIVE_MODEL": "NOT_RUN"
+  },
+  "target_ubuntu_t04": {
+    "status": "ACCEPTED",
+    "accepted_at": "2026-09-13",
+    "commits": {
+      "adr_and_matrix": "ff5b49c",
+      "substep1_container_worker": "45bef25",
+      "substep2_gpu_path": "9875048"
+    },
+    "adr": "docs/adr/0001-trusted-worker-container-boundary.md",
+    "container_boundary": {
+      "runtime": "Docker 28.2.2 + NVIDIA Container Toolkit 1.19.1 (nvidia runtime, CDI devices discovered)",
+      "images": {
+        "python": "docker.m.daocloud.io/library/python@sha256:528257d48c1da0dcecc2e725d1ae34498d60c965f1241e39cd6a85a8859bdf84",
+        "ubuntu": "docker.m.daocloud.io/library/ubuntu@sha256:224a1869083a311ef3f13648a154ba79832fbef6364d31493642ca03082da254"
+      },
+      "registry_note": "registry-1.docker.io unreachable from daemon (timeout, no sudo for proxy config); docker.m.daocloud.io reachable directly",
+      "isolation": "network none, read-only rootfs, read-only trusted input mounts, non-root uid 20000, cap-drop ALL, no-new-privileges, cgroup memory/cpu/pids limits, parent-monitored log/output caps, kill+rm reclamation verified by inspect",
+      "design_deviation": "Output channel: host bind directory with parent-monitored size cap (container tmpfs dies with its mount namespace; post-exit 'docker cp' returns rc=0 with an empty tree - observed, recorded in ADR-0001 revision)"
+    },
+    "cpu_checks": {
+      "status": "PASS",
+      "container_boundary_tests": "19/19 executed on target (no docker skip)",
+      "full_check": {
+        "command": "uv run --locked kernelagent check --output artifacts/t04-cpu",
+        "exit_code": 0,
+        "counts": {
+          "total": 334,
+          "passed": 331,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 3,
+          "skip_reason": "tests/test_worker_boundary.py Windows Job Object path (3 cases)"
+        },
+        "report": {
+          "path": "artifacts/t04-cpu/32ef3cc1efe64aed92a3e63a303bb3fb/report.json",
+          "sha256": "e5eff8f1aff2aa4ee3233e654d3cda5c19db35a428b6573b886ab11e36a52d35"
+        }
+      }
+    },
+    "gpu_checks": {
+      "status": "PASS",
+      "command": "uv run --locked python examples/container_gpu_smoke.py --output artifacts/t04-gpu",
+      "exit_code": 0,
+      "protocol": "t04-container-gpu-smoke-v1",
+      "report": {
+        "path": "artifacts/t04-gpu/container-gpu-smoke.json",
+        "sha256": "13c9fd64c49038dba3573fd2401eb30039496445f97ce6da6ab94b68e85c9b7b"
+      },
+      "positive_case": "PTX JIT kernel wrote 42 inside the container; parent independently verified value and input-hash stability (all 10 CUresult trace steps 0x0)",
+      "negative_case": "kernel wrote 43, payload exited 0, parent rejected it (verified=false) - candidate exit code/artifacts cannot certify correctness",
+      "gpu_allocation": "CDI device by UUID: nvidia.com/gpu=GPU-ea248ec5-1f33-d90f-c598-1c94dfdc6998 (exclusive, serialized)"
+    },
+    "scope_note": "Single-GPU serialized worker boundary only; KernelBench native evaluation belongs to T05."
   },
   "target_ubuntu_t04a": {
     "status": "ACCEPTED",

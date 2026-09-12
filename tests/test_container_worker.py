@@ -451,9 +451,9 @@ def test_output_size_limit_breach_kills_and_marks_failed(tmp_path):
     record = record_of(outcome)
     assert record["reclaimed"] is True
     assert record["output_bytes"] > 1024 * 1024, "breach must be visible in output accounting"
-    assert (
-        record["output_bytes"] < 128 * 1024 * 1024
-    ), "monitor must stop the breach well before completion"
+    assert record["output_bytes"] < 128 * 1024 * 1024, (
+        "monitor must stop the breach well before completion"
+    )
 
 
 @require_python_image

@@ -7,13 +7,19 @@
 | T00/T01/T02/T08/T12a | ACCEPTED：工程、纯契约、静态基准适配、证据存储、离线模型客户端；当前 CPU 回归持续覆盖 |
 | T03 | ACCEPTED（2026-09-12）：目标 Ubuntu/NVIDIA 真机验收通过；探针 4 pass / 0 fail / 2 unavailable（nvcc、ncu 不在 PATH） |
 | T04a | ACCEPTED（2026-09-13）：Ubuntu 复核通过——check 315 项 312 pass / 3 Windows 专用 skip / 0 fail，worker_smoke completed；仅进程机制，不是沙箱 |
-| T04 | IN_PROGRESS：可信容器边界、资源控制、真实 GPU 请求实现中 |
+| T04 | ACCEPTED（2026-09-13）：容器边界（Docker+CDI、禁网、只读输入、非 root、cgroup 限额）+ 真实 GPU 请求通路（PTX JIT 写 42 验证通过、写 43 负例被父端拒绝）；ADR-0001 |
 | T05–T25（除 T08 及 T12a 子包） | 按任务计划依赖推进，未实现完整自动优化闭环 |
 
 ## 本次移交内容（2026-09-13，ZCode/GLM）
 
-- T04a 完成 Ubuntu 目标复核并转 ACCEPTED：`kernelagent check`（315 项：312 过 / 3 跳过均为 Windows Job Object 专用 / 0 失败，报告 `artifacts/worker-cpu/31bd…/report.json`）与 `examples/worker_smoke.py`（status=completed）均通过。
-- T04 环境事实：Docker 28.2.2 服务可用（cgroup v2、systemd 驱动），`nvidia` runtime 已注册，CDI 设备 `nvidia.com/gpu=0`/`GPU-ea248ec5-…` 已发现；nvidia-container-cli 1.19.1。Docker Hub 直连超时、无密码 sudo；国内镜像 `docker.m.daocloud.io` 直连可用，`ubuntu:24.04`（digest `sha256:224a1869…`）已锁定拉取。
+- T04a 转 ACCEPTED：`kernelagent check`（315 项 312 过 / 3 跳过 Windows 专用 / 0 失败）+ worker_smoke 在目标 Ubuntu 复核通过。
+- T04 实现并转 ACCEPTED（ADR-0001 + 子步1 容器边界 + 子步2 GPU 通路）：
+  - 容器执行器 `kernelagent.worker.container`：`--network none`、只读 rootfs 与只读可信输入、非 root uid 20000、cap-drop ALL、no-new-privileges、cgroup 内存/CPU/PID 限额、随机容器名、kill+rm 回收经 inspect 确认、container-record.json 证据；19/19 项边界测试在目标机真实运行（C1–C10：协议身份、自报拒绝、只读输入、路径越界、禁网、环境净化、超时/取消含 setsid 后代、内存/PID/输出/日志限额、基础设施失败）。
+  - GPU 通路：`examples/container_gpu_smoke.py` 按冻结 PTX 载荷经容器边界在真实 GPU 上执行，父端独立验证；正例写 42 通过，负例写 43（exit 0）被父端拒绝——候选退出码/工件不能自证正确。GPU 按 CDI UUID 独占分配。
+  - 实证发现（ADR-0001 修订）：容器退出后 tmpfs 随 mount namespace 销毁，`docker cp` 对已停止容器返回 rc=0 但目录为空——输出通道改为宿主 bind 目录 + 父端 0.5s 监视限额（内核 cgroup 限额兜底）。
+  - 全量回归：334 项 331 过 / 3 Windows 专用 skip / 0 失败；报告 sha256 `e5eff8f1…`。
+- 镜像与网络事实：Docker Hub 直连超时、无密码 sudo；`docker.m.daocloud.io` 直连可用。已按 digest 锁定 `python:3.11-slim-bookworm`（`sha256:528257d4…`）与 `ubuntu:24.04`（`sha256:224a1869…`）。
+- 证据：`artifacts/t04-gpu/container-gpu-smoke.json`（sha256 `13c9fd64…`）、`artifacts/t04-cpu/32ef3cc1…/report.json`、`docs/work-packages/T04.md`、`docs/adr/0001-…md`；索引见 `docs/evidence/current.json` 的 `target_ubuntu_t04`。
 
 ## 本次移交内容（2026-09-12，ZCode/GLM）
 
@@ -33,7 +39,7 @@
 
 ## 下一步
 
-推进 [T04](../work-packages/T04.md)：复用 Docker + NVIDIA Container Toolkit（`nvidia` runtime、CDI 设备已确认），落实可信 evaluator 与候选分离、禁网、只读可信输入、限额及进程回收；按卡片先 CPU 隔离子步、再 GPU 请求通路。T04a Ubuntu 复核已完成。随后 T05 原生基线（依赖 nvcc 就绪）。
+进入 [T05](../../docs/开发任务与验收计划.md)：上游 KernelBench 基线与原生评测（依赖 T02/T03/T04 均已 ACCEPTED）。前置条件：宿主 nvcc（另一会话安装中）与 KernelBench 快照恢复（`research/fetch_kernelbench_problems.py --proxy http://127.0.0.1:7890`）。验收要求：至少三个不同类别问题，已知正确候选通过、错误候选失败、与直接上游调用对照。
 
 本地调研/实验缓存未随 Git 分发。清理前记录可在提交 `1b4a306` 查阅；不要将历史摘要当作当前验收事实。每包收尾替换本页的当前状态、活动作业、结果位置与下一步，避免追加聊天流水。
 
