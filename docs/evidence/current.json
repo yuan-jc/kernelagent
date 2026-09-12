@@ -15,9 +15,9 @@
     "T12a"
   ],
   "pending": {
-    "T11/T18/T19": "external suite/agent adapters (proxy clones)",
+    "T11/T18": "external adapters",
+    "T16/T17/T20/T21/T22": "composites",
     "T12/G5": "LIVE_MODEL needs user provider credentials",
-    "T16/T17/T20/T21/T22": "composites after T11-T14 wave",
     "LIVE_MODEL": "NOT_RUN"
   },
   "target_ubuntu_t04": {
@@ -584,5 +584,38 @@
       "cases": "5 configs: 3 measured (raw batches), 3000 structural-prune, 1048576 probe resource-prune; winner 2048 frozen_verified; 15 input restore events; executor OOM semantics refined (subprocess probe OOM with clean main exit = recorded, not failed)"
     },
     "scope_note": "Kernel Tuner / CUTLASS Profiler paths belong to T20."
+  },
+  "target_ubuntu_t19": {
+    "status": "ACCEPTED",
+    "accepted_at": "2026-09-13",
+    "gpu_checks": {
+      "status": "PASS",
+      "command": "uv run --locked python examples/flashinfer_bench_smoke.py --output artifacts/t19",
+      "exit_code": 0,
+      "report": {
+        "path": "artifacts/t19/fib-report.json",
+        "sha256": "491b3c77f776ae6a9b56730d43e06cd45ec3a9ba191e6fdd2335c68bade19f90"
+      },
+      "cases": "pinned FIB trace (commit 40e6ca78, 3 files sha256-locked) executed on real GPU: return-style and DPS torch solutions verified+timed; upstream B200-only solution refused by hardware guard; revision/tensor hashes recorded"
+    },
+    "scope_note": "First workload entry only (uuid-pinned protocol); FlashInfer production kernels as strong baseline deferred.",
+    "cpu_checks": {
+      "status": "PASS",
+      "full_check": {
+        "command": "uv run --locked kernelagent check --output artifacts/t19-cpu",
+        "exit_code": 0,
+        "counts": {
+          "total": 406,
+          "passed": 403,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 3
+        },
+        "report": {
+          "path": "artifacts/t19-cpu/6075d94babdf475dadfc7f26170a7483/report.json",
+          "sha256": "f47a285f78b53bfc8daf6e1c23ddfe527397af8e89535e4a3a5cd47a323a7d09"
+        }
+      }
+    }
   }
 }

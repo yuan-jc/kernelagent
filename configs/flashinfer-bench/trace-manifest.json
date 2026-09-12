@@ -1,0 +1,22 @@
+{
+  "suite": "flashinfer-bench",
+  "upstream": {
+    "repository": "flashinfer-ai/flashinfer-bench",
+    "commit": "40e6ca7844b514eb4b1c7edba6d6a7377df57870",
+    "trace": "examples/ffi/Example-FlashInfer-Trace"
+  },
+  "files": [
+    {
+      "path": "definitions/gemm_n4096_k4096.json",
+      "sha256": "a8fda04481c31aa26b53f151c5c97bc9c0803a93dda828fa37d6384fcb31fc18"
+    },
+    {
+      "path": "solutions/example_agent_solution.json",
+      "sha256": "a1d2ae929b540e3da34a270a0f2d2e97351bf5bc41057611a378ecf5e309c6da"
+    },
+    {
+      "path": "workloads/gemm_n4096_k4096.jsonl",
+      "sha256": "e90c8706653fc4ec662ad03fc04696e7ce1f91ec156ef15aff26aa6d0744fbf7"
+    }
+  ]
+}

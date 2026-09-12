@@ -1,0 +1,18 @@
+{
+  "name": "torch_sm89_dps",
+  "definition": "gemm_n4096_k4096",
+  "description": "Destination-passing style torch solution for sm_89 devices; authored by this project.",
+  "author": "kernelagent",
+  "spec": {
+    "language": "torch",
+    "target_hardware": ["sm89"],
+    "entry_point": "solution.py::run",
+    "dependencies": ["torch"]
+  },
+  "sources": [
+    {
+      "path": "solution.py",
+      "content": "import torch\n\ndef run(A, B, C):\n    torch.matmul(A, B.T, out=C)\n"
+    }
+  ]
+}
