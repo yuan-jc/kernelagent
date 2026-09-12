@@ -1,0 +1,38 @@
+{
+  "kind": "t04a_review_fix_r2",
+  "review_report": "artifacts/review-t04a-r2/review.md",
+  "baseline_commit": "afea537b65abdaa30797fe8ed095b5df5f1327f4",
+  "status": "READY_FOR_ACCEPTANCE",
+  "review_note": "Second-round review confirmed r1 fixes and found two remaining failure paths. Both fixed with negative-first evidence; T04a stays READY_FOR_ACCEPTANCE until independent review confirms this round.",
+  "findings_fixed": [
+    {
+      "id": "r2-P1",
+      "finding": "Windows Job creation/configuration/assignment failures were silently ignored: unchecked AssignProcessToJobObject BOOL meant an unattributed run was reported completed with no descendant reclamation guarantee",
+      "fix": "_WindowsJob declares explicit ctypes prototypes and checks CreateJobObjectW, SetInformationJobObject, AssignProcessToJobObject, TerminateJobObject, recording GetLastError diagnostics in .error; execute refuses to create any resource when the job is unavailable (infra_error before spawn); payloads start CREATE_SUSPENDED and are attributed (or terminated while still suspended, so no descendant ever runs) before threads resume - this also removes the r1 assignment race",
+      "repro": "test_repro_r2_job_creation_failure_is_infra_error; test_repro_r2_job_assign_failure_is_infra_error (descendant no longer survives)"
+    },
+    {
+      "id": "r2-P2",
+      "finding": "lifecycle exception handling covered only Popen OSError: log open failures and reclamation helper failures raised bare exceptions, leaving the payload directory and producing no WorkerOutcome; mkdir/env build were outside the guarded zone and log read-back depended on already-failing paths",
+      "fix": "unified _InfraFailure lifecycle: mkdir, log open, process start, reclamation (taskkill/killpg OSError and timeout) and log read-back all convert to structured infra_error outcomes with the primary reason and cleanup; reclamation failure reports the unreclaimed state instead of a completed run",
+      "repro": "test_repro_r2_log_open_failure_is_infra_error; test_repro_r2_termination_failure_is_infra_error; test_repro_r2_tail_read_failure_still_produces_result"
+    }
+  ],
+  "verification": {
+    "repro_before_fix": "5/5 r2 repro tests failed on unfixed code",
+    "cpu_after_fix": {
+      "command": "uv run --locked kernelagent check --output artifacts/t04a-fix-r2",
+      "status": "PASS",
+      "run_id": "5dcad0572e7142d5a25128d229c05f20",
+      "counts": {"passed": 307, "failed": 0, "errors": 0, "skipped": 0}
+    },
+    "static_checks": {
+      "uv run --locked ruff check .": "PASS",
+      "uv run --locked ruff format --check .": "PASS"
+    }
+  },
+  "not_run": [
+    "Target Ubuntu + NVIDIA formal T03/T04 acceptance (frozen spec unchanged)",
+    "POSIX setsid-escape and container-level enforcement verification (parent T04 on Linux)"
+  ]
+}

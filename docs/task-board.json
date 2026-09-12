@@ -138,10 +138,12 @@
       },
       "evidence": [
         "docs/work-packages/T04a.md",
-        "docs/evidence/T04a.json"
+        "docs/evidence/T04a.json",
+        "docs/evidence/review-fixes-t04a.json",
+        "docs/evidence/review-fixes-t04a-r2.json"
       ],
       "work_package_record": "docs/work-packages/T04a.md",
-      "blocker": "Pending independent review of the 2026-09-12 review fixes (docs/evidence/review-fixes-t04a.json); ACCEPTED only after review confirms."
+      "blocker": "Pending independent review of the r2 fixes (docs/evidence/review-fixes-t04a-r2.json; r1: review-fixes-t04a.json). ACCEPTED only after review confirms."
     },
     {
       "id": "T05",

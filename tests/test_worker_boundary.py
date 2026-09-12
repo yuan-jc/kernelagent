@@ -362,3 +362,118 @@ def test_repro_nul_bytes_rejected_in_request(tmp_path):
         make_request((PYTHON + "\0bad", "-c", "pass"), tmp_path)
     with pytest.raises(ValueError):
         make_request((PYTHON, "-c", "pass"), tmp_path, env_extra=(("A", "v\0"),))
+
+
+# -- round-2 review repros (artifacts/review-t04a-r2/review.md) --------------
+
+
+@pytest.fixture()
+def _win32_job_stub():
+    if sys.platform != "win32":
+        pytest.skip("Windows Job Object path")
+    yield
+
+
+_WIN32_ONLY = pytest.mark.skipif(sys.platform != "win32", reason="Windows Job Object path")
+
+
+class _StubJob:
+    """Fault-injection stand-in for the Windows Job Object."""
+
+    def __init__(self, handle=1234, assign_ok=True, assign_error="", terminate_ok=True):
+        self.handle = handle
+        self.assign_ok = assign_ok
+        self.terminate_ok = terminate_ok
+        self.error = assign_error
+        self.terminated = False
+        self.closed = False
+
+    def assign(self, process):
+        if self.assign_ok:
+            return True
+        self.error = "AssignProcessToJobObject failed (GetLastError=5)"
+        return False
+
+    def terminate(self):
+        self.terminated = True
+        return self.terminate_ok
+
+    def close(self):
+        self.closed = True
+
+
+def test_repro_r2_job_creation_failure_is_infra_error(tmp_path, monkeypatch, _win32_job_stub):
+    monkeypatch.setattr(
+        "kernelagent.worker.process._WindowsJob",
+        lambda: _StubJob(handle=None, assign_error="CreateJobObjectW failed (GetLastError=8)"),
+    )
+    outcome = execute(make_request((PYTHON, "-c", "print('never runs')"), tmp_path))
+    assert outcome.status == "infra_error"
+    assert "Job Object unavailable" in outcome.stderr_tail
+    assert outcome.exit_code is None
+
+
+def test_repro_r2_job_assign_failure_is_infra_error(tmp_path, monkeypatch, _win32_job_stub):
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    late_file = workspace / "late.txt"
+    payload = (
+        "import subprocess, sys\n"
+        "subprocess.Popen([sys.executable, '-c', "
+        f"\"import time, sys; time.sleep(2); open(sys.argv[1], 'w').write('late')\", "
+        f"{str(late_file)!r}])\n"
+    )
+    monkeypatch.setattr(
+        "kernelagent.worker.process._WindowsJob",
+        lambda: _StubJob(assign_ok=False),
+    )
+    outcome = execute(make_request((PYTHON, "-c", payload), tmp_path, timeout_seconds=10))
+    assert outcome.status == "infra_error"
+    assert "AssignProcessToJobObject" in outcome.stderr_tail
+    time.sleep(3.5)
+    assert not late_file.exists(), "unmanaged descendant outlived the request"
+
+
+def test_repro_r2_log_open_failure_is_infra_error(tmp_path, monkeypatch):
+    from pathlib import Path as _Path
+
+    real_open = _Path.open
+
+    def fake_open(self, mode="r", *args, **kwargs):
+        if self.name in ("stdout.log", "stderr.log") and "w" in mode:
+            raise PermissionError(13, "simulated log open denial")
+        return real_open(self, mode, *args, **kwargs)
+
+    monkeypatch.setattr(_Path, "open", fake_open)
+    outcome = execute(make_request((PYTHON, "-c", "print('never runs')"), tmp_path))
+    assert outcome.status == "infra_error"
+    assert "log file open failed" in outcome.stderr_tail
+    assert outcome.workdir is None
+
+
+def test_repro_r2_termination_failure_is_infra_error(tmp_path, monkeypatch, _win32_job_stub):
+    monkeypatch.setattr(
+        "kernelagent.worker.process._WindowsJob",
+        lambda: _StubJob(terminate_ok=False),
+    )
+    monkeypatch.setattr(
+        "kernelagent.worker.process._kill_process_group",
+        lambda pgid, pid: (_ for _ in ()).throw(OSError("taskkill missing")),
+    )
+    outcome = execute(
+        make_request((PYTHON, "-c", "import time; time.sleep(60)"), tmp_path, timeout_seconds=1.5)
+    )
+    assert outcome.status == "infra_error"
+    assert "reclamation" in outcome.stderr_tail
+
+
+def test_repro_r2_tail_read_failure_still_produces_result(tmp_path, monkeypatch):
+    import kernelagent.worker.process as probe_module
+
+    def failing_tail(path, limit):
+        raise OSError("simulated tail read failure")
+
+    monkeypatch.setattr(probe_module, "_read_tail", failing_tail)
+    outcome = execute(make_request((PYTHON, "-c", "print('done')"), tmp_path))
+    assert outcome.status == "completed"
+    assert "[tail-read-error]" in outcome.stderr_tail
