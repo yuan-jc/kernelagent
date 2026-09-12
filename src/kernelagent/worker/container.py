@@ -95,15 +95,18 @@ def _require_positive_int(value: int, name: str) -> None:
 class ContainerSpec:
     """Immutable description of the isolation boundary for one request.
 
-    ``image_digest`` must be a full ``sha256:...`` digest; the executor
-    runs exactly ``image @ digest`` and refuses anything looser. Trusted
-    input mount sources must resolve inside the request's workspace root;
-    ``/out`` (parent-monitored size cap) and ``/tmp`` (tmpfs) are reserved
-    mount points the spec cannot override."""
+    The image is pinned by ``image_digest`` (``repo @ sha256:...`` manifest
+    digest) or - for locally built images that have no registry digest - by
+    ``image_id`` (the content-addressed config digest). Exactly one must be
+    given; the executor runs exactly that reference and refuses anything
+    looser. Trusted input mount sources must resolve inside the request's
+    workspace root; ``/out`` (parent-monitored size cap) and ``/tmp``
+    (tmpfs) are reserved mount points the spec cannot override."""
 
     __slots__ = (
         "image",
         "image_digest",
+        "image_id",
         "user",
         "memory_bytes",
         "cpus",
@@ -118,7 +121,9 @@ class ContainerSpec:
     def __init__(
         self,
         image: str,
-        image_digest: str,
+        image_digest: str | None = None,
+        *,
+        image_id: str | None = None,
         user: str = DEFAULT_USER,
         memory_bytes: int = DEFAULT_MEMORY_BYTES,
         cpus: float = DEFAULT_CPUS,
@@ -131,8 +136,14 @@ class ContainerSpec:
     ) -> None:
         if not isinstance(image, str) or not image or not re.fullmatch(r"[A-Za-z0-9._/-]+", image):
             raise ValueError(f"image must be a plain repository path; got {image!r}")
-        if not isinstance(image_digest, str) or not _DIGEST_PATTERN.fullmatch(image_digest):
+        if image_digest is None and image_id is None:
+            raise ValueError("either image_digest or image_id must pin the image")
+        if image_digest is not None and image_id is not None:
+            raise ValueError("image_digest and image_id are mutually exclusive")
+        if image_digest is not None and not _DIGEST_PATTERN.fullmatch(image_digest):
             raise ValueError(f"image_digest must be 'sha256:<64 hex>'; got {image_digest!r}")
+        if image_id is not None and not _DIGEST_PATTERN.fullmatch(image_id):
+            raise ValueError(f"image_id must be 'sha256:<64 hex>'; got {image_id!r}")
         if not isinstance(user, str) or not re.fullmatch(r"[0-9]{1,5}:[0-9]{1,5}", user):
             raise ValueError(f"user must be '<uid>:<gid>'; got {user!r}")
         _require_positive_int(memory_bytes, "memory_bytes")
@@ -162,6 +173,7 @@ class ContainerSpec:
             raise ValueError("gpu_devices must be a tuple of CDI device names ('vendor/gpu=id')")
         self.image = image
         self.image_digest = image_digest
+        self.image_id = image_id
         self.user = user
         self.memory_bytes = memory_bytes
         self.cpus = cpus
@@ -171,6 +183,11 @@ class ContainerSpec:
         self.log_limit_bytes = log_limit_bytes
         self.read_only_mounts = tuple(read_only_mounts)
         self.gpu_devices = tuple(gpu_devices)
+
+    @property
+    def reference(self) -> str:
+        """The exact content-addressed image reference this spec runs."""
+        return self.image_id if self.image_id is not None else f"{self.image}@{self.image_digest}"
 
 
 def _docker(
@@ -349,7 +366,7 @@ def execute_container(
     container_name = f"ka-{uuid.uuid4().hex}"
     record: dict = {
         "container_name": container_name,
-        "image": f"{spec.image}@{spec.image_digest}",
+        "image": spec.reference,
         "gpu_devices": list(spec.gpu_devices),
         "user": spec.user,
         "request_id": request.request_id,
@@ -357,7 +374,7 @@ def execute_container(
     try:
         if shutil.which(docker_command[0]) is None and not Path(docker_command[0]).exists():
             _raise_infra(f"docker command {docker_command[0]!r} not found")
-        digest_ref = f"{spec.image}@{spec.image_digest}"
+        digest_ref = spec.reference
         inspect = _docker(docker_command, "image", "inspect", digest_ref)
         if inspect.returncode != 0:
             _raise_infra(

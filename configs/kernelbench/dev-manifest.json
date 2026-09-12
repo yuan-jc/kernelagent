@@ -260,7 +260,7 @@
   ],
   "protocols": {
     "upstream_compatible": {
-      "description": "Original KernelBench protocol: problem source, input generation, seed handling and tolerance rules come from the pinned problem files themselves; baseline and timing entry points are the pinned eval.py/timing.py. Extended checks, if any, are reported separately and never mixed into this track.",
+      "description": "Original KernelBench protocol: problem source, input generation, seed handling and tolerance rules come from the pinned problem files themselves; baseline and timing entry points are the pinned eval.py/timing.py. Extended checks, if any, are reported separately and never mixed into this track. T05 note: utils.py appended (2026-09-13, ADR-0002) because the pinned eval_kernel_against_ref imports src/kernelbench/utils.py at call time; the problem list, tolerances and files-manifest binding are unchanged.",
       "references": [
         {
           "path": "src/kernelbench/dataset.py",
@@ -273,6 +273,10 @@
         {
           "path": "src/kernelbench/timing.py",
           "sha256": "eaabdad5dd042cfaac7159713b5f0c17a9244e65622b504eb3ca909d780854c5"
+        },
+        {
+          "path": "src/kernelbench/utils.py",
+          "sha256": "c421bf34686b9546b254aa56c8106984245c610cdfff62188ad6263f8ae99742"
         }
       ]
     },
