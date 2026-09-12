@@ -17,13 +17,10 @@
     "N/A"
   ],
   "notes": [
-    "T00-T02, T04a, T08 and T12a delivered; T04a is READY_FOR_ACCEPTANCE pending independent review of the 2026-09-12 review fixes (request_id traversal, descendant lifecycle, bounded tail reads, structured infra/cleanup outcomes, container typing). T03 is READY_FOR_ACCEPTANCE - fixed probe passes natively (6/6) and in WSL (kernel pass); formal GPU acceptance waits for the target Ubuntu + NVIDIA run per frozen spec.",
-    "T04a is a user-approved offline split of T04 (process isolation mechanics); parent T04 acceptance contract (OS-enforced isolation, real GPU eval requests, network-off) unchanged.",
-    "T12a is a user-approved offline split of T12: parent T12 acceptance contract (real model-to-code-to-GPU loop) is unchanged.",
-    "Dependencies are hard gates; acceptance requires evidence, not narrative.",
-    "GPU N/A means this package is offline; it does not certify integrated GPU behavior.",
-    "Create a work-package record from docs/work-package-template.md before implementation; exact acceptance commands are not implemented yet.",
-    "Child packages may be added without weakening the parent acceptance contract."
+    "Target: Ubuntu + NVIDIA; start with docs/UBUNTU.md and T03 target acceptance.",
+    "Current evidence is consolidated in docs/evidence/current.json; pre-cleanup history remains at Git commit 1b4a306.",
+    "T04a is process mechanics, not a sandbox; T12a is offline model plumbing, not live generation.",
+    "No target GPU or live model acceptance is implied by CPU tests or CI. Preserve parent package gates."
   ],
   "tasks": [
     {
@@ -38,11 +35,9 @@
         "REVIEW": "PASS"
       },
       "evidence": [
-        "docs/work-packages/T00.md",
-        "docs/evidence/T00.json",
-        "https://github.com/yuan-jc/kernelagent/actions/runs/34667461881"
+        "docs/evidence/current.json"
       ],
-      "work_package_record": "docs/work-packages/T00.md",
+      "work_package_record": "docs/handoffs/current.md",
       "blocker": null
     },
     {
@@ -59,10 +54,9 @@
         "REVIEW": "PASS"
       },
       "evidence": [
-        "docs/work-packages/T01.md",
-        "docs/evidence/T01.json"
+        "docs/evidence/current.json"
       ],
-      "work_package_record": "docs/work-packages/T01.md",
+      "work_package_record": "docs/handoffs/current.md",
       "blocker": null
     },
     {
@@ -79,10 +73,9 @@
         "REVIEW": "PASS"
       },
       "evidence": [
-        "docs/work-packages/T02.md",
-        "docs/evidence/T02.json"
+        "docs/evidence/current.json"
       ],
-      "work_package_record": "docs/work-packages/T02.md",
+      "work_package_record": "docs/handoffs/current.md",
       "blocker": null
     },
     {
@@ -99,11 +92,11 @@
         "REVIEW": "PASS"
       },
       "evidence": [
-        "docs/work-packages/T03.md",
-        "docs/evidence/T03.json"
+        "docs/evidence/current.json",
+        "docs/work-packages/T03.md"
       ],
       "work_package_record": "docs/work-packages/T03.md",
-      "blocker": "Target Ubuntu + NVIDIA formal acceptance not yet run (frozen spec: probe report valid, cuda_kernel_launch pass with verified 42 round trip). Local fixed-probe runs (native 6/6 pass, WSL kernel pass) are evidence but do not substitute."
+      "blocker": "Target Ubuntu runtime acceptance remains pending; see the current work-package card."
     },
     {
       "id": "T04",
@@ -120,8 +113,8 @@
         "REVIEW": "NOT_RUN"
       },
       "evidence": [],
-      "work_package_record": null,
-      "blocker": "Blocked on T03 acceptance (target Ubuntu). Process-isolation mechanics split into T04a (accepted); OS-enforced isolation, real GPU evaluation requests and network-off enforcement remain here."
+      "work_package_record": "docs/work-packages/T04.md",
+      "blocker": "Requires target T03 acceptance; containers, enforced resource isolation and GPU requests remain TODO."
     },
     {
       "id": "T04a",
@@ -137,13 +130,11 @@
         "REVIEW": "PASS"
       },
       "evidence": [
-        "docs/work-packages/T04a.md",
-        "docs/evidence/T04a.json",
-        "docs/evidence/review-fixes-t04a.json",
-        "docs/evidence/review-fixes-t04a-r2.json"
+        "docs/evidence/current.json",
+        "docs/work-packages/T04a.md"
       ],
       "work_package_record": "docs/work-packages/T04a.md",
-      "blocker": "Pending independent review of the r2 fixes (docs/evidence/review-fixes-t04a-r2.json; r1: review-fixes-t04a.json). ACCEPTED only after review confirms."
+      "blocker": "Target Ubuntu runtime acceptance remains pending; see the current work-package card."
     },
     {
       "id": "T05",
@@ -212,10 +203,9 @@
         "REVIEW": "PASS"
       },
       "evidence": [
-        "docs/work-packages/T08.md",
-        "docs/evidence/T08.json"
+        "docs/evidence/current.json"
       ],
-      "work_package_record": "docs/work-packages/T08.md",
+      "work_package_record": "docs/handoffs/current.md",
       "blocker": null
     },
     {
@@ -311,10 +301,9 @@
         "REVIEW": "PASS"
       },
       "evidence": [
-        "docs/work-packages/T12a.md",
-        "docs/evidence/T12a.json"
+        "docs/evidence/current.json"
       ],
-      "work_package_record": "docs/work-packages/T12a.md",
+      "work_package_record": "docs/handoffs/current.md",
       "blocker": null
     },
     {

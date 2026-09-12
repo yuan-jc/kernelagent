@@ -1,0 +1,117 @@
+{
+  "schema_version": "1.0",
+  "kind": "ubuntu_development_handoff",
+  "history_before_cleanup": {
+    "commit": "1b4a3066954317beff7a7b03b51048e7c94d834a",
+    "note": "Historical working cards, evidence and research collection records remain in Git at this commit."
+  },
+  "accepted_offline_packages": [
+    "T00",
+    "T01",
+    "T02",
+    "T08",
+    "T12a"
+  ],
+  "pending": {
+    "T03": "Target Ubuntu + NVIDIA GPU acceptance NOT_RUN",
+    "T04a": "Target runtime review pending; process mechanics only",
+    "T04": "Container/OS-enforced worker and real GPU requests TODO",
+    "LIVE_MODEL": "NOT_RUN"
+  },
+  "local": {
+    "system": "Windows",
+    "python": "3.13.3",
+    "cpu": {
+      "status": "PASS",
+      "counts": {
+        "total": 315,
+        "passed": 315,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "command": "uv run --locked kernelagent check --output artifacts/ubuntu-handoff/cpu",
+      "report": {
+        "path": "artifacts/ubuntu-handoff/cpu/73b5f661ef2a4c078fe3d32122e2eba4/report.json",
+        "sha256": "070204062f2cdfcf63e2e2c572e7550b4ac14a04d80a5897bd8576f2cb78ceee"
+      }
+    },
+    "lint": "PASS",
+    "format": "PASS",
+    "snapshot_fetch": {
+      "path": "artifacts/ubuntu-handoff/fetch.json",
+      "sha256": "7380cbaa63e362f1788a0153b7990c6d91d9bebe54a7c00a83b313c07aa9cec8"
+    },
+    "snapshot_verify": {
+      "path": "artifacts/ubuntu-handoff/bench.json",
+      "sha256": "2476233a3a7b28965c65c0e6f0228b9be2c7b7812acafea71226a6741530b1d8"
+    },
+    "worker_smoke": {
+      "path": "artifacts/ubuntu-handoff/smoke.json",
+      "sha256": "73ca659cc27e850c2189efc2214a31ccaddd94d8a7ac4c6a5356d409197215fe"
+    },
+    "distribution": {
+      "status": "PASS",
+      "command": "uv build --no-sources; clean venv wheel install; python -I examples/worker_smoke.py",
+      "scope": "Windows clean-install CPU smoke; sdist includes source bootstrap and user documentation"
+    }
+  },
+  "source_hash_format": "SHA-256 of LF-normalized source/test/config text; excludes evidence index to avoid self-reference",
+  "tested_source_sha256": {
+    ".github/workflows/cpu.yml": "e3d05ebfa664a3e59a336c85fdc12baac2cb41c8421396e072f97bfc01778151",
+    "examples/worker_smoke.py": "d03dcb0b8e01f5fd6028ad5ffec07dcb83dc7d35d7dad330c4ff52ff1b962b9b",
+    "pyproject.toml": "4699ed7b8a30088993585973685293130c5b428a5744269dab1715c411e18776",
+    "research/fetch_kernelbench_problems.py": "c7319a4738744abc29e246a1cc546ac0b8dd816e6d14b232baa2634f06793f21",
+    "src/kernelagent/__init__.py": "6867f13e813a7edf3b52215844a33ac3ccbae5c05b433db140ac335b2c82b8ed",
+    "src/kernelagent/__main__.py": "d2b32170d62ad192da6ea9ce4777dbc32643e3e433070c4b3261891342b7d1e9",
+    "src/kernelagent/acceptance.py": "514878734ab503cbe6adef3ad234c50b72634851adaeb6cc7e110f6d557377d3",
+    "src/kernelagent/adapters/__init__.py": "742954815ab41c3cae480f9f70701d7c289631aa033e72666612af6c8ec4c81c",
+    "src/kernelagent/adapters/benchmarks/__init__.py": "4c46e3737b1f9822a2d2db9d4fa0e43fc79a75ad2c29cd5a32146f20873b6392",
+    "src/kernelagent/adapters/benchmarks/kernelbench.py": "1f698078ea77f6d596f7057516c969bc193c8a3684f77155be61ed634d15d87c",
+    "src/kernelagent/adapters/models/__init__.py": "1cb6799d0f8e909859219f25554bcbbe2cfaebbddadb5fadaff614b43d951e62",
+    "src/kernelagent/adapters/models/client.py": "c82526dbd33551d0551db8d309aa50ac6ac2cee05ead65a73494e75a5b2c6da0",
+    "src/kernelagent/adapters/models/costing.py": "e218145dbf0a1c07adb4b11ac890db503e156f51d677a846a66c342bb869d1ca",
+    "src/kernelagent/adapters/models/errors.py": "c1c3b80f33f1e8e6cafbdc5e53ed2e748478b73056e584cc241ff2ba9c0e5558",
+    "src/kernelagent/adapters/models/parsing.py": "b27d695fc67de0679c6effbcc90ba82ffd7dcc228e57b3c9f8aa52c8fc10ae42",
+    "src/kernelagent/adapters/storage/__init__.py": "46630505cf0058238e4c7d9b783a3eeef3e6bd82307d01b266664611f31392c3",
+    "src/kernelagent/adapters/storage/evidence.py": "132d5bfd7e1f4dff0dcb4d852befaca4b1fe7f563d9d61b007dcbaad4a159dab",
+    "src/kernelagent/cli.py": "7bd9ee538a18c9ddd4675c38ba4b465d2b2c8c625e03da800c3e3c4186616249",
+    "src/kernelagent/domain/__init__.py": "021a45930ebb99fd6b2dd55b2386680bc05fc2f578dca4f3d5084816a039d4a1",
+    "src/kernelagent/domain/_validation.py": "9b3a3c8b978c903db92b4760c60d416b739917f75138c7073066ec0e352abb39",
+    "src/kernelagent/domain/errors.py": "05ad78b12875cacdde5c07b7f4b2b7e5a16698b84d336f79eeacbd138a2dfc1e",
+    "src/kernelagent/domain/evidence.py": "c8ab3cc671e7a7e470ebae0bdb6fe827345913b3e6cc86939c8a7b36594ccd5b",
+    "src/kernelagent/domain/implementation.py": "79512dd4fb02519f86260cb45c1ac00696732ed303f57eba2a9a22e701395c28",
+    "src/kernelagent/domain/method.py": "680b1135a190d06e2a61bd0e8f81b4b211f3c8e73617e808d9e3868833f5cd76",
+    "src/kernelagent/domain/operator.py": "4456d031340782c34605168958ea444c0a6086563f3bbe9410c8ee90e8f0f74f",
+    "src/kernelagent/domain/result.py": "05677dd657f14dcf653d7d0649346c71420d7bbf06b6b2f88b30172e7692a0ba",
+    "src/kernelagent/domain/serialization.py": "462d5865d153e6c0f593c51a508dee0fa75e5b5c5b6cd3d351becf85b5841a73",
+    "src/kernelagent/domain/task.py": "027ad148eae169ae63b47eae7d9d42fe9b889f41ebf82f7ab5d6cf2900c1a475",
+    "src/kernelagent/domain/workload.py": "8009809693391fcdd372a4ac18fb85a100ef1d655b2492bec9254c44718de2e5",
+    "src/kernelagent/probe.py": "f34bb17096cd72e378ff0f95590c70f5604cd8b01e698889e1f06aa1e1dfd69b",
+    "src/kernelagent/worker/__init__.py": "13b85e3f2c2b0ccb62eb54ea3a2351b5d4864651dfae3f3d5307b25676681c5a",
+    "src/kernelagent/worker/errors.py": "9b2af472cb81fc1047e84319e546b05f0f388f8b6f39b66ce862a7cfd8420dc5",
+    "src/kernelagent/worker/process.py": "fe67a17071aa7e9548296ec149b3159e58b2d9eae5281fc430772efa84413f78",
+    "src/kernelagent/worker/protocol.py": "1f6d9f224db88b704ccc14eab9b0a27cc6af52286339da5e25c9e5125f52f97d",
+    "tests/domain_samples.py": "7d06e1df6746f43fee4344379f0e39839a6eb901bddf10dbd8b3a56fe36fb86e",
+    "tests/kernelbench_fixtures.py": "dac468452f4e5105f9c6f6ca60037c89c28d9aedb5f8caa53b2be64ff5e9de8b",
+    "tests/test_acceptance.py": "1f7ef562931a5b67a79b423d2e087abaf74164ada726585c877fb82c8e9a581a",
+    "tests/test_domain_import_boundary.py": "a67cdfb8477f4c977b6b21b8142a2955c37dc48b690cdc53791f37fbc9327dd4",
+    "tests/test_domain_objects.py": "f98bc09dc2606833f26d812bc1b4b2f83170f9292386895476ac8ab81c5ed603",
+    "tests/test_domain_serialization.py": "3e53bdb4438eea5ea6cfd309cb575a4b46386e29e6fed3c60bdd2cf65cd22a68",
+    "tests/test_evidence_identity.py": "56580bbe06e513054d6e32e3a6c7cc1d945642e261a66223404a02f053e44309",
+    "tests/test_evidence_store.py": "6e2631e5ed45b9161813d2e452e591a6904750d93de77f283e2f98f406ca2420",
+    "tests/test_gpu_probe.py": "47b8cbd22a9543d842dc95e43ed52368d36b2e1741767c81beb13f6cba353aba",
+    "tests/test_kernelbench_adapter.py": "545f7db5c2c3e10b12ae8034515fa09d623e5708255152ac9cbdc429024e637c",
+    "tests/test_kernelbench_dev_manifest.py": "f082fce0807085bfb8384fb213bcccdd3a3913b26ff801f0a2c292444638488c",
+    "tests/test_kernelbench_protocols.py": "dadb49ec427a0a9fe83ca20297e160742cfb0b4c6573d39e65cf8da365085f7c",
+    "tests/test_model_client.py": "3c2ae6e7315ff7f520d85f108de56fea0d660987732d102182e6ac0374ae52fa",
+    "tests/test_package.py": "e3c4562d49a851956f63085b104e5037587551fc52e00c07c62c263b16dececd",
+    "tests/test_snapshot_fetch.py": "c80c1e26f6b8765c3f7cd177d3e47d96558ee21ed8a0de0f756b7d473f5c4403",
+    "tests/test_worker_boundary.py": "9c4df9d2d6bbaf0883a49c9ec5612fdca8d10a2fb6e335170ff301b799225267",
+    "uv.lock": "c77e67d978cb3d5a704a9883f111c0dad393e3485913d8efc9697fb9b140d08d"
+  },
+  "publication_ci": {
+    "status": "PENDING",
+    "note": "Will bind the implementation commit after push; CPU only. GPU NOT_RUN."
+  }
+}

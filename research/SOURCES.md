@@ -35,13 +35,10 @@ README/源码属于上游资料，未作为本项目代码执行。各项目保�
 | [nsight_systems](https://docs.nvidia.com/nsight-systems/UserGuide/index.html) | 本地缓存 `sources/nvidia_docs/nsight_systems.html`（不随公开仓库分发） |
 | [cuda_binary_utilities](https://docs.nvidia.com/cuda/cuda-binary-utilities/index.html) | 本地缓存 `sources/nvidia_docs/cuda_binary_utilities.html`（不随公开仓库分发） |
 
-## 复核与获取记录
+## 复核与获取
 
-- `snapshot_manifest.json` 是最终快照清单：仓库 commit、文件 URL 和 SHA-256。
-- `source_manifest.json`、`additional_manifest.json`、`extension_manifest.json`、`detail_manifest.json` 是分批获取记录。
-- extension_manifest 中三个项目最初遇到匿名 GitHub API 限流；之后通过已连接 GitHub 工具成功获取固定 commit 与材料，最终结果以 snapshot_manifest 为准。
-- SakanaAI/AI-CUDA-Engineer 精确 URL 返回 404，未纳入成功快照，也不据此断言其研究不存在。
-- `collect_sources.py`、`collect_details.py` 可重新获取公开资料；重新运行可能解析到更新的主分支，不能将新结果冒充本次快照。
-- `build_source_index.py` 只重建本地清单，不联网、不更新源文件。
-- `.txt` 是官方 HTML 的派生纯文本，原始 HTML hash 才是获取清单中记录的内容身份。
-- 本次未安装研究项目依赖、未编译 kernel、未做 GPU benchmark，所有性能建议均待实施验证。
+- `snapshot_manifest.json` 保留调研固定 commit、文件 URL 与 SHA-256；不是已经验证兼容的运行依赖锁。
+- `fetch_kernelbench_problems.py` 仅恢复 `configs/kernelbench/` 已冻结的问题与协议引用，不改写清单、不执行上游代码；首次克隆可直接运行。
+- 其他调研原始文件可按 snapshot_manifest 中 URL 获取并校验，日常开发无需下载全部研究项目。
+- 第三方资料及许可证属于原项目；本仓库不分发本地原始缓存。
+- 分批抓取流水与一次性脚本已从当前目录移除，历史可在 Git 提交 `1b4a306` 查阅。

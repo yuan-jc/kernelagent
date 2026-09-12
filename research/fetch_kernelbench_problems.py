@@ -1,13 +1,4 @@
-"""Fetch KernelBench problem files at the pinned research commit.
-
-Downloads KernelBench/level{1,2,3,4}/*.py from raw.githubusercontent.com at the
-commit recorded in research/SOURCES.md, verifies against git blob SHAs from
-tree.json, and writes configs/kernelbench/snapshot-files.manifest.json.
-
-Offline rebuild: `build_source_index.py` recomputes hashes without network.
-Re-running this script re-fetches; it must not be presented as a new snapshot
-unless the commit changes.
-"""
+"""Restore pinned KernelBench files from a clean clone; never rewrite manifests."""
 
 from __future__ import annotations
 
@@ -15,106 +6,128 @@ import argparse
 import concurrent.futures
 import hashlib
 import json
-import sys
+import os
+import re
+import tempfile
 import urllib.request
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-SNAPSHOT_DIR = REPO_ROOT / "research" / "sources" / "ScalingIntelligence__KernelBench"
-TREE_JSON = SNAPSHOT_DIR / "tree.json"
-OUTPUT_MANIFEST = REPO_ROOT / "configs" / "kernelbench" / "snapshot-files.manifest.json"
-
-REPOSITORY = "ScalingIntelligence/KernelBench"
-COMMIT = "423217d9fda91e0c2d67e4a43bf62f96f6d104f1"
-LEVELS = (1, 2, 3, 4)
-RAW_BASE = f"https://raw.githubusercontent.com/{REPOSITORY}/{COMMIT}"
+DEFAULT_ROOT = REPO_ROOT / "research/sources/ScalingIntelligence__KernelBench"
+FILES_MANIFEST = REPO_ROOT / "configs/kernelbench/snapshot-files.manifest.json"
+DEV_MANIFEST = REPO_ROOT / "configs/kernelbench/dev-manifest.json"
 
 
-def blob_sha1(content: bytes) -> str:
-    return hashlib.sha1(b"blob %d\x00" % len(content) + content).hexdigest()
+def inventory(files_path: Path, dev_path: Path) -> tuple[str, dict[str, str]]:
+    data = files_path.read_bytes()
+    files, dev = json.loads(data), json.loads(dev_path.read_bytes())
+    upstream = dev["upstream"]
+    if files["schema_version"] != "1.0" or dev["schema_version"] != "1.0":
+        raise ValueError("unsupported manifest version")
+    canonical = json.dumps(files, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode(
+        "utf-8"
+    )
+    if hashlib.sha256(canonical).hexdigest() != upstream["files_manifest_sha256"]:
+        raise ValueError("files manifest does not match frozen dev manifest")
+    repository, commit = files["repository"], files["commit"]
+    if (repository, commit) != (upstream["repository"], upstream["commit"]):
+        raise ValueError("manifest repository/commit mismatch")
+    if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repository):
+        raise ValueError("invalid upstream repository")
+    if not re.fullmatch(r"[0-9a-f]{40}", commit):
+        raise ValueError("invalid upstream commit")
+    records = list(files["files"])
+    if not records:
+        raise ValueError("empty problem manifest")
+    records += dev["protocols"]["upstream_compatible"]["references"]
+    records += [{"path": upstream["dataset_module"], "sha256": upstream["dataset_module_sha256"]}]
+    entries: dict[str, str] = {}
+    for item in records:
+        path, digest = item["path"], item["sha256"]
+        if (
+            not isinstance(path, str)
+            or not path
+            or "\\" in path
+            or ":" in path
+            or any(part in ("", ".", "..") for part in path.split("/"))
+            or PurePosixPath(path).is_absolute()
+        ):
+            raise ValueError(f"unsafe manifest path: {path!r}")
+        if not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest):
+            raise ValueError(f"invalid sha256: {path}")
+        if path in entries and entries[path] != digest:
+            raise ValueError(f"conflicting content hashes: {path}")
+        entries[path] = digest
+    return f"https://raw.githubusercontent.com/{repository}/{commit}", entries
 
 
-def problem_paths() -> list[tuple[str, str]]:
-    tree = json.loads(TREE_JSON.read_text(encoding="utf-8"))
-    if tree.get("truncated"):
-        raise SystemExit("tree.json is truncated; cannot enumerate all files")
-    entries = [
-        (entry["path"], entry["sha"])
-        for entry in tree["tree"]
-        if entry["type"] == "blob"
-        and entry["path"].startswith("KernelBench/")
-        and any(entry["path"].startswith(f"KernelBench/level{level}/") for level in LEVELS)
-        and entry["path"].endswith(".py")
-    ]
-    return sorted(entries)
-
-
-def fetch_one(proxy: str | None, path: str, expected_blob: str) -> dict:
-    target = SNAPSHOT_DIR / path
-    if target.is_file():
-        content = target.read_bytes()
-        if blob_sha1(content) != expected_blob:
-            target.unlink()  # corrupted cache entry; refetch below
-    if not target.is_file():
-        request = urllib.request.Request(f"{RAW_BASE}/{path}")
-        opener = urllib.request.build_opener(
-            urllib.request.ProxyHandler({"http": proxy, "https": proxy} if proxy else {})
-        )
-        with opener.open(request, timeout=60) as response:
-            content = response.read()
-        actual = blob_sha1(content)
-        if actual != expected_blob:
-            raise SystemExit(f"blob SHA mismatch for {path}: expected {expected_blob}, got {actual}")
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_bytes(content)
-    else:
-        content = target.read_bytes()
-    return {
-        "path": path,
-        "git_blob_sha1": expected_blob,
-        "sha256": hashlib.sha256(content).hexdigest(),
-        "size": len(content),
-    }
+def fetch_one(root: Path, path: str, digest: str, base_url: str, opener) -> None:
+    target = (root / path).resolve()
+    if not target.is_relative_to(root.resolve()):
+        raise ValueError(f"cache path escapes root: {path}")
+    if target.is_file() and hashlib.sha256(target.read_bytes()).hexdigest() == digest:
+        return
+    with opener.open(f"{base_url}/{path}", timeout=60) as response:
+        data = response.read()
+    if hashlib.sha256(data).hexdigest() != digest:
+        raise ValueError(f"download sha256 mismatch: {path}; cache was not changed")
+    target.parent.mkdir(parents=True, exist_ok=True)
+    name = None
+    try:
+        with tempfile.NamedTemporaryFile(dir=target.parent, delete=False) as tmp:
+            name = Path(tmp.name)
+            tmp.write(data)
+        os.replace(name, target)
+    finally:
+        if name is not None:
+            name.unlink(missing_ok=True)
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--proxy", default=None, help="e.g. http://127.0.0.1:7893")
+    parser.add_argument("--root", type=Path, default=DEFAULT_ROOT)
+    parser.add_argument("--proxy", help="Optional proxy URL; defaults to standard proxy settings")
     parser.add_argument("--workers", type=int, default=8)
     args = parser.parse_args()
-
-    entries = problem_paths()
-    print(f"{len(entries)} problem files at commit {COMMIT[:12]}")
-    records: list[dict] = []
-    failures: list[str] = []
-    with concurrent.futures.ThreadPoolExecutor(max_workers=args.workers) as pool:
-        futures = {pool.submit(fetch_one, args.proxy, path, blob): path for path, blob in entries}
-        for future in concurrent.futures.as_completed(futures):
-            path = futures[future]
-            try:
-                records.append(future.result())
-            except Exception as exc:  # noqa: BLE001 - collect all failures for the summary
-                failures.append(f"{path}: {type(exc).__name__}: {exc}")
-    if failures:
-        print(f"{len(failures)} FAILED:")
-        for line in failures:
-            print(" ", line)
+    if args.workers < 1:
+        parser.error("--workers must be positive")
+    try:
+        base_url, entries = inventory(FILES_MANIFEST, DEV_MANIFEST)
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        print(json.dumps({"status": "FAIL", "reason": str(exc)}))
         return 1
-    records.sort(key=lambda item: item["path"])
-    manifest = {
-        "schema_version": "1.0",
-        "repository": REPOSITORY,
-        "commit": COMMIT,
-        "note": "Problem file inventory at the pinned research commit; files stay in the "
-        "local gitignored research/sources cache. The public repo keeps hashes only.",
-        "files": records,
-    }
-    OUTPUT_MANIFEST.parent.mkdir(parents=True, exist_ok=True)
-    OUTPUT_MANIFEST.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
-    total = sum(item["size"] for item in records)
-    print(f"OK: {len(records)} files verified, {total} bytes; manifest -> {OUTPUT_MANIFEST}")
-    return 0
+    handler = (
+        urllib.request.ProxyHandler({"http": args.proxy, "https": args.proxy})
+        if args.proxy
+        else urllib.request.ProxyHandler()
+    )
+    opener = urllib.request.build_opener(handler)
+    failures = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=args.workers) as pool:
+        pending = {
+            pool.submit(fetch_one, args.root, path, sha, base_url, opener): path
+            for path, sha in entries.items()
+        }
+        for future in concurrent.futures.as_completed(pending):
+            try:
+                future.result()
+            except Exception as exc:
+                failures.append({"path": pending[future], "reason": str(exc)})
+    print(
+        json.dumps(
+            {
+                "status": "FAIL" if failures else "PASS",
+                "commit": base_url.rsplit("/", 1)[1],
+                "files": len(entries),
+                "verified": len(entries) - len(failures),
+                "root": str(args.root),
+                "failures": sorted(failures, key=lambda item: item["path"]),
+            },
+            indent=2,
+        )
+    )
+    return 1 if failures else 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    raise SystemExit(main())

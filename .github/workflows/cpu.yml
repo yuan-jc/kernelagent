@@ -25,7 +25,9 @@ jobs:
       - run: uv sync --locked
       - run: uv run --locked ruff check .
       - run: uv run --locked ruff format --check .
+      - run: uv run --locked ruff check --isolated --line-length 100 research/fetch_kernelbench_problems.py
       - run: uv run --locked kernelagent check --output artifacts/ci
+      - run: uv run --locked python examples/worker_smoke.py
       - run: uv build --no-sources
       - uses: actions/upload-artifact@v4
         if: always()

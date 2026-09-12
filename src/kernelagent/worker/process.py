@@ -13,8 +13,8 @@ creation, configuration, process attribution, reclamation, log access) is
 checked: failure refuses the run or produces a structured ``infra_error``
 outcome with the reason, never a silent ``completed``. Platform limits,
 documented honestly: a POSIX descendant that escapes its process group
-(set sid) survives the best-effort killpg, and a Windows payload could
-theoretically race the Job Object assignment. OS-enforced isolation
+(setsid) survives the best-effort killpg. Windows payloads remain suspended
+until Job Object assignment succeeds. OS-enforced isolation
 (containers/cgroups with real boundaries) is the parent T04 package on the
 target Ubuntu environment; this module is not a sandbox."""
 
@@ -238,10 +238,15 @@ class _WindowsJob:
             self.error = f"TerminateJobObject failed (GetLastError={last_error})"
         return bool(result)
 
-    def close(self) -> None:
+    def close(self) -> bool:
         if self.handle:
-            ctypes.windll.kernel32.CloseHandle(self.handle)
+            if not ctypes.windll.kernel32.CloseHandle(self.handle):
+                self.error = (
+                    f"CloseHandle failed (GetLastError={ctypes.windll.kernel32.GetLastError()})"
+                )
+                return False
             self.handle = None
+        return True
 
 
 def _resume_process_threads(pid: int) -> bool:
@@ -269,20 +274,27 @@ def _resume_process_threads(pid: int) -> bool:
         ]
 
     snapshot = kernel32.CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0)
-    if not snapshot:
+    if snapshot in (None, ctypes.c_void_p(-1).value):
         return False
     resumed = False
     try:
         entry = THREADENTRY32()
         entry.dwSize = ctypes.sizeof(entry)
+        for name in ("Thread32First", "Thread32Next"):
+            function = getattr(kernel32, name)
+            function.argtypes = [ctypes.c_void_p, ctypes.POINTER(THREADENTRY32)]
+            function.restype = ctypes.c_int
         ok = kernel32.Thread32First(snapshot, ctypes.byref(entry))
         while ok:
             if entry.th32OwnerProcessID == pid:
                 thread = kernel32.OpenThread(THREAD_SUSPEND_RESUME, False, entry.th32ThreadID)
                 if thread:
-                    kernel32.ResumeThread(thread)
-                    kernel32.CloseHandle(thread)
-                    resumed = True
+                    try:
+                        if kernel32.ResumeThread(thread) == 0xFFFFFFFF:
+                            return False
+                        resumed = True
+                    finally:
+                        kernel32.CloseHandle(thread)
             ok = kernel32.Thread32Next(snapshot, ctypes.byref(entry))
     finally:
         kernel32.CloseHandle(snapshot)
@@ -355,7 +367,10 @@ def execute(request: WorkerRequest) -> WorkerOutcome:
             # Refusing here is the guarantee: without the job there is no
             # descendant reclamation, and a completed report would be a lie.
             raise _InfraFailure(f"Windows Job Object unavailable: {job.error or 'unknown'}")
-        env = build_child_env(extra=request.env_extra)
+        try:
+            env = build_child_env(extra=request.env_extra)
+        except ValueError as exc:
+            raise _InfraFailure(f"invalid child environment: {exc}") from exc
         workdir = ensure_within(
             request.workspace_root,
             request.workspace_root / f"{_WORKDIR_PREFIX}{uuid.uuid4().hex}",
@@ -366,10 +381,13 @@ def execute(request: WorkerRequest) -> WorkerOutcome:
             raise _InfraFailure(f"work directory creation failed: {exc}") from exc
         stdout_path = workdir / "stdout.log"
         stderr_path = workdir / "stderr.log"
+        out_handle = None
         try:
             out_handle = stdout_path.open("wb")
             err_handle = stderr_path.open("wb")
         except OSError as exc:
+            if out_handle is not None:
+                out_handle.close()
             raise _InfraFailure(f"log file open failed: {exc}") from exc
         with out_handle as out, err_handle as err:
             win32_flags = {"creationflags": 0x4} if sys.platform == "win32" else {}
@@ -393,21 +411,16 @@ def execute(request: WorkerRequest) -> WorkerOutcome:
                     # Child is still suspended: terminate it before it ever
                     # runs, so no descendant can escape the failed
                     # attribution.
-                    ctypes.windll.kernel32.TerminateProcess(int(process._handle), 1)
+                    process.kill()
                     process.wait(timeout=30)
                     raise _InfraFailure(
                         "process attribution failed: "
                         f"{job.error or 'AssignProcessToJobObject returned failure'}"
                     )
                 if not _resume_process_threads(process.pid):
-                    ctypes.windll.kernel32.TerminateProcess(int(process._handle), 1)
+                    process.kill()
                     raise _InfraFailure("failed to resume the suspended payload threads")
             else:
-                try:
-                    pgid = os.getpgid(process.pid)
-                except ProcessLookupError:
-                    pgid = None
-            if sys.platform != "win32":
                 try:
                     pgid = os.getpgid(process.pid)
                 except ProcessLookupError:
@@ -448,17 +461,28 @@ def execute(request: WorkerRequest) -> WorkerOutcome:
             stderr_tail = _read_tail(stderr_path, request.output_tail_chars)
         except OSError as exc:
             stdout_tail, stderr_tail = "", f"[tail-read-error] {type(exc).__name__}: {exc}"
-    except _InfraFailure as exc:
+            raise _InfraFailure("log read-back failed") from exc
+    except (_InfraFailure, OSError, subprocess.TimeoutExpired) as exc:
         infra_reason = str(exc)
         status = "infra_error"
-        exit_code = None
-        killed = False
     finally:
-        job.close()
+        # Failures before/during wait must still reap the direct payload,
+        # including suspended Windows processes that could not be resumed.
+        if process is not None and process.poll() is None:
+            try:
+                process.kill()
+                killed = True
+                exit_code = process.wait(timeout=30)
+            except (OSError, subprocess.TimeoutExpired) as exc:
+                status = "infra_error"
+                infra_reason += f"; direct process reclamation failed: {exc}"
+        if not job.close():
+            status = "infra_error"
+            infra_reason += f"; {job.error or 'job close failed'}"
     if infra_reason:
         stderr_tail = "\n".join(part for part in (infra_reason, stderr_tail) if part)
     duration = time.monotonic() - started
-    should_keep = request.keep_workdir_on_failure and status in ("failed", "timeout")
+    should_keep = request.keep_workdir_on_failure and status != "completed"
     if workdir is not None and not should_keep:
         shutil.rmtree(workdir, ignore_errors=True)
     kept = str(workdir) if (workdir is not None and workdir.exists()) else None

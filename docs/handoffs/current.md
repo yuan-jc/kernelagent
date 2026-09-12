@@ -1,24 +1,34 @@
-# 当前开发交接
+# 当前状态与下一步
 
-- 更新时间：2026-09-12
-- 当前工作包：T04a 修复轮，**READY_FOR_ACCEPTANCE**（审查发现 5 项缺陷已修复并附反例证据，待独立审查确认后恢复 ACCEPTED）。
-- 当前唯一有效状态：本地与 origin/main 同步于 `6f40d49`；本轮修复提交后以该提交为准（提交 SHA 与 CI 绑定记录在 docs/evidence/review-fixes-t04a.json）。
-- 当前代码状态（单一事实）：T00 工程验收入口、T01 domain 契约（严格反序列化）、T02 KernelBench 数据适配、T03 GPU 环境探测（READY_FOR_ACCEPTANCE）、T04a 可信 worker 进程隔离（修复轮）、T08 证据存储（消费时校验）、T12a 模型客户端离线层；**当前测试基线 302 项全过**（历史数字 15/117/150/232/269/293 均为各时点快照，不再引用）。
-- 已完成：详细设计、任务计划、T00–T03、T08、T12a、T04a（修复轮），已上传 GitHub 公开仓库 https://github.com/yuan-jc/kernelagent。
-- 已通过检查（本轮）：302 项 CPU 测试、ruff check/format、KernelBench 快照 270/270、wheel 干净安装含严格契约与 worker 冒烟。
-- 环境结论（审查后修正，旧归因作废）：修复前探针存在 kernelParams 间接寻址与旧 ABI 缺陷，此前"GPU-PV 拒绝回读/WSL 驱动 SIGSEGV"的结论 SUPERSEDED。修复后探针实测：本机 native 6/6 全 pass（设备内存往返写读 42），WSL kernel 启动 pass（nvcc 缺失、ncu shim 损坏为真实缺口）。审查修复详情见 docs/evidence/review-fixes-2026-09-12.json 与 docs/evidence/review-fixes-t04a.json。
-- T03 唯一真实阻塞：目标 Ubuntu + NVIDIA 环境的正式验收尚未执行（冻结规格：报告有效 + cuda_kernel_launch pass + 42 写读验证 + 证据入库）。本机通过不替代验收。
-- 尚未执行：T04 父包（容器级隔离 + 真实 GPU 评测请求）、T05–T07、T09–T11、T12 主体（真实模型闭环）、T13–T25；没有 GPU/模型实验。
-- 网络与工具：GitHub 走本机代理 127.0.0.1:7893（仓库级 git http.proxy）；CI 失败用"干净 clone + uv sync --locked + 复现 workflow 命令"本地诊断。
-- 活动作业：无。
-- 下一步：(a) 本轮修复经独立审查确认后 T04a 恢复 ACCEPTED；(b) 目标 Ubuntu 环境就绪 → 复跑 probe 验收 T03 → 按 GLM-next 分包计划推进 T04 父包（容器隔离 + 真实 GPU 评测请求）→ T05。复查命令：`uv run --locked kernelagent check --output artifacts/local`。
+首用环境：**Ubuntu + NVIDIA GPU**。先按 [Ubuntu 指南](../UBUNTU.md)自检与恢复数据，然后只推进 [T03](../work-packages/T03.md)。状态清单见 [task-board](../task-board.json)，有效检查索引见 [current.json](../evidence/current.json)。
 
-## 后续每次交接必须补齐
+| 范围 | 状态与能力边界 |
+|---|---|
+| T00/T01/T02/T08/T12a | ACCEPTED：工程、纯契约、静态基准适配、证据存储、离线模型客户端；当前 CPU 回归持续覆盖 |
+| T03 | READY_FOR_ACCEPTANCE：探针可运行；目标 Ubuntu/NVIDIA 正式验收 NOT_RUN |
+| T04a | READY_FOR_ACCEPTANCE：进程执行机制与失败回归可用；目标运行环境需复核，不等于沙箱 |
+| T04 | TODO：可信容器边界、资源控制、真实 GPU 请求尚未实现/验收 |
+| T05–T25（除 T08 及 T12a 子包） | 按任务计划依赖推进，未实现完整自动优化闭环 |
 
-1. 当前 task/subtask 与实际代码版本或工作区差异。
-2. 实现了哪些可观察行为。
-3. 执行过的精确命令、退出状态、原始日志和环境位置。
-4. 失败/未执行检查及原因；不得省略 GPU NOT_RUN。
-5. 活动作业 ID、工作目录、结果位置和状态查询方式。
-6. 未提交变更/接口变更/已知风险。
-7. 下一条可执行命令或所需输入。
+## 本次移交内容
+
+- 清理重复工作流水、模型专用会话指令和一次性调研脚本；设计基线、冻结清单、来源索引保留。
+- README 与 Ubuntu 指南成为新机器入口。KernelBench 获取脚本从提交清单恢复缓存，不依赖历史 tree.json，不修改清单；已在空目录完整恢复并校验。
+- worker 收尾补充：部分日志打开失败关闭已开的句柄；日志回读失败返回 infra_error；基础设施失败仍回收直接载荷；错误保留目录策略覆盖 infra_error；Windows 线程恢复与 Job 关闭结果明确检查。
+- 测试结果、实现身份与发布 CI 见证据索引，不在多个文档重复维护测试数字。
+
+## 已知限制
+
+- 当前 POSIX 进程组回收不能阻止 setsid 逃逸；文件权限、网络和 GPU/内存资源边界必须由 T04 容器/cgroup 强制执行。只用受控载荷测试现有 runner。
+- 记录状态 completed 只表示进程成功退出，不能代表候选正确、性能有效或允许晋升。
+- 模型层只有离线能力；回放要求请求/响应 model_id 精确一致。未来 provider 的别名映射须显式设计并测试。
+- 证据存储约定单写入器、同一内容 hash 对应一组索引元数据；hash 是完整性检查，不是抵御整个存储被任意修改的签名。
+- GPU 环境版本与容器镜像尚未冻结，正式测量与模型调用均未执行。
+
+## 下一步
+
+在目标 Ubuntu 执行 `uv run --locked kernelagent check --output artifacts/ubuntu-cpu`，然后按 T03 卡片产出真实 GPU 报告。T03 验收通过再进入 [T04](../work-packages/T04.md)，不要从旧的“等待实体卡/GPU-PV”描述推断环境原因。
+
+本地调研/实验缓存未随 Git 分发。清理前记录可在提交 `1b4a306` 查阅；不要将历史摘要当作当前验收事实。每包收尾替换本页的当前状态、活动作业、结果位置与下一步，避免追加聊天流水。
+
+当前无持续 GPU/模型实验作业。发布检查以证据索引和本次提交对应 CI 为准。

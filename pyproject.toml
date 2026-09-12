@@ -20,7 +20,7 @@ dev = ["pytest>=8.3,<10", "jsonschema>=4.23,<5", "ruff>=0.11,<1"]
 packages = ["src/kernelagent"]
 
 [tool.hatch.build.targets.sdist]
-include = ["/src", "/tests", "/schemas", "/configs", "/pyproject.toml", "/uv.lock", "/README.md"]
+include = ["/src", "/tests", "/schemas", "/configs", "/examples", "/docs", "/AGENTS.md", "/research/fetch_kernelbench_problems.py", "/research/SOURCES.md", "/research/snapshot_manifest.json", "/pyproject.toml", "/uv.lock", "/README.md"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

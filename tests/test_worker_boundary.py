@@ -400,6 +400,7 @@ class _StubJob:
 
     def close(self):
         self.closed = True
+        return True
 
 
 def test_repro_r2_job_creation_failure_is_infra_error(tmp_path, monkeypatch, _win32_job_stub):
@@ -475,5 +476,45 @@ def test_repro_r2_tail_read_failure_still_produces_result(tmp_path, monkeypatch)
 
     monkeypatch.setattr(probe_module, "_read_tail", failing_tail)
     outcome = execute(make_request((PYTHON, "-c", "print('done')"), tmp_path))
-    assert outcome.status == "completed"
+    assert outcome.status == "infra_error"
     assert "[tail-read-error]" in outcome.stderr_tail
+
+
+def test_partial_log_open_failure_closes_stdout(tmp_path, monkeypatch):
+    from pathlib import Path
+
+    opened = []
+    real_open = Path.open
+
+    def open_log(path, mode="r", *args, **kwargs):
+        if path.name == "stderr.log" and mode == "wb":
+            raise PermissionError("stderr denied")
+        handle = real_open(path, mode, *args, **kwargs)
+        if path.name == "stdout.log" and mode == "wb":
+            opened.append(handle)
+        return handle
+
+    monkeypatch.setattr(Path, "open", open_log)
+    outcome = execute(make_request((PYTHON, "-c", "pass"), tmp_path))
+    assert outcome.status == "infra_error"
+    assert opened and all(handle.closed for handle in opened)
+    assert outcome.workdir is None
+
+
+def test_denied_environment_has_no_filesystem_side_effect(tmp_path):
+    outcome = execute(
+        make_request((PYTHON, "-c", "pass"), tmp_path, env_extra=(("OPENAI_API_KEY", "test-only"),))
+    )
+    assert outcome.status == "infra_error"
+    assert "invalid child environment" in outcome.stderr_tail
+    assert not (tmp_path / "workspace").exists()
+
+
+def test_infra_error_retains_workdir_when_requested(tmp_path):
+    from pathlib import Path
+
+    outcome = execute(
+        make_request(("definitely-missing-binary-xyz",), tmp_path, keep_workdir_on_failure=True)
+    )
+    assert outcome.status == "infra_error"
+    assert outcome.workdir is not None and Path(outcome.workdir).is_dir()
