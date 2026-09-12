@@ -17,7 +17,7 @@
     "N/A"
   ],
   "notes": [
-    "T00 and T01 accepted after local CPU checks; T02-T25 remain TODO.",
+    "T00, T01 and T02 accepted after local CPU checks; T03-T25 remain TODO (T03 blocked on GPU environment being unspecified).",
     "Dependencies are hard gates; acceptance requires evidence, not narrative.",
     "GPU N/A means this package is offline; it does not certify integrated GPU behavior.",
     "Create a work-package record from docs/work-package-template.md before implementation; exact acceptance commands are not implemented yet.",
@@ -69,16 +69,16 @@
       "dependencies": [
         "T01"
       ],
-      "status": "IN_PROGRESS",
+      "status": "ACCEPTED",
       "checks": {
-        "CPU": "NOT_RUN",
+        "CPU": "PASS",
         "GPU": "N/A",
         "LIVE_MODEL": "N/A",
-        "REVIEW": "NOT_RUN"
+        "REVIEW": "PASS"
       },
       "evidence": [
         "docs/work-packages/T02.md",
-        "configs/kernelbench/snapshot-files.manifest.json"
+        "docs/evidence/T02.json"
       ],
       "work_package_record": "docs/work-packages/T02.md",
       "blocker": null

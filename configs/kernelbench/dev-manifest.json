@@ -1,0 +1,281 @@
+{
+  "schema_version": "1.0",
+  "suite": "kernelbench",
+  "note": "Frozen development subset referencing the pinned upstream snapshot. Problem files stay in the local gitignored research cache; this manifest carries ids, names and sha256 only. It is a selection of upstream data, not a new problem bank.",
+  "upstream": {
+    "repository": "ScalingIntelligence/KernelBench",
+    "commit": "423217d9fda91e0c2d67e4a43bf62f96f6d104f1",
+    "dataset_module": "src/kernelbench/dataset.py",
+    "dataset_module_sha256": "53d1f24a73bca99855a61de45d0c7bcf21d0bf0f59959e4ad3cc9ded2cee3475",
+    "selection_rule": "LEVEL1_REPRESENTATIVE_IDS / LEVEL2_REPRESENTATIVE_IDS / LEVEL3_REPRESENTATIVE_IDS from src/kernelbench/dataset.py (equivalent to BaseDataset.get_representative_subset, availability-filtered)",
+    "files_manifest": "configs/kernelbench/snapshot-files.manifest.json",
+    "files_manifest_sha256": "52b6ae787155e2ae1431f00c9706278a50aadb804c9241314200017a11349b12"
+  },
+  "problems": [
+    {
+      "level": 1,
+      "problem_id": 1,
+      "name": "1_Square_matrix_multiplication_.py",
+      "sha256": "7626d611b8f2c97a71ae40d731da8cb7ba067dc43cc2f3e8185ad85c68533f30",
+      "task_id": "kernelbench-l1-p001"
+    },
+    {
+      "level": 1,
+      "problem_id": 3,
+      "name": "3_Batched_matrix_multiplication.py",
+      "sha256": "310fb3bdf4f69ea178a5b5868bf204e83196cba71e4750be3fbbcb68b78d37f7",
+      "task_id": "kernelbench-l1-p003"
+    },
+    {
+      "level": 1,
+      "problem_id": 6,
+      "name": "6_Matmul_with_large_K_dimension_.py",
+      "sha256": "18287323c43d000af0eaf384d8e142424182fb48e17cc317fc7009bb345bd7b0",
+      "task_id": "kernelbench-l1-p006"
+    },
+    {
+      "level": 1,
+      "problem_id": 18,
+      "name": "18_Matmul_with_transposed_both.py",
+      "sha256": "58f61b728890855d009329dbdbd0da4ac7d9390e46f7199b27dc353dd512ad19",
+      "task_id": "kernelbench-l1-p018"
+    },
+    {
+      "level": 1,
+      "problem_id": 23,
+      "name": "23_Softmax.py",
+      "sha256": "c9fa418447f2d64d5aeb4763d817137c1cb5a6b411a580f0b6291a7b29301d75",
+      "task_id": "kernelbench-l1-p023"
+    },
+    {
+      "level": 1,
+      "problem_id": 26,
+      "name": "26_GELU_.py",
+      "sha256": "6c08367ffb8a4153714fb8390ece47d8f0294f9e2152245840f3a9764ac8b69b",
+      "task_id": "kernelbench-l1-p026"
+    },
+    {
+      "level": 1,
+      "problem_id": 33,
+      "name": "33_BatchNorm.py",
+      "sha256": "0b7f5ca58d6ec76a6faef2f583fa84ab2c14c0bfd09e7faf8c6289187a56cfc4",
+      "task_id": "kernelbench-l1-p033"
+    },
+    {
+      "level": 1,
+      "problem_id": 36,
+      "name": "36_RMSNorm_.py",
+      "sha256": "8f6ee1b9ee212f3cee1069eff2b7935482713c99596b1024801868065e5a2b1d",
+      "task_id": "kernelbench-l1-p036"
+    },
+    {
+      "level": 1,
+      "problem_id": 40,
+      "name": "40_LayerNorm.py",
+      "sha256": "8d975d7cee6946513dcfb6ba84c971e53a890f9d9c6f0a4fb828904941f25975",
+      "task_id": "kernelbench-l1-p040"
+    },
+    {
+      "level": 1,
+      "problem_id": 42,
+      "name": "42_Max_Pooling_2D.py",
+      "sha256": "615a5a6d6baa0d13774cc17b305dd0588625e13a829bdef16395f5cd101e06bc",
+      "task_id": "kernelbench-l1-p042"
+    },
+    {
+      "level": 1,
+      "problem_id": 48,
+      "name": "48_Mean_reduction_over_a_dimension.py",
+      "sha256": "5fedf7c91096731d6d0edf00ade5b31b835c07e39be159512446fb4479fd5b35",
+      "task_id": "kernelbench-l1-p048"
+    },
+    {
+      "level": 1,
+      "problem_id": 54,
+      "name": "54_conv_standard_3D__square_input__square_kernel.py",
+      "sha256": "98b074edf89802ed79b9b99c37d94eb1d781ab46037614390046ebf92a1f2f0d",
+      "task_id": "kernelbench-l1-p054"
+    },
+    {
+      "level": 1,
+      "problem_id": 57,
+      "name": "57_conv_transposed_2D__square_input__square_kernel.py",
+      "sha256": "9e84df45806e4fa36bef9b8ef98f255d86470ff81735e9ee98d2c721634fde52",
+      "task_id": "kernelbench-l1-p057"
+    },
+    {
+      "level": 1,
+      "problem_id": 65,
+      "name": "65_conv_transposed_2D__square_input__asymmetric_kernel.py",
+      "sha256": "5a2f6a47e83931e2c3d1e78cff3f6793415f963308ba0c2eb5c1a27596c3cfde",
+      "task_id": "kernelbench-l1-p065"
+    },
+    {
+      "level": 1,
+      "problem_id": 77,
+      "name": "77_conv_transposed_3D_square_input_square_kernel___padded____dilated____strided__.py",
+      "sha256": "a16f0026c2249c9f6e3a151fbf3b42db29dd17640a0ef9f001cbd1d09d5f9444",
+      "task_id": "kernelbench-l1-p077"
+    },
+    {
+      "level": 1,
+      "problem_id": 82,
+      "name": "82_conv_depthwise_2D_square_input_square_kernel.py",
+      "sha256": "23578d4c1257ee9c2b86ab8969eb91292aca2b9699ab15b2b72ea7e8d438078f",
+      "task_id": "kernelbench-l1-p082"
+    },
+    {
+      "level": 1,
+      "problem_id": 86,
+      "name": "86_conv_depthwise_separable_2D.py",
+      "sha256": "cee48ffdb13900385835c6390154a3886bd9ad8b84154ae1d37f0148cd8feabe",
+      "task_id": "kernelbench-l1-p086"
+    },
+    {
+      "level": 1,
+      "problem_id": 87,
+      "name": "87_conv_pointwise_2D.py",
+      "sha256": "5608fbde926998ce10992790b9c1b09a15481cbd005472b0ad54d70db41eb1d8",
+      "task_id": "kernelbench-l1-p087"
+    },
+    {
+      "level": 2,
+      "problem_id": 1,
+      "name": "1_Conv2D_ReLU_BiasAdd.py",
+      "sha256": "45ee3a3db038396c982207b36812086bf1b94472ebbf229c5e76c5ea0b90f89f",
+      "task_id": "kernelbench-l2-p001"
+    },
+    {
+      "level": 2,
+      "problem_id": 2,
+      "name": "2_ConvTranspose2d_BiasAdd_Clamp_Scaling_Clamp_Divide.py",
+      "sha256": "2b69e31d12d28d291fb5b56634176269ba6513e8d240fc01d6f8a7b706abc109",
+      "task_id": "kernelbench-l2-p002"
+    },
+    {
+      "level": 2,
+      "problem_id": 8,
+      "name": "8_Conv3d_Divide_Max_GlobalAvgPool_BiasAdd_Sum.py",
+      "sha256": "80e0126cbb0f9287f7118cba2e8bfa73c1c3401b6f590e10bc240bdd0223d06a",
+      "task_id": "kernelbench-l2-p008"
+    },
+    {
+      "level": 2,
+      "problem_id": 18,
+      "name": "18_Matmul_Sum_Max_AvgPool_LogSumExp_LogSumExp.py",
+      "sha256": "0a7391a12a0c88164045b68580b57f51efee843465aa0060d86fbb5f00f65861",
+      "task_id": "kernelbench-l2-p018"
+    },
+    {
+      "level": 2,
+      "problem_id": 23,
+      "name": "23_Conv3d_GroupNorm_Mean.py",
+      "sha256": "9677116401cf1ec4ac00eb19cb6f08762d63b87b137e6ed10f2c8ec3741310fb",
+      "task_id": "kernelbench-l2-p023"
+    },
+    {
+      "level": 2,
+      "problem_id": 28,
+      "name": "28_BMM_InstanceNorm_Sum_ResidualAdd_Multiply.py",
+      "sha256": "5ed41cc50c8b2dfe65d03e642cc471dc3ad7cf6858608c65b911c235946ef00e",
+      "task_id": "kernelbench-l2-p028"
+    },
+    {
+      "level": 2,
+      "problem_id": 33,
+      "name": "33_Gemm_Scale_BatchNorm.py",
+      "sha256": "50f77c555d65b3cfc908bce9ee4e13fdf2f1ee82f5bbb3c34d9e544e92b1509b",
+      "task_id": "kernelbench-l2-p033"
+    },
+    {
+      "level": 2,
+      "problem_id": 43,
+      "name": "43_Conv3d_Max_LogSumExp_ReLU.py",
+      "sha256": "e274319f222a8938fe0fe51c0f9093bedc7c90f00f1b684ba9be8f39e5db6b19",
+      "task_id": "kernelbench-l2-p043"
+    },
+    {
+      "level": 3,
+      "problem_id": 1,
+      "name": "1_MLP.py",
+      "sha256": "3fabb8e6bb6f0f5a9524a62226ce25fc3a8f5289464e809a29a85919536c4efc",
+      "task_id": "kernelbench-l3-p001"
+    },
+    {
+      "level": 3,
+      "problem_id": 5,
+      "name": "5_AlexNet.py",
+      "sha256": "021d44956638c6a4f77eb3a60b0fdb4a3cdc50540e0268eb86fb9d22d8dd971e",
+      "task_id": "kernelbench-l3-p005"
+    },
+    {
+      "level": 3,
+      "problem_id": 8,
+      "name": "8_ResNetBasicBlock.py",
+      "sha256": "8e1ae06aca5126c9d75e213da14d660b83f2a335059d049cc659b9f0f101a36e",
+      "task_id": "kernelbench-l3-p008"
+    },
+    {
+      "level": 3,
+      "problem_id": 11,
+      "name": "11_VGG16.py",
+      "sha256": "61f70e59d41e85a9b54fa9d060ef1aba3f144d2e4af5859ccba5f82f560a9c81",
+      "task_id": "kernelbench-l3-p011"
+    },
+    {
+      "level": 3,
+      "problem_id": 20,
+      "name": "20_MobileNetV2.py",
+      "sha256": "919ef276726fa3c68f3733fbc818085721bc309513f3b44ddd315773e9a15b85",
+      "task_id": "kernelbench-l3-p020"
+    },
+    {
+      "level": 3,
+      "problem_id": 21,
+      "name": "21_EfficientNetMBConv.py",
+      "sha256": "24e555726c4856120cceaa8dad2dbbca798a56c0a99313c77fbe84c16e37c20b",
+      "task_id": "kernelbench-l3-p021"
+    },
+    {
+      "level": 3,
+      "problem_id": 33,
+      "name": "33_VanillaRNN.py",
+      "sha256": "00cebeed898faa796b965b29e7031422231a7da4d0a2b609d8f1d73a6988abd2",
+      "task_id": "kernelbench-l3-p033"
+    },
+    {
+      "level": 3,
+      "problem_id": 38,
+      "name": "38_LSTMBidirectional.py",
+      "sha256": "84fa50c2d83976b92ef3c0add2b81d08485297afdbd2e4f96702864ec7cd6005",
+      "task_id": "kernelbench-l3-p038"
+    },
+    {
+      "level": 3,
+      "problem_id": 43,
+      "name": "43_MinGPTCausalAttention.py",
+      "sha256": "9d280c98c015edca0e7e521594380f9def43fdea7bbd95f5f71ff83689632900",
+      "task_id": "kernelbench-l3-p043"
+    }
+  ],
+  "protocols": {
+    "upstream_compatible": {
+      "description": "Original KernelBench protocol: problem source, input generation, seed handling and tolerance rules come from the pinned problem files themselves; baseline and timing entry points are the pinned eval.py/timing.py. Extended checks, if any, are reported separately and never mixed into this track.",
+      "references": [
+        {
+          "path": "src/kernelbench/dataset.py",
+          "sha256": "53d1f24a73bca99855a61de45d0c7bcf21d0bf0f59959e4ad3cc9ded2cee3475"
+        },
+        {
+          "path": "src/kernelbench/eval.py",
+          "sha256": "b42ce1268ec64ee7274db307ab98945c1e868792b54689554014b28c41787ee6"
+        },
+        {
+          "path": "src/kernelbench/timing.py",
+          "sha256": "eaabdad5dd042cfaac7159713b5f0c17a9244e65622b504eb3ca909d780854c5"
+        }
+      ]
+    },
+    "extended": []
+  }
+}

@@ -1,6 +1,14 @@
 # NVIDIA 算子优化 Agent 设计
 
-T00 工程基础与 T01 核心 domain 契约已验收：Python 包、CPU 验收命令、依赖锁、CI，以及 12 个不可变契约对象（OperatorSpec/Workload/OptimizationTask/Implementation/MethodProposal/EvaluationResult/TaskResult 等）、版本化 JSON 序列化与内容 hash 身份。[T00 四组跨平台 CI 已通过](https://github.com/yuan-jc/kernelagent/actions/runs/34667461881)。尚未实现 GPU 优化 Agent，T02 及后续功能未开始。
+T00 工程基础、T01 核心 domain 契约与 T02 KernelBench 数据适配已验收：Python 包、CPU 验收命令、12 个不可变契约对象与内容 hash 身份，以及固定 commit 的 KernelBench 快照读取器（270 题双 hash 清单、35 题冻结开发清单、协议分离、`kernelagent bench verify` 完整性校验）。[T00 四组跨平台 CI 已通过](https://github.com/yuan-jc/kernelagent/actions/runs/34667461881)。尚未实现 GPU 优化 Agent，T05 及后续 GPU 功能未开始。
+
+## KernelBench 快照（T02）
+
+```bash
+python -m uv run --locked kernelagent bench verify   # 校验本地快照与提交的清单一致
+```
+
+快照题目文件留在本地 gitignored 缓存，公开仓库只携带 hash 清单（`configs/kernelbench/`）；开发清单为上游代表子集的引用，不是新题库。adapter 只读元数据与字节，不执行题目代码——加载与评测属于 T04/T05 的 GPU worker。
 
 ## 核心 domain（T01）
 
@@ -12,8 +20,10 @@ from kernelagent.domain import IOPort, OperatorSpec, dumps, loads
 spec = OperatorSpec(
     operator_id="matmul",
     granularity="operator",
-    inputs=(IOPort(name="a", dtype="float32", shape=(-1, -1)),
-            IOPort(name="b", dtype="float32", shape=(-1, -1))),
+    inputs=(
+        IOPort(name="a", dtype="float32", shape=(-1, -1)),
+        IOPort(name="b", dtype="float32", shape=(-1, -1)),
+    ),
     outputs=(IOPort(name="y", dtype="float32", shape=(-1, -1)),),
 )
 restored = loads(dumps(spec))  # 往返保持语义；非法字段在构造期被拒绝

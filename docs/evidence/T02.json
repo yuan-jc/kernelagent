@@ -1,0 +1,37 @@
+{
+  "work_package": "T02",
+  "status": "ACCEPTED",
+  "repository": "https://github.com/yuan-jc/kernelagent",
+  "local": {
+    "platform": "Windows",
+    "python": "3.13.3",
+    "uv": "0.12.13",
+    "cpu_counts": {"passed": 150, "failed": 0, "errors": 0, "skipped": 0},
+    "run_id": "d8d3330dd7bb4acc8d0b962fe1583f41",
+    "checks": {
+      "snapshot_list_get_consistency": "PASS",
+      "missing_id_and_tamper_negative_paths": "PASS",
+      "protocol_separation_and_merge_refusal": "PASS",
+      "committed_dev_manifest_consistency_ci_safe": "PASS",
+      "real_snapshot_bench_verify_270_files": "PASS",
+      "cli_negative_corrupted_copy_exit_1": "PASS",
+      "t00_t01_regression_suite": "PASS",
+      "ruff_check_and_format": "PASS",
+      "wheel_build_with_adapters_clean_install": "PASS"
+    }
+  },
+  "deliverables": [
+    "src/kernelagent/adapters/benchmarks/kernelbench.py: read-only snapshot reader (FilesManifest, KernelBenchSnapshot, TaskNotFoundError with available-id hint, verify_snapshot, DevManifest loader/checker, run_verify)",
+    "configs/kernelbench/snapshot-files.manifest.json: 270 problem files at pinned commit 423217d9 with git blob sha1 + sha256",
+    "configs/kernelbench/dev-manifest.json: frozen dev subset (L1=18, L2=8, L3=9) with per-problem sha256, upstream protocol references (dataset/eval/timing.py hashes), separate extended section (empty)",
+    "CLI: kernelagent bench verify (--root/--manifest/--dev-manifest), exit 0 only on fully verified snapshot and dev subset",
+    "research/fetch_kernelbench_problems.py: pinned-commit fetcher with blob SHA verification"
+  ],
+  "review": "PASS: selection references upstream data with hashes, no parallel problem bank; adapter never executes problem code; upstream/extended protocols structurally separated with refused merge; notes recorded in work package card",
+  "gpu": "N/A",
+  "live_model": "N/A",
+  "limitations": [
+    "Problem importability, input generation semantics and tolerance rules are verified in T05 on a GPU worker, not here.",
+    "Problem sources remain in the local gitignored research cache; the public repo carries hashes and manifests only."
+  ]
+}

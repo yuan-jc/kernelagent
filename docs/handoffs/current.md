@@ -1,15 +1,15 @@
 # 当前开发交接
 
 - 更新时间：2026-09-12
-- 当前工作包：T02，IN_PROGRESS（数据准备检查点完成，adapter 未实现）；T01 ACCEPTED；T03 及以后未动。
-- 当前代码状态：T00 工程验收入口 + T01 核心 domain 契约；T02 已完成 KernelBench 快照题目抓取（270 文件过 blob SHA 校验，hash 清单入库），adapter/测试/CLI 未写。
-- 已完成：详细设计、任务计划、T00、T01，已上传 GitHub 公开仓库 https://github.com/yuan-jc/kernelagent。
-- 已通过检查：T01 本地 117 项 CPU 测试、ruff、wheel；T02 数据清单校验（命令与 hash 见 docs/work-packages/T02.md）。
-- 被验证实现：T01 提交 `0813410`；T02 检查点随后提交。
-- 尚未执行：T02 验收表全部检查项（adapter 未实现）；T03 及以后；没有 GPU/模型实验。
-- 环境未知项：目标 NVIDIA GPU、Linux worker 访问方式、NCU 权限、运行时模型配置。网络：GitHub 访问需走本机代理 127.0.0.1:7893（已配置为本仓库 git http.proxy，仅仓库级）。
+- 当前工作包：T02，ACCEPTED；下一个可做包是 T08（依赖 T01 已满足）与 T09（依赖 T07/T08，暂不可做）；T03 及 GPU 链未动。
+- 当前代码状态：T00 工程验收入口 + T01 核心 domain 契约 + T02 KernelBench 数据适配（只读快照读取器、双 hash 清单、冻结开发清单 35 题、协议分离、CLI bench verify、150 项测试）。
+- 已完成：详细设计、任务计划、T00、T01、T02，已上传 GitHub 公开仓库 https://github.com/yuan-jc/kernelagent。
+- 已通过检查：T02 本地 150 项 CPU 测试、ruff、真实快照 bench verify（270/270 + 协议引用 + 子集 18/8/9）、CLI 篡改负例 exit 1、wheel 打包含 adapters。
+- 被验证实现：T02 工作包卡片记录的提交（见 docs/work-packages/T02.md 与 docs/evidence/T02.json）。
+- 尚未执行：T05/T07 及所有 GPU 检查；T08 及以后；没有 GPU/模型实验。
+- 环境未知项：目标 NVIDIA GPU、Linux worker 访问方式、NCU 权限、运行时模型配置。网络：GitHub 访问走本机代理 127.0.0.1:7893（已配置为仓库级 git http.proxy）。
 - 活动作业：无。
-- 下一步：继续 T02——实现 `src/kernelagent/adapters/benchmarks/kernelbench.py`、`configs/kernelbench/dev-manifest.json`、CLI verify 子命令与 test_kernelbench_*.py 正反例，按卡片冻结验收表逐项验收后提交推送。复查命令：`uv run --locked kernelagent check --output artifacts/local`。
+- 下一步：用户要求继续时，按 T08 开发证据存储与身份（SQLite 索引、artifact、追加事件、原子发布和查询；损坏 hash/孤立 artifact 检出；环境/协议变更不误命中；重复 experiment 不产生矛盾终态）；先填写工作包卡片。复查命令：`uv run --locked kernelagent check --output artifacts/local`。
 
 ## 后续每次交接必须补齐
 
