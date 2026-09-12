@@ -111,7 +111,7 @@ def main() -> int:
         for future in concurrent.futures.as_completed(pending):
             try:
                 future.result()
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001 - per-file fetch failures are collected, not swallowed
                 failures.append({"path": pending[future], "reason": str(exc)})
     print(
         json.dumps(
