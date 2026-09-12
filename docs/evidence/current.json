@@ -15,8 +15,9 @@
     "T12a"
   ],
   "pending": {
-    "T11": "external KernelAgent adapter (upstream generation needs LLM credential, same as T12)",
-    "T16/T17/T20/T21/T22": "composites",
+    "T20": "CUDA/CUTLASS search backend (deps satisfied)",
+    "T11": "external KernelAgent adapter (LLM credential blocker)",
+    "T16/T17/T22": "gated by T12 LIVE_MODEL via T16",
     "T12/G5": "LIVE_MODEL needs user provider credentials",
     "LIVE_MODEL": "NOT_RUN"
   },
@@ -633,5 +634,39 @@
     },
     "eval_image": "T18 diagnostic layer sha256:5ce0c61e8d6fc0c053d137e9ad730fe0d9d96810fad7eba24b03ba1f4b2b893e (eval image + tabulate/psutil/pynvml, configs/tritonbench/Dockerfile)",
     "scope_note": "vector_add operator only; other 60 operators out of smoke scope."
+  },
+  "target_ubuntu_t21": {
+    "status": "ACCEPTED",
+    "accepted_at": "2026-09-13",
+    "gpu_checks": {
+      "status": "PASS",
+      "command": "uv run --locked python examples/dispatch_smoke.py --output artifacts/t21",
+      "exit_code": 0,
+      "report": {
+        "path": "artifacts/t21/dispatch-report.json",
+        "sha256": "8d1d3f2055f53ba4d2ed8a0393171be98df7f2722340d8d9e3ec6fbbcd17a4f6"
+      },
+      "cases": "guard enforced against an exact element-count cap (2x workload refused to fallback with correct reference output); degradation retreat pinned by unit tests; wrapper itself timed (5 batches)"
+    },
+    "cpu_checks": {
+      "status": "PASS",
+      "unit_tests": "9/9 (weights, uncovered workloads, guards, conservative retreat, missing workloads)",
+      "full_check": {
+        "command": "uv run --locked kernelagent check --output artifacts/t21-cpu",
+        "exit_code": 0,
+        "counts": {
+          "total": 415,
+          "passed": 412,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 3
+        },
+        "report": {
+          "path": "artifacts/t21-cpu/b10ffd2971a44bba8916d1108416aee2/report.json",
+          "sha256": "0056927589b06b8558491403c156eda582f1f7dfde8adfa4dc5e2d730d336055"
+        }
+      }
+    },
+    "scope_note": "Single candidate + fallback; multi-impl competitive selection deferred."
   }
 }

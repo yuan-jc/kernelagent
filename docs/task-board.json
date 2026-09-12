@@ -17,7 +17,7 @@
     "N/A"
   ],
   "notes": [
-    "Target: Ubuntu + NVIDIA; T03-T07, T09, T10, T13-T15, T18, T19 ACCEPTED by 2026-09-13; T12 READY_FOR_ACCEPTANCE (LIVE_MODEL user credentials); remaining: T11/T16/T17/T20-T25.",
+    "Target: Ubuntu + NVIDIA; T03-T07, T09, T10, T13-T15, T18, T19, T21 ACCEPTED by 2026-09-13; T12 READY_FOR_ACCEPTANCE (LIVE_MODEL user credentials); remaining: T11/T16/T17/T20/T22-T25.",
     "Current evidence is consolidated in docs/evidence/current.json; pre-cleanup history remains at Git commit 1b4a306.",
     "T04a is process mechanics, not a sandbox; T12a is offline model plumbing, not live generation.",
     "No target GPU or live model acceptance is implied by CPU tests or CI. Preserve parent package gates."
@@ -513,15 +513,18 @@
         "T09",
         "T13"
       ],
-      "status": "TODO",
+      "status": "ACCEPTED",
       "checks": {
-        "CPU": "NOT_RUN",
-        "GPU": "NOT_RUN",
+        "CPU": "PASS",
+        "GPU": "PASS",
         "LIVE_MODEL": "N/A",
-        "REVIEW": "NOT_RUN"
+        "REVIEW": "PASS"
       },
-      "evidence": [],
-      "work_package_record": null,
+      "evidence": [
+        "docs/work-packages/T21.md",
+        "artifacts/t21/dispatch-report.json"
+      ],
+      "work_package_record": "docs/work-packages/T21.md",
       "blocker": null
     },
     {
