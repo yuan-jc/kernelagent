@@ -271,3 +271,94 @@ def test_worker_imports_no_gpu_or_third_party_helpers():
     )
     run = __import__("subprocess").run([sys.executable, "-c", code], capture_output=True, text=True)
     assert run.returncode == 0, run.stderr
+
+
+# -- review repros (artifacts/review-t04a/review.md): each must fail on the
+#    unfixed implementation and pass after the fix -------------------------
+
+
+def test_repro_request_id_traversal_is_rejected(tmp_path):
+    with pytest.raises(ValueError):
+        make_request((PYTHON, "-c", "pass"), tmp_path, request_id="x/../../escaped")
+    with pytest.raises(ValueError):
+        make_request((PYTHON, "-c", "pass"), tmp_path, request_id="a\b")
+
+
+def test_repro_workdir_stays_inside_workspace(tmp_path):
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    outcome = execute(
+        make_request((PYTHON, "-c", "print('ok')"), tmp_path, keep_workdir_on_failure=False)
+    )
+    assert outcome.status == "completed"
+    for entry in workspace.iterdir():
+        assert "payload-" in entry.name
+
+
+def test_repro_descendants_die_when_payload_exits_early(tmp_path):
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    late_file = workspace / "late.txt"
+    payload = (
+        "import subprocess, sys\n"
+        "subprocess.Popen([sys.executable, '-c', "
+        f"\"import time, sys; time.sleep(2); open(sys.argv[1], 'w').write('late')\", "
+        f"{str(late_file)!r}])\n"
+    )
+    outcome = execute(make_request((PYTHON, "-c", payload), tmp_path, timeout_seconds=10))
+    assert outcome.status == "completed"
+    time.sleep(3.5)  # past the descendant's 2s write delay
+    assert not late_file.exists(), "descendant outlived the request budget"
+
+
+def test_repro_log_tail_does_not_load_whole_file(tmp_path, monkeypatch):
+    marker = "END-OF-LOG"
+    payload = "import sys; sys.stdout.write('x' * 4194304 + %r)" % marker
+
+    def _boom(self, *args, **kwargs):
+        raise AssertionError("unbounded read_bytes used for tail read")
+
+    monkeypatch.setattr("pathlib.Path.read_bytes", _boom)
+    outcome = execute(make_request((PYTHON, "-c", payload), tmp_path, output_tail_chars=16))
+    assert outcome.status == "completed"
+    assert outcome.stdout_tail.endswith(marker)
+
+
+def test_repro_missing_executable_returns_infra_error(tmp_path):
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    outcome = execute(make_request(("definitely-missing-binary-xyz",), tmp_path))
+    assert outcome.status == "infra_error"
+    assert outcome.workdir is None
+    assert not any(workspace.iterdir()), "infra failure must clean its payload directory"
+
+
+def test_repro_cleanup_failure_is_reported(tmp_path, monkeypatch):
+    import shutil
+
+    monkeypatch.setattr(shutil, "rmtree", lambda *a, **k: None)
+    outcome = execute(
+        make_request(
+            (PYTHON, "-c", "open('leftover.txt', 'w').write('x'); import sys; sys.exit(1)"),
+            tmp_path,
+        )
+    )
+    assert outcome.status == "failed"
+    assert outcome.workdir is not None, "undeleted workdir must be reported, not claimed clean"
+
+
+def test_repro_env_extra_outer_container_must_be_tuple(tmp_path):
+    with pytest.raises(ValueError):
+        make_request((PYTHON, "-c", "pass"), tmp_path, env_extra=[("A", "1")])
+
+
+def test_repro_keep_workdir_must_be_bool(tmp_path):
+    with pytest.raises(ValueError):
+        make_request((PYTHON, "-c", "pass"), tmp_path, keep_workdir_on_failure="yes")
+
+
+def test_repro_nul_bytes_rejected_in_request(tmp_path):
+    with pytest.raises(ValueError):
+        make_request((PYTHON + "\0bad", "-c", "pass"), tmp_path)
+    with pytest.raises(ValueError):
+        make_request((PYTHON, "-c", "pass"), tmp_path, env_extra=(("A", "v\0"),))

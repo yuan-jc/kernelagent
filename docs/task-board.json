@@ -17,7 +17,7 @@
     "N/A"
   ],
   "notes": [
-    "T00-T02, T04a, T08 and T12a accepted; T03 is READY_FOR_ACCEPTANCE - probe tooling verified after review fixes (native 6/6 pass incl. kernel round trip; WSL kernel launch pass), formal GPU acceptance waits for the target Ubuntu + NVIDIA run per frozen spec.",
+    "T00-T02, T04a, T08 and T12a delivered; T04a is READY_FOR_ACCEPTANCE pending independent review of the 2026-09-12 review fixes (request_id traversal, descendant lifecycle, bounded tail reads, structured infra/cleanup outcomes, container typing). T03 is READY_FOR_ACCEPTANCE - fixed probe passes natively (6/6) and in WSL (kernel pass); formal GPU acceptance waits for the target Ubuntu + NVIDIA run per frozen spec.",
     "T04a is a user-approved offline split of T04 (process isolation mechanics); parent T04 acceptance contract (OS-enforced isolation, real GPU eval requests, network-off) unchanged.",
     "T12a is a user-approved offline split of T12: parent T12 acceptance contract (real model-to-code-to-GPU loop) is unchanged.",
     "Dependencies are hard gates; acceptance requires evidence, not narrative.",
@@ -103,7 +103,7 @@
         "docs/evidence/T03.json"
       ],
       "work_package_record": "docs/work-packages/T03.md",
-      "blocker": "No environment can complete a verified kernel write-read round trip: host VM GPU-PV blocks device memory read-back, nested WSL driver segfaults; physical NVIDIA card not yet installed. Rerun 'kernelagent probe' on a real GPU environment to accept."
+      "blocker": "Target Ubuntu + NVIDIA formal acceptance not yet run (frozen spec: probe report valid, cuda_kernel_launch pass with verified 42 round trip). Local fixed-probe runs (native 6/6 pass, WSL kernel pass) are evidence but do not substitute."
     },
     {
       "id": "T04",
@@ -129,7 +129,7 @@
       "dependencies": [
         "T01"
       ],
-      "status": "ACCEPTED",
+      "status": "READY_FOR_ACCEPTANCE",
       "checks": {
         "CPU": "PASS",
         "GPU": "N/A",
@@ -141,7 +141,7 @@
         "docs/evidence/T04a.json"
       ],
       "work_package_record": "docs/work-packages/T04a.md",
-      "blocker": null
+      "blocker": "Pending independent review of the 2026-09-12 review fixes (docs/evidence/review-fixes-t04a.json); ACCEPTED only after review confirms."
     },
     {
       "id": "T05",

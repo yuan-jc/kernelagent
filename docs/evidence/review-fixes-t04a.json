@@ -1,0 +1,35 @@
+{
+  "kind": "t04a_review_fix",
+  "review_report": "artifacts/review-t04a/review.md",
+  "baseline_commit": "efeba3b3691aeecef6e166cbb7bcd1c816888c15",
+  "status": "READY_FOR_ACCEPTANCE",
+  "review_note": "Delivered per GLM-next workflow: fixes + negative-first evidence; restores to ACCEPTED only after independent review confirms. T04a acceptance status downgraded from ACCEPTED to READY_FOR_ACCEPTANCE as part of this round.",
+  "findings_fixed": [
+    {"id": "P1-1", "finding": "request_id path traversal escapes workspace (workdir built from unsanitized id)", "fix": "request_id restricted to one safe path component; workdir named from independent uuid; ensure_within before mkdir; cleanup honors boundary", "repro": "test_repro_request_id_traversal_is_rejected"},
+    {"id": "P1-2", "finding": "runner waits on direct child only; descendants outlive the request budget", "fix": "Windows Job Object with KILL_ON_JOB_CLOSE (terminate on timeout, close at end); POSIX captures pgid at spawn and killpg-reaps the group on every exit path; setsid-escape and assign-race documented as parent-T04 container scope", "repro": "test_repro_descendants_die_when_payload_exits_early"},
+    {"id": "P1-3", "finding": "log tail read loaded the whole candidate log into parent memory", "fix": "seek-based bounded tail read (byte limit, UTF-8 replace decode)", "repro": "test_repro_log_tail_does_not_load_whole_file (read_bytes monkeypatch witness)"},
+    {"id": "P2-4", "finding": "Popen failure raised a bare exception and left the payload dir; cleanup failure silently claimed a clean directory", "fix": "startup OSError becomes a structured infra_error outcome with cleanup; undeletable workdir is reported in outcome.workdir", "repro": "test_repro_missing_executable_returns_infra_error; test_repro_cleanup_failure_is_reported"},
+    {"id": "P2-5", "finding": "frozen request accepted mutable outer container and unsafe bytes", "fix": "env_extra outer tuple check; keep_workdir_on_failure bool check; NUL bytes rejected in argv and env values", "repro": "test_repro_env_extra_outer_container_must_be_tuple; test_repro_keep_workdir_must_be_bool; test_repro_nul_bytes_rejected_in_request"},
+    {"id": "P2-6", "finding": "task board and T03.json still attributed the block to GPU-PV/physical card, contradicting the superseded probe-bug analysis; handoff mixed 232/293 counts", "fix": "T03 blocker restated as 'target Ubuntu/NVIDIA formal acceptance pending'; historical reports kept as observations; handoff made consistent", "repro": "n/a (documentation)"}
+  ],
+  "verification": {
+    "repro_before_fix": "8 failed / 1 sanity passed (run on unfixed working tree)",
+    "cpu_after_fix": {
+      "command": "uv run --locked kernelagent check --output artifacts/t04a-fix",
+      "status": "PASS",
+      "run_id": "a1dec44d57304eccb3c08b174ef1765b",
+      "counts": {"passed": 302, "failed": 0, "errors": 0, "skipped": 0}
+    },
+    "static_checks": {
+      "uv run --locked ruff check .": "PASS",
+      "uv run --locked ruff format --check .": "PASS",
+      "uv run --locked kernelagent bench verify": "PASS 270/270 (unchanged snapshot)"
+    },
+    "distribution": "uv build + clean venv install; traversal-rejection and worker execution smoke passed"
+  },
+  "not_run": [
+    "Target Ubuntu + NVIDIA formal T03/T04 acceptance (frozen spec unchanged)",
+    "POSIX setsid-escape and container-level enforcement verification (parent T04 on Linux)",
+    "Post-fix CI at commit time (will be bound here after push)"
+  ]
+}

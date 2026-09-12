@@ -1,17 +1,17 @@
 # 当前开发交接
 
 - 更新时间：2026-09-12
-- 归档终检：本会话收尾时全套检验通过——ruff check/format 干净、232 项 CPU 测试全过（run_id 47a1ca2871154042ae056a54e1553538）、KernelBench 快照校验 270/270（开发子集 18/8/9）、wheel 干净安装四模块导入正常、证据库 7 份报告 audit healthy；工作区干净，本地与 origin/main 同步。
-- 当前工作包：T12a（模型客户端离线层），ACCEPTED；T03 READY_FOR_ACCEPTANCE（等实体卡）；T00/T01/T02/T08 ACCEPTED；其余等 GPU 链。
-- 当前代码状态：T00 工程验收入口 + T01 domain 契约 + T02 KernelBench 数据适配 + T03 GPU 环境探测 + T08 证据存储 + T12a 模型客户端离线层 + T04a 可信 worker 进程隔离机制（私有工作目录、环境净化、超时杀进程树、可信目录篡改检测，293 项测试）。
-- 已完成：详细设计、任务计划、T00–T03、T08、T12a、T04a，已上传 GitHub 公开仓库 https://github.com/yuan-jc/kernelagent。
-- 已通过检查：本地 293 项 CPU 测试、ruff、wheel 干净安装含 worker 执行冒烟；修复后探针实测 native 6/6 全 pass、WSL kernel 启动 pass，报告已入证据库。
-- 被验证实现：T03 提交 937b564、T12a 提交见 docs/work-packages/T12a.md 与 docs/evidence/T12a.json。
-- 关键环境发现（2026-09-12 审查后修正）：GPT-6 审查发现 probe 把设备地址直接放进 kernelParams（缺一层间接）且绑定了旧内存 ABI 符号——此前"GPU-PV 拒绝回读/WSL 驱动 SIGSEGV"的结论均被该缺陷污染，已标记 SUPERSEDED。修复后探针实测：本机 Windows native 6/6 全 pass（设备内存往返写读 42），WSL kernel 启动也 pass（仅 nvcc 缺失、ncu shim 损坏）。T03 正式验收仍按冻结规格等待目标 Ubuntu + NVIDIA 环境复跑，本机通过不替代验收。审查修复详情见 docs/evidence/review-fixes-2026-09-12.json。
-- 尚未执行：T04–T07、T09–T11、T12 主体（真实模型闭环）、T13–T25；没有 GPU/模型实验。
+- 当前工作包：T04a 修复轮，**READY_FOR_ACCEPTANCE**（审查发现 5 项缺陷已修复并附反例证据，待独立审查确认后恢复 ACCEPTED）。
+- 当前唯一有效状态：本地与 origin/main 同步于 `6f40d49`；本轮修复提交后以该提交为准（提交 SHA 与 CI 绑定记录在 docs/evidence/review-fixes-t04a.json）。
+- 当前代码状态（单一事实）：T00 工程验收入口、T01 domain 契约（严格反序列化）、T02 KernelBench 数据适配、T03 GPU 环境探测（READY_FOR_ACCEPTANCE）、T04a 可信 worker 进程隔离（修复轮）、T08 证据存储（消费时校验）、T12a 模型客户端离线层；**当前测试基线 302 项全过**（历史数字 15/117/150/232/269/293 均为各时点快照，不再引用）。
+- 已完成：详细设计、任务计划、T00–T03、T08、T12a、T04a（修复轮），已上传 GitHub 公开仓库 https://github.com/yuan-jc/kernelagent。
+- 已通过检查（本轮）：302 项 CPU 测试、ruff check/format、KernelBench 快照 270/270、wheel 干净安装含严格契约与 worker 冒烟。
+- 环境结论（审查后修正，旧归因作废）：修复前探针存在 kernelParams 间接寻址与旧 ABI 缺陷，此前"GPU-PV 拒绝回读/WSL 驱动 SIGSEGV"的结论 SUPERSEDED。修复后探针实测：本机 native 6/6 全 pass（设备内存往返写读 42），WSL kernel 启动 pass（nvcc 缺失、ncu shim 损坏为真实缺口）。审查修复详情见 docs/evidence/review-fixes-2026-09-12.json 与 docs/evidence/review-fixes-t04a.json。
+- T03 唯一真实阻塞：目标 Ubuntu + NVIDIA 环境的正式验收尚未执行（冻结规格：报告有效 + cuda_kernel_launch pass + 42 写读验证 + 证据入库）。本机通过不替代验收。
+- 尚未执行：T04 父包（容器级隔离 + 真实 GPU 评测请求）、T05–T07、T09–T11、T12 主体（真实模型闭环）、T13–T25；没有 GPU/模型实验。
 - 网络与工具：GitHub 走本机代理 127.0.0.1:7893（仓库级 git http.proxy）；CI 失败用"干净 clone + uv sync --locked + 复现 workflow 命令"本地诊断。
 - 活动作业：无。
-- 下一步：(a) 实体卡/真实 Ubuntu 就绪 → 复跑 `kernelagent probe` 验收 T03 → 父包 T04 用真实 GPU 评测请求验收 worker；(b) VM 使用窗口期无其它可诚实推进的工作包（T13/T14/T18–T21 均依赖 GPU 链上未验收的包，不硬凑）。复查命令：`uv run --locked kernelagent check --output artifacts/local`。
+- 下一步：(a) 本轮修复经独立审查确认后 T04a 恢复 ACCEPTED；(b) 目标 Ubuntu 环境就绪 → 复跑 probe 验收 T03 → 按 GLM-next 分包计划推进 T04 父包（容器隔离 + 真实 GPU 评测请求）→ T05。复查命令：`uv run --locked kernelagent check --output artifacts/local`。
 
 ## 后续每次交接必须补齐
 
