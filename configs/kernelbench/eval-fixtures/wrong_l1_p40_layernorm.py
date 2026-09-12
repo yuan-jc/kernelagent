@@ -1,6 +1,5 @@
 # Known-wrong candidate: skips the normalization entirely and returns the
 # raw input (weights unused).
-import torch
 import torch.nn as nn
 
 

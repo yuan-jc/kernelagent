@@ -1,6 +1,5 @@
 # Known-correct candidate: mirrors the pinned reference structure exactly,
 # so the upstream set_seed weight-sync produces identical parameters.
-import torch
 import torch.nn as nn
 
 
