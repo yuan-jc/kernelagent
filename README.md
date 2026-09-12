@@ -1,6 +1,6 @@
 # NVIDIA 算子优化 Agent 设计
 
-本仓库已开始 T00 工程基础开发：Python 包、CPU 验收命令、依赖锁和 CI。尚未实现 GPU 优化 Agent，T01 及后续功能未开始。
+T00 工程基础已验收：Python 包、CPU 验收命令、依赖锁和 CI。[四组跨平台 CI 已通过](https://github.com/yuan-jc/kernelagent/actions/runs/34667461881)。尚未实现 GPU 优化 Agent，T01 及后续功能未开始。
 
 ## 本地开发（Windows / Linux）
 

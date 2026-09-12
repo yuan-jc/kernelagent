@@ -17,7 +17,7 @@
     "N/A"
   ],
   "notes": [
-    "No implementation work package has been started or accepted.",
+    "T00 accepted after local checks and four successful CPU CI jobs; T01-T25 remain TODO.",
     "Dependencies are hard gates; acceptance requires evidence, not narrative.",
     "GPU N/A means this package is offline; it does not certify integrated GPU behavior.",
     "Create a work-package record from docs/work-package-template.md before implementation; exact acceptance commands are not implemented yet.",
@@ -28,7 +28,7 @@
       "id": "T00",
       "title": "工程与验收入口",
       "dependencies": [],
-      "status": "READY_FOR_ACCEPTANCE",
+      "status": "ACCEPTED",
       "checks": {
         "CPU": "PASS",
         "GPU": "N/A",
@@ -36,7 +36,9 @@
         "REVIEW": "PASS"
       },
       "evidence": [
-        "docs/work-packages/T00.md"
+        "docs/work-packages/T00.md",
+        "docs/evidence/T00.json",
+        "https://github.com/yuan-jc/kernelagent/actions/runs/34667461881"
       ],
       "work_package_record": "docs/work-packages/T00.md",
       "blocker": null

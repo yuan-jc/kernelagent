@@ -1,14 +1,15 @@
 # 当前开发交接
 
 - 更新时间：2026-09-12
-- 当前工作包：T00，READY_FOR_ACCEPTANCE；等待首次推送后的远程 CPU CI。
+- 当前工作包：T00，ACCEPTED；本次到此结束，T01 尚未启动。
 - 当前代码状态：Python 包、CPU check CLI、JSON Schema、uv.lock、pytest 正反例和跨平台 CI 已实现；无 GPU 优化功能。
-- 已完成：详细设计、任务计划及 T00 本地实现。
-- 已通过检查：Windows/Python 3.13.3，15 项 CPU 测试通过；ruff、打包、干净 wheel 安装通过，详情见 `docs/work-packages/T00.md`。
-- 尚未执行：远程 Ubuntu/Windows CPU CI；T01 及全部后续工作包。
+- 已完成：详细设计、任务计划、T00 实现，已上传 GitHub 公开仓库 https://github.com/yuan-jc/kernelagent。
+- 已通过检查：本地 15 项 CPU 测试、ruff、打包、干净 wheel 安装；远程 Ubuntu/Windows × Python 3.11/3.13 全部通过，详情见 `docs/work-packages/T00.md` 和 `docs/evidence/T00.json`。
+- 被验证实现：`d549f92ebf7f904f15d9f4c45c21cac475d95f6f`；之后仅更新验收记录。
+- 尚未执行：T01 及全部后续工作包；没有 GPU/模型实验。
 - 环境未知项：目标 NVIDIA GPU、Linux worker 访问方式、NCU 权限、运行时模型配置。
 - 活动作业：无。
-- 下一步：发布用户授权的 GitHub 公开仓库、核对 CPU CI；通过后接受 T00，本次不自动启动 T01。
+- 下一步：用户要求继续时，按 T01 开发核心 domain；先填写工作包卡片。复查命令：`python -m uv run --locked kernelagent check --output artifacts/local`。
 
 ## 后续每次交接必须补齐
 
