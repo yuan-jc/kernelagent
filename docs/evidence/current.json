@@ -15,7 +15,7 @@
     "T12a"
   ],
   "pending": {
-    "T06/T07": "Next per dependency (both depend on T05); T07 formal timing protocol required before T09",
+    "T06/T09/T10": "Next per dependency (T09 needs T07+T08, both ACCEPTED)",
     "LIVE_MODEL": "NOT_RUN"
   },
   "target_ubuntu_t04": {
@@ -358,5 +358,40 @@
       }
     },
     "scope_note": "Correctness track only; formal timing protocol is T07. Single-GPU serialized."
+  },
+  "target_ubuntu_t07": {
+    "status": "ACCEPTED",
+    "accepted_at": "2026-09-13",
+    "adr": "none (no protocol deviation); TimingProtocol v1 fields frozen in docs/work-packages/T07.md",
+    "gpu_checks": {
+      "status": "PASS",
+      "command": "uv run --locked python examples/timing_protocol_smoke.py --output artifacts/t07",
+      "exit_code": 0,
+      "report": {
+        "path": "artifacts/t07/timing-protocol-report.json",
+        "sha256": "1e39e5199ac87ab89bef2130aadceb1b67b1ad150d72573f4fbfa9dadce75314"
+      },
+      "cases": "aa-eager-1/aa-eager-2 (A/A ratio 95% CI 0.9969-1.0190 covers 1.0), compile role, triton candidate (upstream tempfile path), async-leak counterexample flagged; all 12 raw batch samples per case; source fixed cuda_event"
+    },
+    "cpu_checks": {
+      "status": "PASS",
+      "unit_tests": "7/7 timing protocol tests (source tag enforcement, protocol binding, bootstrap)",
+      "full_check": {
+        "command": "uv run --locked kernelagent check --output artifacts/t07-cpu",
+        "exit_code": 0,
+        "counts": {
+          "total": 350,
+          "passed": 347,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 3
+        },
+        "report": {
+          "path": "artifacts/t07-cpu/4b08b289ba5f416e8ef07d52d0f1c7a4/report.json",
+          "sha256": "861495a5139d740819f4e196f97fcea6b134d33d154ed792441007cc652cd1b7"
+        }
+      }
+    },
+    "scope_note": "Formal timing only; CUDA Graph protocol and cold-cache对照 batches not exercised (fields reserved)."
   }
 }

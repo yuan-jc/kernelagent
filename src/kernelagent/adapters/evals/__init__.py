@@ -1,5 +1,6 @@
-"""Evaluation adapters (control plane): pinned upstream evaluators driven
-inside the T04 container boundary. See ADR-0002."""
+"""Evaluation adapters (control plane): pinned upstream evaluators and
+the formal timing protocol, driven inside the T04 container boundary.
+See ADR-0002 and design §9.3."""
 
 from kernelagent.adapters.evals.kernelbench_eval import (
     EVAL_IMAGE_ID,
@@ -9,12 +10,28 @@ from kernelagent.adapters.evals.kernelbench_eval import (
     derive_upstream_verdict,
     evaluate_case,
 )
+from kernelagent.adapters.evals.timing import (
+    SOURCE_TAG,
+    TimingCase,
+    TimingCaseResult,
+    TimingProtocol,
+    bootstrap_ratio_ci,
+    run_timing_case,
+    validate_timing_payload,
+)
 
 __all__ = [
     "EVAL_IMAGE_ID",
     "EVAL_IMAGE_REPO",
     "EvalCase",
     "EvalCaseResult",
+    "SOURCE_TAG",
+    "TimingCase",
+    "TimingCaseResult",
+    "TimingProtocol",
+    "bootstrap_ratio_ci",
     "derive_upstream_verdict",
     "evaluate_case",
+    "run_timing_case",
+    "validate_timing_payload",
 ]
