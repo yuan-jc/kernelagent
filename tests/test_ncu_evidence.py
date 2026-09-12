@@ -4,7 +4,6 @@ Pure CPU. The real report generation runs in the ADR-0003 diagnostic
 container via examples/ncu_evidence_smoke.py; these tests pin the
 interpretation semantics on representative raw CSV."""
 
-import pytest
 
 from kernelagent.adapters.profiling import (
     MISSING,
@@ -18,7 +17,8 @@ from kernelagent.adapters.profiling import (
 
 RAW_CSV = (
     '"ID","Process ID","Process Name","Host Name","Kernel Name","Context","Stream",'
-    '"Block Size","Grid Size","Device","CC","gpu__time_duration.sum","launch__registers_per_thread"\n'
+    '"Block Size","Grid Size","Device","CC","gpu__time_duration.sum",'
+    '"launch__registers_per_thread"\n'
     '"","","","","","","","","","","","us",""\n'
     '"0","108","two_kernels","127.0.0.1","saxpy(int, float, float *, float *)","1","7",'
     '"(256, 1, 1)","(4096, 1, 1)","0","8.9","12.5","32"\n'
@@ -78,7 +78,10 @@ def test_blocker_signatures_map_to_explicit_states():
         detect_profiling_blocker("==ERROR== ERR_NVGPUCTRPERM - The user does not have permission")
         == "gpu_counter_permission_denied"
     )
-    assert detect_profiling_blocker("==WARNING== No kernels were profiled.") == "no_kernels_profiled"
+    assert (
+        detect_profiling_blocker("==WARNING== No kernels were profiled.")
+        == "no_kernels_profiled"
+    )
     assert detect_profiling_blocker("all good") is None
 
 

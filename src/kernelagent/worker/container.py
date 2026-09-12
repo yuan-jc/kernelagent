@@ -462,9 +462,19 @@ def execute_container(
                     "oom_killed": container_state.get("OOMKilled"),
                 }
                 if container_state.get("OOMKilled"):
-                    if status == "completed":
-                        status = "failed"
-                    notes.append("[oom_killed] memory cgroup limit triggered")
+                    # A subprocess (e.g. a config probe) dying by OOM while
+                    # the payload itself exits cleanly is the documented
+                    # resource-prune pattern; only a nonzero main exit is
+                    # a failure.
+                    if exit_code:
+                        if status == "completed":
+                            status = "failed"
+                        notes.append("[oom_killed] memory cgroup limit triggered")
+                    else:
+                        notes.append(
+                            "[oom_subprocess_killed] a container subprocess was "
+                            "OOM-killed; main payload exited cleanly"
+                        )
                 if exit_code is None:
                     exit_code = container_state.get("ExitCode")
             except (json.JSONDecodeError, KeyError, IndexError) as exc:

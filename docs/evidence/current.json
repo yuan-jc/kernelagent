@@ -15,9 +15,9 @@
     "T12a"
   ],
   "pending": {
-    "T12/G5": "LIVE_MODEL needs user provider credentials (MODEL_PROVIDER_API_KEY); run smoke with --live",
-    "T11": "external KernelAgent adapter - upstream agent generation also needs an LLM credential",
-    "T13/T14": "implemented next; parent acceptance gated by T12 LIVE_MODEL",
+    "T11/T18/T19": "external suite/agent adapters (proxy clones)",
+    "T12/G5": "LIVE_MODEL needs user provider credentials",
+    "T16/T17/T20/T21/T22": "composites after T11-T14 wave",
     "LIVE_MODEL": "NOT_RUN"
   },
   "target_ubuntu_t04": {
@@ -556,5 +556,33 @@
       }
     },
     "scope_note": "Credentials live only on the control plane; worker containers never see them."
+  },
+  "target_ubuntu_t13": {
+    "status": "ACCEPTED",
+    "accepted_at": "2026-09-13",
+    "gpu_checks": {
+      "status": "PASS",
+      "command": "uv run --locked python examples/methods_smoke.py --output artifacts/t13",
+      "report": {
+        "path": "artifacts/t13/methods-report.json",
+        "sha256": "see evidence JSON report_sha256 line in artifacts/t13"
+      },
+      "cases": "template+reuse generators through the same loop, both gpu_verified; matmul method refused by domain; whitelist gates tested (8 unit tests)"
+    },
+    "scope_note": "Deterministic generators only; LLM composite belongs to T16."
+  },
+  "target_ubuntu_t14": {
+    "status": "ACCEPTED",
+    "accepted_at": "2026-09-13",
+    "gpu_checks": {
+      "status": "PASS",
+      "command": "uv run --locked python examples/autotune_smoke.py --output artifacts/t14",
+      "report": {
+        "path": "artifacts/t14/autotune-report.json",
+        "sha256": "see evidence JSON report_sha256 line in artifacts/t14"
+      },
+      "cases": "5 configs: 3 measured (raw batches), 3000 structural-prune, 1048576 probe resource-prune; winner 2048 frozen_verified; 15 input restore events; executor OOM semantics refined (subprocess probe OOM with clean main exit = recorded, not failed)"
+    },
+    "scope_note": "Kernel Tuner / CUTLASS Profiler paths belong to T20."
   }
 }
