@@ -1,6 +1,7 @@
 # 当前开发交接
 
 - 更新时间：2026-09-12
+- 归档终检：本会话收尾时全套检验通过——ruff check/format 干净、232 项 CPU 测试全过（run_id 47a1ca2871154042ae056a54e1553538）、KernelBench 快照校验 270/270（开发子集 18/8/9）、wheel 干净安装四模块导入正常、证据库 7 份报告 audit healthy；工作区干净，本地与 origin/main 同步。
 - 当前工作包：T12a（模型客户端离线层），ACCEPTED；T03 READY_FOR_ACCEPTANCE（等实体卡）；T00/T01/T02/T08 ACCEPTED；其余等 GPU 链。
 - 当前代码状态：T00 工程验收入口 + T01 domain 契约 + T02 KernelBench 数据适配 + T03 GPU 环境探测 + T08 证据存储 + T12a 模型客户端离线层（请求身份 hash、脚本/录制回放、瞬时有限重试、成本账本与预算、结构化解析，232 项测试）。
 - 已完成：详细设计、任务计划、T00–T03、T08、T12a，已上传 GitHub 公开仓库 https://github.com/yuan-jc/kernelagent。
