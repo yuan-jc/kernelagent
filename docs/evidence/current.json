@@ -15,7 +15,7 @@
     "T12a"
   ],
   "pending": {
-    "T06/T09/T10": "Next per dependency (T09 needs T07+T08, both ACCEPTED)",
+    "T06/T10/T11": "T10 deps (T05/T08/T09) satisfied; T06 depends on T05; T11 opens G2 once its deps land",
     "LIVE_MODEL": "NOT_RUN"
   },
   "target_ubuntu_t04": {
@@ -393,5 +393,28 @@
       }
     },
     "scope_note": "Formal timing only; CUDA Graph protocol and cold-cache对照 batches not exercised (fields reserved)."
+  },
+  "target_ubuntu_t09": {
+    "status": "ACCEPTED",
+    "accepted_at": "2026-09-13",
+    "level": "CPU (GPU N/A per plan); inputs are T07 timing-v1 batch structures",
+    "rules": "Promotion rules v1 frozen in docs/work-packages/T09.md (delta=0.02, confidence=0.95 as explicit params; batch-level bootstrap; hard constraints first)",
+    "unit_tests": "11/11 in tests/test_promotion.py (reject terminals, retain semantics, CI promote, denominators, fast_p strict >, coverage)",
+    "full_check": {
+      "command": "uv run --locked kernelagent check --output artifacts/t09-cpu",
+      "exit_code": 0,
+      "counts": {
+        "total": 361,
+        "passed": 358,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 3
+      },
+      "report": {
+        "path": "artifacts/t09-cpu/74d9d664cf46427f803b8eb4acb0a37f/report.json",
+        "sha256": "61b0fa17d17db002b7278de98b2ffe7aa02d79c3f8fb0c656c7da89b8d307fe6"
+      }
+    },
+    "scope_note": "Multiple-comparison handling deferred to real multi-candidate confirm campaigns."
   }
 }

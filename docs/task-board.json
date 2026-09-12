@@ -17,7 +17,7 @@
     "N/A"
   ],
   "notes": [
-    "Target: Ubuntu + NVIDIA; T03 (2026-09-12), T04a/T04/T05 (2026-09-13) and T07 (2026-09-13) ACCEPTED on the target machine; next per dependency: T06/T09/T10.",
+    "Target: Ubuntu + NVIDIA; T03/T04a/T04 (GPU chain), T05 (upstream eval), T07 (timing), T09 (promotion) ACCEPTED on the target machine by 2026-09-13; next: T06/T10.",
     "Current evidence is consolidated in docs/evidence/current.json; pre-cleanup history remains at Git commit 1b4a306.",
     "T04a is process mechanics, not a sandbox; T12a is offline model plumbing, not live generation.",
     "No target GPU or live model acceptance is implied by CPU tests or CI. Preserve parent package gates."
@@ -226,15 +226,18 @@
         "T07",
         "T08"
       ],
-      "status": "TODO",
+      "status": "ACCEPTED",
       "checks": {
-        "CPU": "NOT_RUN",
+        "CPU": "PASS",
         "GPU": "N/A",
         "LIVE_MODEL": "N/A",
-        "REVIEW": "NOT_RUN"
+        "REVIEW": "PASS"
       },
-      "evidence": [],
-      "work_package_record": null,
+      "evidence": [
+        "docs/work-packages/T09.md",
+        "artifacts/t09-cpu/74d9d664cf46427f803b8eb4acb0a37f/report.json"
+      ],
+      "work_package_record": "docs/work-packages/T09.md",
       "blocker": null
     },
     {
