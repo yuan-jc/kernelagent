@@ -1,0 +1,35 @@
+{
+  "work_package": "T12a",
+  "status": "ACCEPTED",
+  "repository": "https://github.com/yuan-jc/kernelagent",
+  "parent_note": "Offline slice of T12 (user-approved split). Parent T12 acceptance contract preserved unchanged: real model-to-code-to-GPU closed loop still requires T04/T10 plus credentials.",
+  "local": {
+    "platform": "Windows",
+    "python": "3.13.3",
+    "uv": "0.12.13",
+    "cpu_counts": {"passed": 232, "failed": 0, "errors": 0, "skipped": 0},
+    "run_id": "eb69d7b7c3064bc9b662e1b5d7f70405",
+    "checks": {
+      "request_identity_content_hash": "PASS",
+      "scripted_and_recorded_clients": "PASS",
+      "bounded_retry_transient_only": "PASS",
+      "cost_ledger_and_token_budget": "PASS",
+      "structured_parsing_negative_paths": "PASS",
+      "evidence_store_integration": "PASS",
+      "t00_t08_regression_suite": "PASS",
+      "ruff_check_and_format": "PASS",
+      "wheel_build_models_functional": "PASS"
+    }
+  },
+  "deliverables": [
+    "adapters/models: ModelClient protocol + frozen ModelRequest/ModelResponse/ModelUsage contracts (request identity = canonical content sha256, purpose excluded)",
+    "ScriptedModelClient (ordered offline double) and RecordedModelClient (hash-keyed replay with loud miss)",
+    "RetryingModelClient: transient-only bounded retry with exponential backoff via injectable sleep; permanent errors surface immediately",
+    "CostLedger + TokenBudget: per-model usage aggregation, hard ceiling with explicit BudgetExceededError",
+    "parse_structured/extract_json_payload: markdown fence stripping plus required-key/type enforcement with explicit ParseError",
+    "32 new tests covering contracts, negative paths, evidence integration and SDK-free import boundary"
+  ],
+  "gpu": "N/A",
+  "live_model": "N/A (parent T12 scope)",
+  "review": "PASS: recorded responses verify control flow only and never stand in for generation capability; token cost is a first-class budget object per design 12; protocol versioned model-client-v1"
+}

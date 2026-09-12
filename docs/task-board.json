@@ -17,7 +17,8 @@
     "N/A"
   ],
   "notes": [
-    "T00, T01, T02 and T08 accepted; T03 is READY_FOR_ACCEPTANCE - probe tooling verified on real hardware (native + WSL reports in evidence), GPU acceptance blocked on a real card (host VM GPU-PV blocks kernel result read-back, nested WSL driver segfaults).",
+    "T00-T02, T08 and T12a accepted; T03 is READY_FOR_ACCEPTANCE - probe tooling verified on real hardware (native + WSL reports in evidence), GPU acceptance blocked on a real card (host VM GPU-PV blocks kernel result read-back, nested WSL driver segfaults).",
+    "T12a is a user-approved offline split of T12: parent T12 acceptance contract (real model-to-code-to-GPU loop) is unchanged.",
     "Dependencies are hard gates; acceptance requires evidence, not narrative.",
     "GPU N/A means this package is offline; it does not certify integrated GPU behavior.",
     "Create a work-package record from docs/work-package-template.md before implementation; exact acceptance commands are not implemented yet.",
@@ -271,6 +272,26 @@
       },
       "evidence": [],
       "work_package_record": null,
+      "blocker": "Depends on T04/T10 (GPU chain). Offline slice split into T12a (accepted); real provider client + LIVE_MODEL closed loop remain here."
+    },
+    {
+      "id": "T12a",
+      "title": "模型客户端离线层（T12 子包）",
+      "dependencies": [
+        "T01"
+      ],
+      "status": "ACCEPTED",
+      "checks": {
+        "CPU": "PASS",
+        "GPU": "N/A",
+        "LIVE_MODEL": "N/A",
+        "REVIEW": "PASS"
+      },
+      "evidence": [
+        "docs/work-packages/T12a.md",
+        "docs/evidence/T12a.json"
+      ],
+      "work_package_record": "docs/work-packages/T12a.md",
       "blocker": null
     },
     {

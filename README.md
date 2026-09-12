@@ -1,6 +1,23 @@
 # NVIDIA 算子优化 Agent 设计
 
-T00 工程基础、T01 核心 domain 契约、T02 KernelBench 数据适配与 T08 证据存储已验收：Python 包、CPU 验收命令、12 个不可变契约对象与内容 hash 身份、固定 commit 的 KernelBench 快照读取器（270 题双 hash 清单、35 题冻结开发清单、`kernelagent bench verify`），以及追加式证据存储（内容寻址 artifact、SQLite 索引、`evaluation_key` 身份、实验记录不可变、完整性审计）。[T00 四组跨平台 CI 已通过](https://github.com/yuan-jc/kernelagent/actions/runs/34667461881)。尚未实现 GPU 优化 Agent，T05 及后续 GPU 功能未开始。
+T00 工程基础、T01 核心 domain 契约、T02 KernelBench 数据适配、T03 GPU 环境探测（READY_FOR_ACCEPTANCE）、T08 证据存储与 T12a 模型客户端离线层已验收：CPU 验收命令、不可变契约对象与内容 hash 身份、KernelBench 快照读取器、追加式证据存储、跨平台 GPU 探测（`kernelagent probe`），以及模型客户端离线层（请求身份 hash、录制回放、有限重试、成本预算、结构化解析）。[T00 四组跨平台 CI 已通过](https://github.com/yuan-jc/kernelagent/actions/runs/34667461881)。真实 GPU 优化闭环（T04+）等待实体卡环境验收。
+
+## 模型客户端离线层（T12a）
+
+```python
+from kernelagent.adapters.models import (
+    ModelRequest, ModelResponse, ModelUsage,
+    RecordedModelClient, RetryingModelClient, CostLedger, TokenBudget,
+    parse_structured,
+)
+
+request = ModelRequest(model_id="glm-5.3", messages=(("user", "propose"),))
+# RecordedModelClient 按 request.request_sha256 精确回放；RetryingModelClient
+# 仅对瞬时错误有限重试；CostLedger/TokenBudget 让 token 成本成为一等入账对象；
+# parse_structured 把模型输出解析为校验过的 JSON（失败显式 ParseError）。
+```
+
+录制响应只用于控制流验证，不冒充生成能力；真实模型调用与"模型→代码→GPU"闭环属 T12 主体验收。
 
 ## 证据存储（T08）
 
