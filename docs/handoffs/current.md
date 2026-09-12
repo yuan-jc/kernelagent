@@ -10,6 +10,14 @@
 | T04 | ACCEPTED（2026-09-13）：容器边界（Docker+CDI、禁网、只读输入、非 root、cgroup 限额）+ 真实 GPU 请求通路（PTX JIT 写 42 验证通过、写 43 负例被父端拒绝）；ADR-0001 |
 | T05–T25（除 T08 及 T12a 子包） | 按任务计划依赖推进，未实现完整自动优化闭环 |
 
+## 本次移交内容（2026-09-13，ZCode/GLM，宿主 CUDA 工具链安装）
+
+- 应用户要求安装宿主工具链（用户已授权安装，无 sudo 密码故全程免 root）：CUDA 13.0.2 runfile 用户级安装到 `/home/y/toolchains/cuda-13.0`（~7.1GB，`~/toolchains/cuda` 为稳定软链；`~/.profile` 导出 `CUDA_HOME` 并前置 PATH）。runfile sha256 `81a5d0d0…`、makeself 负载 MD5 校验通过；选 13.0.2 因其捆绑驱动 580.95.05 与主机完全一致。安装包保留在 `~/cuda-dl/` 供 T04/T05 容器镜像复用。
+- 组件：nvcc 13.0.88、Nsight Compute 2025.3.1.4、Nsight Systems 2025.3.2.474、compute-sanitizer、cuda-gdb。注意 nvcc 脚本按 `$0` 定位顶层目录，只能从真实路径调用（一次软链覆盖事故已从 runfile payload 原样修复，记录于证据索引）。
+- 端到端验证：`-arch=sm_89` 编译 SAXPY 并在 RTX 4060 上运行通过（driver/runtime 13.0，n=1048576 结果校验）；nsys 生成真实 `.nsys-rep`；重跑 gpu-probe：**6 pass / 0 fail / 0 unavailable**（nvcc、ncu 检查转 pass），报告 sha256 `d5e5a004…`，EvidenceStore audit healthy。
+- 遗留一条 sudo 动作：非 root ncu profiling 被 `NVreg_RestrictProfilingToAdminUsers=1` 拦截（ERR_NVGPUCTRPERM）；sudo ncu 当前可用，普通用户需写入 `/etc/modprobe.d/nvidia-profiling.conf` 后重启。T15 前完成即可。
+- 证据：`artifacts/ubuntu/toolchain/`（install.txt、各工具版本、saxpy 编译运行、ncu 权限测试、probe/ 与 evidence/）；索引见 `docs/evidence/current.json` 的 `target_ubuntu_toolchain`。
+
 ## 本次移交内容（2026-09-13，ZCode/GLM）
 
 - T04a 转 ACCEPTED：`kernelagent check`（315 项 312 过 / 3 跳过 Windows 专用 / 0 失败）+ worker_smoke 在目标 Ubuntu 复核通过。
@@ -35,11 +43,11 @@
 - 记录状态 completed 只表示进程成功退出，不能代表候选正确、性能有效或允许晋升。
 - 模型层只有离线能力；回放要求请求/响应 model_id 精确一致。未来 provider 的别名映射须显式设计并测试。
 - 证据存储约定单写入器、同一内容 hash 对应一组索引元数据；hash 是完整性检查，不是抵御整个存储被任意修改的签名。
-- 宿主机无 nvcc/ncu；容器镜像与 GPU 运行环境版本尚未冻结（T04/T05 范围）。NCU 版本查询不属本包；真实 profiling 属 T15。
+- 宿主 nvcc/ncu 已装（CUDA 13.0.2 用户级，见上文工具链章节）；ncu 非 root profiling 有一条待用户执行的 sudo 配置。torch/triton 按计划仍归 T05 的冻结 GPU 环境。
 
 ## 下一步
 
-进入 [T05](../../docs/开发任务与验收计划.md)：上游 KernelBench 基线与原生评测（依赖 T02/T03/T04 均已 ACCEPTED）。前置条件：宿主 nvcc（另一会话安装中）与 KernelBench 快照恢复（`research/fetch_kernelbench_problems.py --proxy http://127.0.0.1:7890`）。验收要求：至少三个不同类别问题，已知正确候选通过、错误候选失败、与直接上游调用对照。
+进入 [T05](../../docs/开发任务与验收计划.md)：上游 KernelBench 基线与原生评测（依赖 T02/T03/T04 均已 ACCEPTED）。前置条件：宿主 nvcc/ncu 已就绪（CUDA 13.0.2 用户级，`CUDA_HOME=~/toolchains/cuda`）；KernelBench 快照恢复（`research/fetch_kernelbench_problems.py --proxy http://127.0.0.1:7890`）。验收要求：至少三个不同类别问题，已知正确候选通过、错误候选失败、与直接上游调用对照。
 
 本地调研/实验缓存未随 Git 分发。清理前记录可在提交 `1b4a306` 查阅；不要将历史摘要当作当前验收事实。每包收尾替换本页的当前状态、活动作业、结果位置与下一步，避免追加聊天流水。
 
