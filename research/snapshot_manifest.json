@@ -1,0 +1,521 @@
+{
+  "retrieved_date": "2026-09-12",
+  "repositories": [
+    {
+      "repository": "BytedTsinghua-SIA/CUDA-Agent",
+      "url": "https://github.com/BytedTsinghua-SIA/CUDA-Agent",
+      "commit": "473025c8af7878e928525138b5cb327d6bcdf9dd",
+      "commit_date": "2026-03-02T08:46:51Z",
+      "retrieved_at": "2026-09-12T01:16:16.293775+00:00",
+      "license": null,
+      "archived": false,
+      "files": [
+        {
+          "path": "sources/BytedTsinghua-SIA__CUDA-Agent/README.md",
+          "url": "https://raw.githubusercontent.com/BytedTsinghua-SIA/CUDA-Agent/473025c8af7878e928525138b5cb327d6bcdf9dd/README.md",
+          "sha256": "be4bb0ca30e6a6865c431e65af06403cab62f5321c2b0dbf5be5ecd8b3973665"
+        }
+      ]
+    },
+    {
+      "repository": "flashinfer-ai/flashinfer",
+      "url": "https://github.com/flashinfer-ai/flashinfer",
+      "commit": "eea399b74fe3cb74f942f21eecfed6c0d46561c4",
+      "commit_date": "2026-09-11T23:52:20Z",
+      "retrieved_at": "2026-09-12T01:16:03.682276+00:00",
+      "license": {
+        "key": "apache-2.0",
+        "name": "Apache License 2.0",
+        "spdx_id": "Apache-2.0",
+        "url": "https://api.github.com/licenses/apache-2.0",
+        "node_id": "MDc6TGljZW5zZTI="
+      },
+      "archived": false,
+      "files": [
+        {
+          "path": "sources/flashinfer-ai__flashinfer/LICENSE",
+          "url": "https://raw.githubusercontent.com/flashinfer-ai/flashinfer/eea399b74fe3cb74f942f21eecfed6c0d46561c4/LICENSE",
+          "sha256": "cb67c224f503e0a063908950b12f89a7280c6e527dcffac972aa114e4bf3c5de"
+        },
+        {
+          "path": "sources/flashinfer-ai__flashinfer/README.md",
+          "url": "https://raw.githubusercontent.com/flashinfer-ai/flashinfer/eea399b74fe3cb74f942f21eecfed6c0d46561c4/README.md",
+          "sha256": "7c163cfd6a584178790827028d578f2f2ce681e64381607459ad2ae1d4bd52c7"
+        }
+      ]
+    },
+    {
+      "repository": "flashinfer-ai/flashinfer-bench",
+      "url": "https://github.com/flashinfer-ai/flashinfer-bench",
+      "commit": "40e6ca7844b514eb4b1c7edba6d6a7377df57870",
+      "retrieved_at": "2026-09-12",
+      "license": {
+        "key": "apache-2.0",
+        "name": "Apache License 2.0",
+        "spdx_id": "Apache-2.0",
+        "url": "https://api.github.com/licenses/apache-2.0",
+        "node_id": "MDc6TGljZW5zZTI="
+      },
+      "files": [
+        {
+          "path": "sources/flashinfer-ai__flashinfer-bench/docs/start/quickstart.mdx",
+          "url": "https://raw.githubusercontent.com/flashinfer-ai/flashinfer-bench/40e6ca7844b514eb4b1c7edba6d6a7377df57870/docs/start/quickstart.mdx",
+          "sha256": "e5e4fcda3908077fd0ff55172244ef392b38bc8fc9aa1d44cf7077f64ca039d9"
+        },
+        {
+          "path": "sources/flashinfer-ai__flashinfer-bench/flashinfer_bench/data/definition.py",
+          "url": "https://raw.githubusercontent.com/flashinfer-ai/flashinfer-bench/40e6ca7844b514eb4b1c7edba6d6a7377df57870/flashinfer_bench/data/definition.py",
+          "sha256": "b7d54d2a9b619fbee576db8a7032ca5bf1b2a268553aa372944a4623621763ba"
+        },
+        {
+          "path": "sources/flashinfer-ai__flashinfer-bench/flashinfer_bench/data/solution.py",
+          "url": "https://raw.githubusercontent.com/flashinfer-ai/flashinfer-bench/40e6ca7844b514eb4b1c7edba6d6a7377df57870/flashinfer_bench/data/solution.py",
+          "sha256": "ff3aa4bf5e7bf8621ef7a9dbf089c6c078cfccd04d69935d5e3719ebb145da22"
+        },
+        {
+          "path": "sources/flashinfer-ai__flashinfer-bench/flashinfer_bench/data/workload.py",
+          "url": "https://raw.githubusercontent.com/flashinfer-ai/flashinfer-bench/40e6ca7844b514eb4b1c7edba6d6a7377df57870/flashinfer_bench/data/workload.py",
+          "sha256": "1876a4c4d2d1238bda13107617c0845986cf04f7b052cc38451937a4f8c07983"
+        },
+        {
+          "path": "sources/flashinfer-ai__flashinfer-bench/README.md",
+          "url": "https://raw.githubusercontent.com/flashinfer-ai/flashinfer-bench/40e6ca7844b514eb4b1c7edba6d6a7377df57870/README.md",
+          "sha256": "1d2288eb7b5b87c5449da4a8fded4e00bff4b055d7dab505157227f2fa8053ff"
+        }
+      ]
+    },
+    {
+      "repository": "KernelTuner/kernel_tuner",
+      "url": "https://github.com/KernelTuner/kernel_tuner",
+      "commit": "5d0d9e98066c06a7da0097cac8806e6f95952ab9",
+      "commit_date": "2026-09-11T07:08:20Z",
+      "retrieved_at": "2026-09-12T01:16:02.746369+00:00",
+      "license": {
+        "key": "apache-2.0",
+        "name": "Apache License 2.0",
+        "spdx_id": "Apache-2.0",
+        "url": "https://api.github.com/licenses/apache-2.0",
+        "node_id": "MDc6TGljZW5zZTI="
+      },
+      "archived": false,
+      "files": [
+        {
+          "path": "sources/KernelTuner__kernel_tuner/LICENSE",
+          "url": "https://raw.githubusercontent.com/KernelTuner/kernel_tuner/5d0d9e98066c06a7da0097cac8806e6f95952ab9/LICENSE",
+          "sha256": "c6596eb7be8581c18be736c846fb9173b69eccf6ef94c5135893ec56bd92ba08"
+        },
+        {
+          "path": "sources/KernelTuner__kernel_tuner/README.md",
+          "url": "https://raw.githubusercontent.com/KernelTuner/kernel_tuner/5d0d9e98066c06a7da0097cac8806e6f95952ab9/README.md",
+          "sha256": "e89fe5bdfbc28a946fcd61cb389478bed3ee4bdd06ab4cd71ac8c78678daabe9"
+        }
+      ]
+    },
+    {
+      "repository": "meta-pytorch/KernelAgent",
+      "url": "https://github.com/meta-pytorch/KernelAgent",
+      "commit": "e0647170da36ef9b059ac0bd3d60103aa4ed378b",
+      "commit_date": "2026-07-15T19:01:18Z",
+      "retrieved_at": "2026-09-12T01:15:56.086394+00:00",
+      "license": {
+        "key": "apache-2.0",
+        "name": "Apache License 2.0",
+        "spdx_id": "Apache-2.0",
+        "url": "https://api.github.com/licenses/apache-2.0",
+        "node_id": "MDc6TGljZW5zZTI="
+      },
+      "archived": false,
+      "files": [
+        {
+          "path": "sources/meta-pytorch__KernelAgent/kernel_perf_agent/kernel_opt/roofline/ncu_roofline.py",
+          "url": "https://raw.githubusercontent.com/meta-pytorch/KernelAgent/e0647170da36ef9b059ac0bd3d60103aa4ed378b/kernel_perf_agent/kernel_opt/roofline/ncu_roofline.py",
+          "sha256": "36a476c8e7fee9b5bc0bdb77b884777543edd534bf4eb9c3af52e5d89b0672a4"
+        },
+        {
+          "path": "sources/meta-pytorch__KernelAgent/LICENSE",
+          "url": "https://raw.githubusercontent.com/meta-pytorch/KernelAgent/e0647170da36ef9b059ac0bd3d60103aa4ed378b/LICENSE",
+          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+        },
+        {
+          "path": "sources/meta-pytorch__KernelAgent/README.md",
+          "url": "https://raw.githubusercontent.com/meta-pytorch/KernelAgent/e0647170da36ef9b059ac0bd3d60103aa4ed378b/README.md",
+          "sha256": "a44ab32292e4fbeb06c31ba4c476c8e5565878529ca94bab4168bff9d5e7ab0c"
+        },
+        {
+          "path": "sources/meta-pytorch__KernelAgent/triton_kernel_agent/opt_worker_component/orchestrator/optimization_orchestrator.py",
+          "url": "https://raw.githubusercontent.com/meta-pytorch/KernelAgent/e0647170da36ef9b059ac0bd3d60103aa4ed378b/triton_kernel_agent/opt_worker_component/orchestrator/optimization_orchestrator.py",
+          "sha256": "ca53a2f360bb5f4f07e5966b9c02cc6d15a122fc9ba3c6ec07fac9f57050457c"
+        },
+        {
+          "path": "sources/meta-pytorch__KernelAgent/triton_kernel_agent/opt_worker_component/profiling/kernel_profiler.py",
+          "url": "https://raw.githubusercontent.com/meta-pytorch/KernelAgent/e0647170da36ef9b059ac0bd3d60103aa4ed378b/triton_kernel_agent/opt_worker_component/profiling/kernel_profiler.py",
+          "sha256": "a63a292de3a796ea63d4b5f2d724ae2795a7d2e718430f580d82083c7be76a08"
+        }
+      ]
+    },
+    {
+      "repository": "meta-pytorch/tritonbench",
+      "url": "https://github.com/meta-pytorch/tritonbench",
+      "commit": "cdadd2ea64f487c75c504e1de9d03fb88a06bd2d",
+      "commit_date": "2026-09-11T19:33:35Z",
+      "retrieved_at": "2026-09-12T01:15:56.506494+00:00",
+      "license": {
+        "key": "bsd-3-clause",
+        "name": "BSD 3-Clause \"New\" or \"Revised\" License",
+        "spdx_id": "BSD-3-Clause",
+        "url": "https://api.github.com/licenses/bsd-3-clause",
+        "node_id": "MDc6TGljZW5zZTU="
+      },
+      "archived": false,
+      "files": [
+        {
+          "path": "sources/meta-pytorch__tritonbench/LICENSE",
+          "url": "https://raw.githubusercontent.com/meta-pytorch/tritonbench/cdadd2ea64f487c75c504e1de9d03fb88a06bd2d/LICENSE",
+          "sha256": "e19722ba0a7237bc1c3382fef69c8387f7adbcc51e21f0610d3c87d737999503"
+        },
+        {
+          "path": "sources/meta-pytorch__tritonbench/README.md",
+          "url": "https://raw.githubusercontent.com/meta-pytorch/tritonbench/cdadd2ea64f487c75c504e1de9d03fb88a06bd2d/README.md",
+          "sha256": "6e2ce693375af2cab9216fc7a93aad7c465d09d5170556cb694b466b84c9ecd7"
+        },
+        {
+          "path": "sources/meta-pytorch__tritonbench/tritonbench/operators/gemm/operator.py",
+          "url": "https://raw.githubusercontent.com/meta-pytorch/tritonbench/cdadd2ea64f487c75c504e1de9d03fb88a06bd2d/tritonbench/operators/gemm/operator.py",
+          "sha256": "5cfa8e2907bc678648158f597948be19ce38af083037a529e884286f054debf8"
+        },
+        {
+          "path": "sources/meta-pytorch__tritonbench/tritonbench/utils/triton_op.py",
+          "url": "https://raw.githubusercontent.com/meta-pytorch/tritonbench/cdadd2ea64f487c75c504e1de9d03fb88a06bd2d/tritonbench/utils/triton_op.py",
+          "sha256": "6f3dca2808771481c82cffc17e5c1062f125ba69da4fcc52f60eaa4e99e65d9f"
+        }
+      ]
+    },
+    {
+      "repository": "mit-han-lab/ncu-report-skill",
+      "url": "https://github.com/mit-han-lab/ncu-report-skill",
+      "commit": "74a12918e9f64d78036f14da5f8765e435b949a4",
+      "retrieved_at": "2026-09-12",
+      "license": {
+        "key": "mit",
+        "name": "MIT License",
+        "spdx_id": "MIT",
+        "url": "https://api.github.com/licenses/mit",
+        "node_id": "MDc6TGljZW5zZTEz"
+      },
+      "files": [
+        {
+          "path": "sources/mit-han-lab__ncu-report-skill/README.md",
+          "url": "https://raw.githubusercontent.com/mit-han-lab/ncu-report-skill/74a12918e9f64d78036f14da5f8765e435b949a4/README.md",
+          "sha256": "cd0b5aa7998796f30bf04cfbc5ac1ac0a948ecea922f6a6a85ad8869b6c8463c"
+        }
+      ]
+    },
+    {
+      "repository": "NVIDIA/cutlass",
+      "url": "https://github.com/NVIDIA/cutlass",
+      "commit": "147295a3d4b75f3aeff247c25b8927cea9a7006a",
+      "commit_date": "2026-09-08T06:20:12Z",
+      "retrieved_at": "2026-09-12T01:16:01.234448+00:00",
+      "license": {
+        "key": "other",
+        "name": "Other",
+        "spdx_id": "NOASSERTION",
+        "url": null,
+        "node_id": "MDc6TGljZW5zZTA="
+      },
+      "archived": false,
+      "files": [
+        {
+          "path": "sources/NVIDIA__cutlass/LICENSE.txt",
+          "url": "https://raw.githubusercontent.com/NVIDIA/cutlass/147295a3d4b75f3aeff247c25b8927cea9a7006a/LICENSE.txt",
+          "sha256": "ad1513ca983da737a6843364ad19e8424a56d860736c2da773b8c5be527e1475"
+        },
+        {
+          "path": "sources/NVIDIA__cutlass/media/docs/cpp/profiler.md",
+          "url": "https://raw.githubusercontent.com/NVIDIA/cutlass/147295a3d4b75f3aeff247c25b8927cea9a7006a/media/docs/cpp/profiler.md",
+          "sha256": "ee9eb83ddca57ae8d86c5a60c648c5cc63a4b30ebdf5b34a19faca3aa2c985bd"
+        },
+        {
+          "path": "sources/NVIDIA__cutlass/README.md",
+          "url": "https://raw.githubusercontent.com/NVIDIA/cutlass/147295a3d4b75f3aeff247c25b8927cea9a7006a/README.md",
+          "sha256": "a78c6aa81d87a88012db7b6570015c8a87f2778f663348c6ffc61936e06b9dce"
+        }
+      ]
+    },
+    {
+      "repository": "NVIDIA/MatX",
+      "url": "https://github.com/NVIDIA/MatX",
+      "commit": "afb0b2e8c0a07532b9984508c1fdbc9738759736",
+      "commit_date": "2026-09-09T19:58:03Z",
+      "retrieved_at": "2026-09-12T01:16:03.404715+00:00",
+      "license": {
+        "key": "bsd-3-clause",
+        "name": "BSD 3-Clause \"New\" or \"Revised\" License",
+        "spdx_id": "BSD-3-Clause",
+        "url": "https://api.github.com/licenses/bsd-3-clause",
+        "node_id": "MDc6TGljZW5zZTU="
+      },
+      "archived": false,
+      "files": [
+        {
+          "path": "sources/NVIDIA__MatX/LICENSE",
+          "url": "https://raw.githubusercontent.com/NVIDIA/MatX/afb0b2e8c0a07532b9984508c1fdbc9738759736/LICENSE",
+          "sha256": "6574934b23f54cd4177753de0d438db7df2cc94e8a5f0c67b69ab551530190eb"
+        },
+        {
+          "path": "sources/NVIDIA__MatX/README.md",
+          "url": "https://raw.githubusercontent.com/NVIDIA/MatX/afb0b2e8c0a07532b9984508c1fdbc9738759736/README.md",
+          "sha256": "f086eb5b01cfe69dca7ec000423e7824c0c01b96047b55527ea295f9fcd60378"
+        }
+      ]
+    },
+    {
+      "repository": "NVIDIA/nvbench",
+      "url": "https://github.com/NVIDIA/nvbench",
+      "commit": "410dcdd21c9b48191ecb3d3d77060b1bf4ac6244",
+      "commit_date": "2026-08-31T15:47:15Z",
+      "retrieved_at": "2026-09-12T01:16:02.282989+00:00",
+      "license": {
+        "key": "apache-2.0",
+        "name": "Apache License 2.0",
+        "spdx_id": "Apache-2.0",
+        "url": "https://api.github.com/licenses/apache-2.0",
+        "node_id": "MDc6TGljZW5zZTI="
+      },
+      "archived": false,
+      "files": [
+        {
+          "path": "sources/NVIDIA__nvbench/LICENSE",
+          "url": "https://raw.githubusercontent.com/NVIDIA/nvbench/410dcdd21c9b48191ecb3d3d77060b1bf4ac6244/LICENSE",
+          "sha256": "9e45e856bedccee9f67254082ca11851d954de2fed7448c4bed19ad9aab99a91"
+        },
+        {
+          "path": "sources/NVIDIA__nvbench/README.md",
+          "url": "https://raw.githubusercontent.com/NVIDIA/nvbench/410dcdd21c9b48191ecb3d3d77060b1bf4ac6244/README.md",
+          "sha256": "4356b9491f88c02024e4bf03c45a106ab8529bae7d3f864358a2ab119f71b8d5"
+        }
+      ]
+    },
+    {
+      "repository": "NVlabs/kda",
+      "url": "https://github.com/NVlabs/kda",
+      "commit": "4806866492d5c7cad05e07918790bd1e94e976a1",
+      "commit_date": "2026-09-11T05:38:05Z",
+      "retrieved_at": "2026-09-12T01:16:17.522352+00:00",
+      "license": {
+        "key": "other",
+        "name": "Other",
+        "spdx_id": "NOASSERTION",
+        "url": null,
+        "node_id": "MDc6TGljZW5zZTA="
+      },
+      "archived": false,
+      "files": [
+        {
+          "path": "sources/NVlabs__kda/docs/agent-flow.md",
+          "url": "https://raw.githubusercontent.com/NVlabs/kda/4806866492d5c7cad05e07918790bd1e94e976a1/docs/agent-flow.md",
+          "sha256": "c0bf00c893197cbcebdb8dbbbe742c0fd4b51ac7b34e5bab5c3ea4cd94cdb7de"
+        },
+        {
+          "path": "sources/NVlabs__kda/LICENSE",
+          "url": "https://raw.githubusercontent.com/NVlabs/kda/4806866492d5c7cad05e07918790bd1e94e976a1/LICENSE",
+          "sha256": "79a6a78693f4e02b1f43837ceb014aefda32d319e4298425c7314465c26abe23"
+        },
+        {
+          "path": "sources/NVlabs__kda/README.md",
+          "url": "https://raw.githubusercontent.com/NVlabs/kda/4806866492d5c7cad05e07918790bd1e94e976a1/README.md",
+          "sha256": "47e56fd8384fd3f375c89c5f6c94b5e86a097bfa682070136f983535e2babdb0"
+        }
+      ]
+    },
+    {
+      "repository": "ScalingIntelligence/caesar",
+      "url": "https://github.com/ScalingIntelligence/caesar",
+      "commit": "292f5d39452217ca8ce3b96334fe6840b44556da",
+      "retrieved_at": "2026-09-12",
+      "license": null,
+      "files": [
+        {
+          "path": "sources/ScalingIntelligence__caesar/README.md",
+          "url": "https://raw.githubusercontent.com/ScalingIntelligence/caesar/292f5d39452217ca8ce3b96334fe6840b44556da/README.md",
+          "sha256": "4b2a28c3789c115be99a0c7788dc27cd551c8ff9f0f5018a518c104ea144cbbe"
+        }
+      ]
+    },
+    {
+      "repository": "ScalingIntelligence/KernelBench",
+      "url": "https://github.com/ScalingIntelligence/KernelBench",
+      "commit": "423217d9fda91e0c2d67e4a43bf62f96f6d104f1",
+      "commit_date": "2026-03-05T08:38:15Z",
+      "retrieved_at": "2026-09-12T01:15:55.336211+00:00",
+      "license": {
+        "key": "other",
+        "name": "Other",
+        "spdx_id": "NOASSERTION",
+        "url": null,
+        "node_id": "MDc6TGljZW5zZTA="
+      },
+      "archived": false,
+      "files": [
+        {
+          "path": "sources/ScalingIntelligence__KernelBench/EVAL.md",
+          "url": "https://raw.githubusercontent.com/ScalingIntelligence/KernelBench/423217d9fda91e0c2d67e4a43bf62f96f6d104f1/EVAL.md",
+          "sha256": "ad7d15ae20b07db7e325e26a5239ccd3e3f9242912e7a58a15e16734dcfbc3a8"
+        },
+        {
+          "path": "sources/ScalingIntelligence__KernelBench/LICENSE",
+          "url": "https://raw.githubusercontent.com/ScalingIntelligence/KernelBench/423217d9fda91e0c2d67e4a43bf62f96f6d104f1/LICENSE",
+          "sha256": "fb5917dd8e4476fa75e89ef6f03dccf07d4859636bc23c7db50e6c0413887b9e"
+        },
+        {
+          "path": "sources/ScalingIntelligence__KernelBench/pyproject.toml",
+          "url": "https://raw.githubusercontent.com/ScalingIntelligence/KernelBench/423217d9fda91e0c2d67e4a43bf62f96f6d104f1/pyproject.toml",
+          "sha256": "121ae3926588615363d111e0c0e28474a38eebc2cef7c01ba045b99e76fccf95"
+        },
+        {
+          "path": "sources/ScalingIntelligence__KernelBench/README.md",
+          "url": "https://raw.githubusercontent.com/ScalingIntelligence/KernelBench/423217d9fda91e0c2d67e4a43bf62f96f6d104f1/README.md",
+          "sha256": "5428d91bcdebbfb09fbe97608177d485a3babfe0ea6dac7ab3c0dee809fa4196"
+        },
+        {
+          "path": "sources/ScalingIntelligence__KernelBench/scripts/run_and_check.py",
+          "url": "https://raw.githubusercontent.com/ScalingIntelligence/KernelBench/423217d9fda91e0c2d67e4a43bf62f96f6d104f1/scripts/run_and_check.py",
+          "sha256": "6c88e6988e36c7f5fedba1bb20b3232ed338f83af757b9176bc9284465eade27"
+        },
+        {
+          "path": "sources/ScalingIntelligence__KernelBench/src/kernelbench/dataset.py",
+          "url": "https://raw.githubusercontent.com/ScalingIntelligence/KernelBench/423217d9fda91e0c2d67e4a43bf62f96f6d104f1/src/kernelbench/dataset.py",
+          "sha256": "53d1f24a73bca99855a61de45d0c7bcf21d0bf0f59959e4ad3cc9ded2cee3475"
+        },
+        {
+          "path": "sources/ScalingIntelligence__KernelBench/src/kernelbench/eval.py",
+          "url": "https://raw.githubusercontent.com/ScalingIntelligence/KernelBench/423217d9fda91e0c2d67e4a43bf62f96f6d104f1/src/kernelbench/eval.py",
+          "sha256": "b42ce1268ec64ee7274db307ab98945c1e868792b54689554014b28c41787ee6"
+        },
+        {
+          "path": "sources/ScalingIntelligence__KernelBench/src/kernelbench/timing.py",
+          "url": "https://raw.githubusercontent.com/ScalingIntelligence/KernelBench/423217d9fda91e0c2d67e4a43bf62f96f6d104f1/src/kernelbench/timing.py",
+          "sha256": "eaabdad5dd042cfaac7159713b5f0c17a9244e65622b504eb3ca909d780854c5"
+        }
+      ]
+    },
+    {
+      "repository": "thunlp/TritonBench",
+      "url": "https://github.com/thunlp/TritonBench",
+      "commit": "603e28a5050e8c268f6883a69709d477a272d49a",
+      "commit_date": "2025-06-14T15:49:37Z",
+      "retrieved_at": "2026-09-12T01:15:56.400476+00:00",
+      "license": {
+        "key": "apache-2.0",
+        "name": "Apache License 2.0",
+        "spdx_id": "Apache-2.0",
+        "url": "https://api.github.com/licenses/apache-2.0",
+        "node_id": "MDc6TGljZW5zZTI="
+      },
+      "archived": false,
+      "files": [
+        {
+          "path": "sources/thunlp__TritonBench/LICENSE",
+          "url": "https://raw.githubusercontent.com/thunlp/TritonBench/603e28a5050e8c268f6883a69709d477a272d49a/LICENSE",
+          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+        },
+        {
+          "path": "sources/thunlp__TritonBench/README.md",
+          "url": "https://raw.githubusercontent.com/thunlp/TritonBench/603e28a5050e8c268f6883a69709d477a272d49a/README.md",
+          "sha256": "abd02263d11a54b1bca69e221f1a3473381b9d722becb694439f32304951372e"
+        }
+      ]
+    },
+    {
+      "repository": "tile-ai/tilelang",
+      "url": "https://github.com/tile-ai/tilelang",
+      "commit": "66c003c3e75c336f22d928fcd5d3b284cf5a18a0",
+      "commit_date": "2026-09-11T17:52:03Z",
+      "retrieved_at": "2026-09-12T01:16:01.328841+00:00",
+      "license": {
+        "key": "other",
+        "name": "Other",
+        "spdx_id": "NOASSERTION",
+        "url": null,
+        "node_id": "MDc6TGljZW5zZTA="
+      },
+      "archived": false,
+      "files": [
+        {
+          "path": "sources/tile-ai__tilelang/LICENSE",
+          "url": "https://raw.githubusercontent.com/tile-ai/tilelang/66c003c3e75c336f22d928fcd5d3b284cf5a18a0/LICENSE",
+          "sha256": "f70e5cdc24c3797af741930440086f9a0ad36930b05a3dfc25b420936dc2cfa1"
+        },
+        {
+          "path": "sources/tile-ai__tilelang/README.md",
+          "url": "https://raw.githubusercontent.com/tile-ai/tilelang/66c003c3e75c336f22d928fcd5d3b284cf5a18a0/README.md",
+          "sha256": "6e797d5b06ef98f086463b328666edb43afbd757e8b18ae56c63785af8b6fba2"
+        }
+      ]
+    },
+    {
+      "repository": "triton-lang/triton",
+      "url": "https://github.com/triton-lang/triton",
+      "commit": "979c55829b152507bf2b44815bc7eea4ba7e8803",
+      "commit_date": "2026-09-12T01:01:42Z",
+      "retrieved_at": "2026-09-12T01:15:57.453853+00:00",
+      "license": {
+        "key": "mit",
+        "name": "MIT License",
+        "spdx_id": "MIT",
+        "url": "https://api.github.com/licenses/mit",
+        "node_id": "MDc6TGljZW5zZTEz"
+      },
+      "archived": false,
+      "files": [
+        {
+          "path": "sources/triton-lang__triton/LICENSE",
+          "url": "https://raw.githubusercontent.com/triton-lang/triton/979c55829b152507bf2b44815bc7eea4ba7e8803/LICENSE",
+          "sha256": "92640fb97222fd0a698ff28ce0c3782c172623f8d6c609b557636a80f28fb946"
+        },
+        {
+          "path": "sources/triton-lang__triton/python/triton/runtime/autotuner.py",
+          "url": "https://raw.githubusercontent.com/triton-lang/triton/979c55829b152507bf2b44815bc7eea4ba7e8803/python/triton/runtime/autotuner.py",
+          "sha256": "b8ad4c3605f36dedba0ed3a0cba0c29ccbede646064343c8923695cb5c9466e0"
+        },
+        {
+          "path": "sources/triton-lang__triton/python/triton/testing.py",
+          "url": "https://raw.githubusercontent.com/triton-lang/triton/979c55829b152507bf2b44815bc7eea4ba7e8803/python/triton/testing.py",
+          "sha256": "587b5e6d6d1986e799277c7b84c0381093e52eab6b556183a678bc5c99f4d7d5"
+        },
+        {
+          "path": "sources/triton-lang__triton/README.md",
+          "url": "https://raw.githubusercontent.com/triton-lang/triton/979c55829b152507bf2b44815bc7eea4ba7e8803/README.md",
+          "sha256": "4f0ded3ebe9e29b127a1f9438d72984277ba8dbcf8f0efa5ad2ac9f1288a3587"
+        }
+      ]
+    }
+  ],
+  "official_docs": [
+    {
+      "file": "sources/nvidia_docs/ncu_profiling_guide.html",
+      "url": "https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html",
+      "sha256": "8707b6fa8a2b6a81f8dd84e20b5bd03b71d584dda219cf54d4622ed2fcdc387b"
+    },
+    {
+      "file": "sources/nvidia_docs/ncu_cli.html",
+      "url": "https://docs.nvidia.com/nsight-compute/NsightComputeCli/index.html",
+      "sha256": "f6037ce5ecf5cb11b4737f28b5892bf45218a25dcab08622c5837de31fbb10b3"
+    },
+    {
+      "file": "sources/nvidia_docs/compute_sanitizer.html",
+      "url": "https://docs.nvidia.com/compute-sanitizer/ComputeSanitizer/index.html",
+      "sha256": "745ad47998f7bf4ec2f2cc5d3e6266cf7b0d70ac4747b7599e787f20eb6bf87c"
+    },
+    {
+      "file": "sources/nvidia_docs/nsight_systems.html",
+      "url": "https://docs.nvidia.com/nsight-systems/UserGuide/index.html",
+      "sha256": "a1a39c40a403c28633fd164222d38a74afaeacd869f3234ad151ffd1559545f4"
+    },
+    {
+      "file": "sources/nvidia_docs/cuda_binary_utilities.html",
+      "url": "https://docs.nvidia.com/cuda/cuda-binary-utilities/index.html",
+      "sha256": "8d77de70364c2afde2ea20f0643e8d2f79ae6e216abc63267ce3ce45ac8e09fc"
+    }
+  ]
+}

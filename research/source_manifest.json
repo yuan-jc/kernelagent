@@ -1,0 +1,303 @@
+[
+  {
+    "repository": "ScalingIntelligence/KernelBench",
+    "url": "https://github.com/ScalingIntelligence/KernelBench",
+    "commit": "423217d9fda91e0c2d67e4a43bf62f96f6d104f1",
+    "commit_date": "2026-03-05T08:38:15Z",
+    "retrieved_at": "2026-09-12T01:15:55.336211+00:00",
+    "license": {
+      "key": "other",
+      "name": "Other",
+      "spdx_id": "NOASSERTION",
+      "url": null,
+      "node_id": "MDc6TGljZW5zZTA="
+    },
+    "archived": false,
+    "files": [
+      {
+        "path": "LICENSE",
+        "url": "https://raw.githubusercontent.com/ScalingIntelligence/KernelBench/423217d9fda91e0c2d67e4a43bf62f96f6d104f1/LICENSE",
+        "sha256": "fb5917dd8e4476fa75e89ef6f03dccf07d4859636bc23c7db50e6c0413887b9e"
+      },
+      {
+        "path": "README.md",
+        "url": "https://raw.githubusercontent.com/ScalingIntelligence/KernelBench/423217d9fda91e0c2d67e4a43bf62f96f6d104f1/README.md",
+        "sha256": "5428d91bcdebbfb09fbe97608177d485a3babfe0ea6dac7ab3c0dee809fa4196"
+      }
+    ]
+  },
+  {
+    "repository": "meta-pytorch/tritonbench",
+    "url": "https://github.com/meta-pytorch/tritonbench",
+    "commit": "cdadd2ea64f487c75c504e1de9d03fb88a06bd2d",
+    "commit_date": "2026-09-11T19:33:35Z",
+    "retrieved_at": "2026-09-12T01:15:56.506494+00:00",
+    "license": {
+      "key": "bsd-3-clause",
+      "name": "BSD 3-Clause \"New\" or \"Revised\" License",
+      "spdx_id": "BSD-3-Clause",
+      "url": "https://api.github.com/licenses/bsd-3-clause",
+      "node_id": "MDc6TGljZW5zZTU="
+    },
+    "archived": false,
+    "files": [
+      {
+        "path": "LICENSE",
+        "url": "https://raw.githubusercontent.com/meta-pytorch/tritonbench/cdadd2ea64f487c75c504e1de9d03fb88a06bd2d/LICENSE",
+        "sha256": "e19722ba0a7237bc1c3382fef69c8387f7adbcc51e21f0610d3c87d737999503"
+      },
+      {
+        "path": "README.md",
+        "url": "https://raw.githubusercontent.com/meta-pytorch/tritonbench/cdadd2ea64f487c75c504e1de9d03fb88a06bd2d/README.md",
+        "sha256": "6e2ce693375af2cab9216fc7a93aad7c465d09d5170556cb694b466b84c9ecd7"
+      }
+    ]
+  },
+  {
+    "repository": "thunlp/TritonBench",
+    "url": "https://github.com/thunlp/TritonBench",
+    "commit": "603e28a5050e8c268f6883a69709d477a272d49a",
+    "commit_date": "2025-06-14T15:49:37Z",
+    "retrieved_at": "2026-09-12T01:15:56.400476+00:00",
+    "license": {
+      "key": "apache-2.0",
+      "name": "Apache License 2.0",
+      "spdx_id": "Apache-2.0",
+      "url": "https://api.github.com/licenses/apache-2.0",
+      "node_id": "MDc6TGljZW5zZTI="
+    },
+    "archived": false,
+    "files": [
+      {
+        "path": "LICENSE",
+        "url": "https://raw.githubusercontent.com/thunlp/TritonBench/603e28a5050e8c268f6883a69709d477a272d49a/LICENSE",
+        "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+      },
+      {
+        "path": "README.md",
+        "url": "https://raw.githubusercontent.com/thunlp/TritonBench/603e28a5050e8c268f6883a69709d477a272d49a/README.md",
+        "sha256": "abd02263d11a54b1bca69e221f1a3473381b9d722becb694439f32304951372e"
+      }
+    ]
+  },
+  {
+    "repository": "meta-pytorch/KernelAgent",
+    "url": "https://github.com/meta-pytorch/KernelAgent",
+    "commit": "e0647170da36ef9b059ac0bd3d60103aa4ed378b",
+    "commit_date": "2026-07-15T19:01:18Z",
+    "retrieved_at": "2026-09-12T01:15:56.086394+00:00",
+    "license": {
+      "key": "apache-2.0",
+      "name": "Apache License 2.0",
+      "spdx_id": "Apache-2.0",
+      "url": "https://api.github.com/licenses/apache-2.0",
+      "node_id": "MDc6TGljZW5zZTI="
+    },
+    "archived": false,
+    "files": [
+      {
+        "path": "LICENSE",
+        "url": "https://raw.githubusercontent.com/meta-pytorch/KernelAgent/e0647170da36ef9b059ac0bd3d60103aa4ed378b/LICENSE",
+        "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+      },
+      {
+        "path": "README.md",
+        "url": "https://raw.githubusercontent.com/meta-pytorch/KernelAgent/e0647170da36ef9b059ac0bd3d60103aa4ed378b/README.md",
+        "sha256": "a44ab32292e4fbeb06c31ba4c476c8e5565878529ca94bab4168bff9d5e7ab0c"
+      }
+    ]
+  },
+  {
+    "repository": "SakanaAI/AI-CUDA-Engineer",
+    "error": "HTTP Error 404: Not Found"
+  },
+  {
+    "repository": "NVIDIA/cutlass",
+    "url": "https://github.com/NVIDIA/cutlass",
+    "commit": "147295a3d4b75f3aeff247c25b8927cea9a7006a",
+    "commit_date": "2026-09-08T06:20:12Z",
+    "retrieved_at": "2026-09-12T01:16:01.234448+00:00",
+    "license": {
+      "key": "other",
+      "name": "Other",
+      "spdx_id": "NOASSERTION",
+      "url": null,
+      "node_id": "MDc6TGljZW5zZTA="
+    },
+    "archived": false,
+    "files": [
+      {
+        "path": "LICENSE.txt",
+        "url": "https://raw.githubusercontent.com/NVIDIA/cutlass/147295a3d4b75f3aeff247c25b8927cea9a7006a/LICENSE.txt",
+        "sha256": "ad1513ca983da737a6843364ad19e8424a56d860736c2da773b8c5be527e1475"
+      },
+      {
+        "path": "README.md",
+        "url": "https://raw.githubusercontent.com/NVIDIA/cutlass/147295a3d4b75f3aeff247c25b8927cea9a7006a/README.md",
+        "sha256": "a78c6aa81d87a88012db7b6570015c8a87f2778f663348c6ffc61936e06b9dce"
+      }
+    ]
+  },
+  {
+    "repository": "triton-lang/triton",
+    "url": "https://github.com/triton-lang/triton",
+    "commit": "979c55829b152507bf2b44815bc7eea4ba7e8803",
+    "commit_date": "2026-09-12T01:01:42Z",
+    "retrieved_at": "2026-09-12T01:15:57.453853+00:00",
+    "license": {
+      "key": "mit",
+      "name": "MIT License",
+      "spdx_id": "MIT",
+      "url": "https://api.github.com/licenses/mit",
+      "node_id": "MDc6TGljZW5zZTEz"
+    },
+    "archived": false,
+    "files": [
+      {
+        "path": "LICENSE",
+        "url": "https://raw.githubusercontent.com/triton-lang/triton/979c55829b152507bf2b44815bc7eea4ba7e8803/LICENSE",
+        "sha256": "92640fb97222fd0a698ff28ce0c3782c172623f8d6c609b557636a80f28fb946"
+      },
+      {
+        "path": "README.md",
+        "url": "https://raw.githubusercontent.com/triton-lang/triton/979c55829b152507bf2b44815bc7eea4ba7e8803/README.md",
+        "sha256": "4f0ded3ebe9e29b127a1f9438d72984277ba8dbcf8f0efa5ad2ac9f1288a3587"
+      }
+    ]
+  },
+  {
+    "repository": "tile-ai/tilelang",
+    "url": "https://github.com/tile-ai/tilelang",
+    "commit": "66c003c3e75c336f22d928fcd5d3b284cf5a18a0",
+    "commit_date": "2026-09-11T17:52:03Z",
+    "retrieved_at": "2026-09-12T01:16:01.328841+00:00",
+    "license": {
+      "key": "other",
+      "name": "Other",
+      "spdx_id": "NOASSERTION",
+      "url": null,
+      "node_id": "MDc6TGljZW5zZTA="
+    },
+    "archived": false,
+    "files": [
+      {
+        "path": "LICENSE",
+        "url": "https://raw.githubusercontent.com/tile-ai/tilelang/66c003c3e75c336f22d928fcd5d3b284cf5a18a0/LICENSE",
+        "sha256": "f70e5cdc24c3797af741930440086f9a0ad36930b05a3dfc25b420936dc2cfa1"
+      },
+      {
+        "path": "README.md",
+        "url": "https://raw.githubusercontent.com/tile-ai/tilelang/66c003c3e75c336f22d928fcd5d3b284cf5a18a0/README.md",
+        "sha256": "6e797d5b06ef98f086463b328666edb43afbd757e8b18ae56c63785af8b6fba2"
+      }
+    ]
+  },
+  {
+    "repository": "KernelTuner/kernel_tuner",
+    "url": "https://github.com/KernelTuner/kernel_tuner",
+    "commit": "5d0d9e98066c06a7da0097cac8806e6f95952ab9",
+    "commit_date": "2026-09-11T07:08:20Z",
+    "retrieved_at": "2026-09-12T01:16:02.746369+00:00",
+    "license": {
+      "key": "apache-2.0",
+      "name": "Apache License 2.0",
+      "spdx_id": "Apache-2.0",
+      "url": "https://api.github.com/licenses/apache-2.0",
+      "node_id": "MDc6TGljZW5zZTI="
+    },
+    "archived": false,
+    "files": [
+      {
+        "path": "LICENSE",
+        "url": "https://raw.githubusercontent.com/KernelTuner/kernel_tuner/5d0d9e98066c06a7da0097cac8806e6f95952ab9/LICENSE",
+        "sha256": "c6596eb7be8581c18be736c846fb9173b69eccf6ef94c5135893ec56bd92ba08"
+      },
+      {
+        "path": "README.md",
+        "url": "https://raw.githubusercontent.com/KernelTuner/kernel_tuner/5d0d9e98066c06a7da0097cac8806e6f95952ab9/README.md",
+        "sha256": "e89fe5bdfbc28a946fcd61cb389478bed3ee4bdd06ab4cd71ac8c78678daabe9"
+      }
+    ]
+  },
+  {
+    "repository": "NVIDIA/nvbench",
+    "url": "https://github.com/NVIDIA/nvbench",
+    "commit": "410dcdd21c9b48191ecb3d3d77060b1bf4ac6244",
+    "commit_date": "2026-08-31T15:47:15Z",
+    "retrieved_at": "2026-09-12T01:16:02.282989+00:00",
+    "license": {
+      "key": "apache-2.0",
+      "name": "Apache License 2.0",
+      "spdx_id": "Apache-2.0",
+      "url": "https://api.github.com/licenses/apache-2.0",
+      "node_id": "MDc6TGljZW5zZTI="
+    },
+    "archived": false,
+    "files": [
+      {
+        "path": "LICENSE",
+        "url": "https://raw.githubusercontent.com/NVIDIA/nvbench/410dcdd21c9b48191ecb3d3d77060b1bf4ac6244/LICENSE",
+        "sha256": "9e45e856bedccee9f67254082ca11851d954de2fed7448c4bed19ad9aab99a91"
+      },
+      {
+        "path": "README.md",
+        "url": "https://raw.githubusercontent.com/NVIDIA/nvbench/410dcdd21c9b48191ecb3d3d77060b1bf4ac6244/README.md",
+        "sha256": "4356b9491f88c02024e4bf03c45a106ab8529bae7d3f864358a2ab119f71b8d5"
+      }
+    ]
+  },
+  {
+    "repository": "NVIDIA/MatX",
+    "url": "https://github.com/NVIDIA/MatX",
+    "commit": "afb0b2e8c0a07532b9984508c1fdbc9738759736",
+    "commit_date": "2026-09-09T19:58:03Z",
+    "retrieved_at": "2026-09-12T01:16:03.404715+00:00",
+    "license": {
+      "key": "bsd-3-clause",
+      "name": "BSD 3-Clause \"New\" or \"Revised\" License",
+      "spdx_id": "BSD-3-Clause",
+      "url": "https://api.github.com/licenses/bsd-3-clause",
+      "node_id": "MDc6TGljZW5zZTU="
+    },
+    "archived": false,
+    "files": [
+      {
+        "path": "LICENSE",
+        "url": "https://raw.githubusercontent.com/NVIDIA/MatX/afb0b2e8c0a07532b9984508c1fdbc9738759736/LICENSE",
+        "sha256": "6574934b23f54cd4177753de0d438db7df2cc94e8a5f0c67b69ab551530190eb"
+      },
+      {
+        "path": "README.md",
+        "url": "https://raw.githubusercontent.com/NVIDIA/MatX/afb0b2e8c0a07532b9984508c1fdbc9738759736/README.md",
+        "sha256": "f086eb5b01cfe69dca7ec000423e7824c0c01b96047b55527ea295f9fcd60378"
+      }
+    ]
+  },
+  {
+    "repository": "flashinfer-ai/flashinfer",
+    "url": "https://github.com/flashinfer-ai/flashinfer",
+    "commit": "eea399b74fe3cb74f942f21eecfed6c0d46561c4",
+    "commit_date": "2026-09-11T23:52:20Z",
+    "retrieved_at": "2026-09-12T01:16:03.682276+00:00",
+    "license": {
+      "key": "apache-2.0",
+      "name": "Apache License 2.0",
+      "spdx_id": "Apache-2.0",
+      "url": "https://api.github.com/licenses/apache-2.0",
+      "node_id": "MDc6TGljZW5zZTI="
+    },
+    "archived": false,
+    "files": [
+      {
+        "path": "LICENSE",
+        "url": "https://raw.githubusercontent.com/flashinfer-ai/flashinfer/eea399b74fe3cb74f942f21eecfed6c0d46561c4/LICENSE",
+        "sha256": "cb67c224f503e0a063908950b12f89a7280c6e527dcffac972aa114e4bf3c5de"
+      },
+      {
+        "path": "README.md",
+        "url": "https://raw.githubusercontent.com/flashinfer-ai/flashinfer/eea399b74fe3cb74f942f21eecfed6c0d46561c4/README.md",
+        "sha256": "7c163cfd6a584178790827028d578f2f2ce681e64381607459ad2ae1d4bd52c7"
+      }
+    ]
+  }
+]

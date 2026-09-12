@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CPU test run evidence (not GPU/task acceptance)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "kind", "run_id", "status", "reason", "exit_code", "pytest_exit_code", "started_at", "duration_seconds", "command", "environment", "counts", "artifacts", "report_path"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "kind": {"const": "cpu_test_run"},
+    "run_id": {"type": "string", "pattern": "^[a-f0-9]{32}$"},
+    "status": {"enum": ["PASS", "FAIL"]},
+    "reason": {"type": "string", "minLength": 1},
+    "exit_code": {"enum": [0, 1]},
+    "pytest_exit_code": {"type": ["integer", "null"]},
+    "started_at": {"type": "string", "format": "date-time"},
+    "duration_seconds": {"type": "number", "minimum": 0},
+    "command": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "environment": {
+      "type": "object", "additionalProperties": false,
+      "required": ["python", "platform"],
+      "properties": {"python": {"type": "string"}, "platform": {"type": "string"}}
+    },
+    "counts": {
+      "type": "object", "additionalProperties": false,
+      "required": ["total", "passed", "failed", "errors", "skipped"],
+      "properties": {
+        "total": {"type": "integer", "minimum": 0},
+        "passed": {"type": "integer", "minimum": 0},
+        "failed": {"type": "integer", "minimum": 0},
+        "errors": {"type": "integer", "minimum": 0},
+        "skipped": {"type": "integer", "minimum": 0}
+      }
+    },
+    "artifacts": {"type": "array", "items": {
+      "type": "object", "additionalProperties": false, "required": ["path", "sha256"],
+      "properties": {
+        "path": {"type": "string", "enum": ["stdout.log", "stderr.log", "junit.xml"]},
+        "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+      }
+    }},
+    "report_path": {"type": "string", "minLength": 1}
+  },
+  "allOf": [{
+    "if": {"properties": {"status": {"const": "PASS"}}},
+    "then": {"properties": {
+      "exit_code": {"const": 0}, "pytest_exit_code": {"const": 0},
+      "counts": {"properties": {"passed": {"minimum": 1}, "failed": {"const": 0}, "errors": {"const": 0}}}
+    }},
+    "else": {"properties": {"exit_code": {"const": 1}}}
+  }]
+}

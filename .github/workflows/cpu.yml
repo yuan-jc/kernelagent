@@ -1,0 +1,35 @@
+name: CPU acceptance
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cpu:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ['3.11', '3.13']
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.12.13'
+          python-version: ${{ matrix.python }}
+      - run: uv sync --locked
+      - run: uv run --locked ruff check .
+      - run: uv run --locked ruff format --check .
+      - run: uv run --locked kernelagent check --output artifacts/ci
+      - run: uv build --no-sources
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cpu-${{ matrix.os }}-${{ matrix.python }}
+          path: artifacts/ci
+          if-no-files-found: error

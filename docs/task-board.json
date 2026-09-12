@@ -1,0 +1,528 @@
+{
+  "schema_version": "1.0",
+  "updated_at": "2026-09-12",
+  "design_baseline": "docs/NVIDIA算子优化Agent设计文档.md",
+  "plan": "docs/开发任务与验收计划.md",
+  "status_values": [
+    "TODO",
+    "IN_PROGRESS",
+    "READY_FOR_ACCEPTANCE",
+    "ACCEPTED",
+    "BLOCKED"
+  ],
+  "check_values": [
+    "PASS",
+    "FAIL",
+    "NOT_RUN",
+    "N/A"
+  ],
+  "notes": [
+    "No implementation work package has been started or accepted.",
+    "Dependencies are hard gates; acceptance requires evidence, not narrative.",
+    "GPU N/A means this package is offline; it does not certify integrated GPU behavior.",
+    "Create a work-package record from docs/work-package-template.md before implementation; exact acceptance commands are not implemented yet.",
+    "Child packages may be added without weakening the parent acceptance contract."
+  ],
+  "tasks": [
+    {
+      "id": "T00",
+      "title": "工程与验收入口",
+      "dependencies": [],
+      "status": "READY_FOR_ACCEPTANCE",
+      "checks": {
+        "CPU": "PASS",
+        "GPU": "N/A",
+        "LIVE_MODEL": "N/A",
+        "REVIEW": "PASS"
+      },
+      "evidence": [
+        "docs/work-packages/T00.md"
+      ],
+      "work_package_record": "docs/work-packages/T00.md",
+      "blocker": null
+    },
+    {
+      "id": "T01",
+      "title": "核心 domain 契约",
+      "dependencies": [
+        "T00"
+      ],
+      "status": "TODO",
+      "checks": {
+        "CPU": "NOT_RUN",
+        "GPU": "N/A",
+        "LIVE_MODEL": "N/A",
+        "REVIEW": "NOT_RUN"
+      },
+      "evidence": [],
+      "work_package_record": null,
+      "blocker": null
+    },
+    {
+      "id": "T02",
+      "title": "KernelBench 数据适配",
+      "dependencies": [
+        "T01"
+      ],
+      "status": "TODO",
+      "checks": {
+        "CPU": "NOT_RUN",
+        "GPU": "N/A",
+        "LIVE_MODEL": "N/A",
+        "REVIEW": "NOT_RUN"
+      },
+      "evidence": [],
+      "work_package_record": null,
+      "blocker": null
+    },
+    {
+      "id": "T03",
+      "title": "GPU 环境探测",
+      "dependencies": [
+        "T00"
+      ],
+      "status": "TODO",
+      "checks": {
+        "CPU": "NOT_RUN",
+        "GPU": "NOT_RUN",
+        "LIVE_MODEL": "N/A",
+        "REVIEW": "NOT_RUN"
+      },
+      "evidence": [],
+      "work_package_record": null,
+      "blocker": null
+    },
+    {
+      "id": "T04",
+      "title": "可信 worker 边界",
+      "dependencies": [
+        "T01",
+        "T03"
+      ],
+      "status": "TODO",
+      "checks": {
+        "CPU": "NOT_RUN",
+        "GPU": "NOT_RUN",
+        "LIVE_MODEL": "N/A",
+        "REVIEW": "NOT_RUN"
+      },
+      "evidence": [],
+      "work_package_record": null,
+      "blocker": null
+    },
+    {
+      "id": "T05",
+      "title": "上游基线与原生评测",
+      "dependencies": [
+        "T02",
+        "T03",
+        "T04"
+      ],
+      "status": "TODO",
+      "checks": {
+        "CPU": "NOT_RUN",
+        "GPU": "NOT_RUN",
+        "LIVE_MODEL": "N/A",
+        "REVIEW": "NOT_RUN"
+      },
+      "evidence": [],
+      "work_package_record": null,
+      "blocker": null
+    },
+    {
+      "id": "T06",
+      "title": "增强正确性",
+      "dependencies": [
+        "T05"
+      ],
+      "status": "TODO",
+      "checks": {
+        "CPU": "NOT_RUN",
+        "GPU": "NOT_RUN",
+        "LIVE_MODEL": "N/A",
+        "REVIEW": "NOT_RUN"
+      },
+      "evidence": [],
+      "work_package_record": null,
+      "blocker": null
+    },
+    {
+      "id": "T07",
+      "title": "正式计时协议",
+      "dependencies": [
+        "T05"
+      ],
+      "status": "TODO",
+      "checks": {
+        "CPU": "NOT_RUN",
+        "GPU": "NOT_RUN",
+        "LIVE_MODEL": "N/A",
+        "REVIEW": "NOT_RUN"
+      },
+      "evidence": [],
+      "work_package_record": null,
+      "blocker": null
+    },
+    {
+      "id": "T08",
+      "title": "证据存储与身份",
+      "dependencies": [
+        "T01"
+      ],
+      "status": "TODO",
+      "checks": {
+        "CPU": "NOT_RUN",
+        "GPU": "N/A",
+        "LIVE_MODEL": "N/A",
+        "REVIEW": "NOT_RUN"
+      },
+      "evidence": [],
+      "work_package_record": null,
+      "blocker": null
+    },
+    {
+      "id": "T09",
+      "title": "晋升与聚合",
+      "dependencies": [
+        "T07",
+        "T08"
+      ],
+      "status": "TODO",
+      "checks": {
+        "CPU": "NOT_RUN",
+        "GPU": "N/A",
+        "LIVE_MODEL": "N/A",
+        "REVIEW": "NOT_RUN"
+      },
+      "evidence": [],
+      "work_package_record": null,
+      "blocker": null
+    },
+    {
+      "id": "T10",
+      "title": "状态机与预算恢复",
+      "dependencies": [
+        "T05",
+        "T08",
+        "T09"
+      ],
+      "status": "TODO",
+      "checks": {
+        "CPU": "NOT_RUN",
+        "GPU": "NOT_RUN",
+        "LIVE_MODEL": "N/A",
+        "REVIEW": "NOT_RUN"
+      },
+      "evidence": [],
+      "work_package_record": null,
+      "blocker": null
+    },
+    {
+      "id": "T11",
+      "title": "现成 KernelAgent 接入",
+      "dependencies": [
+        "T04",
+        "T05",
+        "T06",
+        "T07",
+        "T08",
+        "T09",
+        "T10"
+      ],
+      "status": "TODO",
+      "checks": {
+        "CPU": "NOT_RUN",
+        "GPU": "NOT_RUN",
+        "LIVE_MODEL": "NOT_RUN",
+        "REVIEW": "NOT_RUN"
+      },
+      "evidence": [],
+      "work_package_record": null,
+      "blocker": null
+    },
+    {
+      "id": "T12",
+      "title": "模型客户端与初始生成",
+      "dependencies": [
+        "T01",
+        "T04",
+        "T10"
+      ],
+      "status": "TODO",
+      "checks": {
+        "CPU": "NOT_RUN",
+        "GPU": "NOT_RUN",
+        "LIVE_MODEL": "NOT_RUN",
+        "REVIEW": "NOT_RUN"
+      },
+      "evidence": [],
+      "work_package_record": null,
+      "blocker": null
+    },
+    {
+      "id": "T13",
+      "title": "复用/模板方法",
+      "dependencies": [
+        "T02",
+        "T10",
+        "T12"
+      ],
+      "status": "TODO",
+      "checks": {
+        "CPU": "NOT_RUN",
+        "GPU": "NOT_RUN",
+        "LIVE_MODEL": "N/A",
+        "REVIEW": "NOT_RUN"
+      },
+      "evidence": [],
+      "work_package_record": null,
+      "blocker": null
+    },
+    {
+      "id": "T14",
+      "title": "原生参数调优",
+      "dependencies": [
+        "T07",
+        "T10",
+        "T13"
+      ],
+      "status": "TODO",
+      "checks": {
+        "CPU": "NOT_RUN",
+        "GPU": "NOT_RUN",
+        "LIVE_MODEL": "N/A",
+        "REVIEW": "NOT_RUN"
+      },
+      "evidence": [],
+      "work_package_record": null,
+      "blocker": null
+    },
+    {
+      "id": "T15",
+      "title": "NCU 证据适配",
+      "dependencies": [
+        "T03",
+        "T04",
+        "T08"
+      ],
+      "status": "TODO",
+      "checks": {
+        "CPU": "NOT_RUN",
+        "GPU": "NOT_RUN",
+        "LIVE_MODEL": "N/A",
+        "REVIEW": "NOT_RUN"
+      },
+      "evidence": [],
+      "work_package_record": null,
+      "blocker": null
+    },
+    {
+      "id": "T16",
+      "title": "证据驱动生成与搜索",
+      "dependencies": [
+        "T09",
+        "T10",
+        "T12",
+        "T13",
+        "T14",
+        "T15"
+      ],
+      "status": "TODO",
+      "checks": {
+        "CPU": "NOT_RUN",
+        "GPU": "NOT_RUN",
+        "LIVE_MODEL": "NOT_RUN",
+        "REVIEW": "NOT_RUN"
+      },
+      "evidence": [],
+      "work_package_record": null,
+      "blocker": null
+    },
+    {
+      "id": "T17",
+      "title": "时间线、SASS、消融与记忆",
+      "dependencies": [
+        "T08",
+        "T15",
+        "T16"
+      ],
+      "status": "TODO",
+      "checks": {
+        "CPU": "NOT_RUN",
+        "GPU": "NOT_RUN",
+        "LIVE_MODEL": "N/A",
+        "REVIEW": "NOT_RUN"
+      },
+      "evidence": [],
+      "work_package_record": null,
+      "blocker": null
+    },
+    {
+      "id": "T18",
+      "title": "Meta tritonbench 扩展",
+      "dependencies": [
+        "T01",
+        "T07",
+        "T08",
+        "T09",
+        "T10"
+      ],
+      "status": "TODO",
+      "checks": {
+        "CPU": "NOT_RUN",
+        "GPU": "NOT_RUN",
+        "LIVE_MODEL": "N/A",
+        "REVIEW": "NOT_RUN"
+      },
+      "evidence": [],
+      "work_package_record": null,
+      "blocker": null
+    },
+    {
+      "id": "T19",
+      "title": "FlashInfer-Bench 扩展",
+      "dependencies": [
+        "T01",
+        "T07",
+        "T08",
+        "T09",
+        "T10"
+      ],
+      "status": "TODO",
+      "checks": {
+        "CPU": "NOT_RUN",
+        "GPU": "NOT_RUN",
+        "LIVE_MODEL": "N/A",
+        "REVIEW": "NOT_RUN"
+      },
+      "evidence": [],
+      "work_package_record": null,
+      "blocker": null
+    },
+    {
+      "id": "T20",
+      "title": "CUDA/CUTLASS 搜索后端",
+      "dependencies": [
+        "T04",
+        "T07",
+        "T10",
+        "T13"
+      ],
+      "status": "TODO",
+      "checks": {
+        "CPU": "NOT_RUN",
+        "GPU": "NOT_RUN",
+        "LIVE_MODEL": "N/A",
+        "REVIEW": "NOT_RUN"
+      },
+      "evidence": [],
+      "work_package_record": null,
+      "blocker": null
+    },
+    {
+      "id": "T21",
+      "title": "多 workload 与 dispatch",
+      "dependencies": [
+        "T06",
+        "T09",
+        "T13"
+      ],
+      "status": "TODO",
+      "checks": {
+        "CPU": "NOT_RUN",
+        "GPU": "NOT_RUN",
+        "LIVE_MODEL": "N/A",
+        "REVIEW": "NOT_RUN"
+      },
+      "evidence": [],
+      "work_package_record": null,
+      "blocker": null
+    },
+    {
+      "id": "T22",
+      "title": "长实验与结果导出",
+      "dependencies": [
+        "T08",
+        "T10",
+        "T16"
+      ],
+      "status": "TODO",
+      "checks": {
+        "CPU": "NOT_RUN",
+        "GPU": "NOT_RUN",
+        "LIVE_MODEL": "N/A",
+        "REVIEW": "NOT_RUN"
+      },
+      "evidence": [],
+      "work_package_record": null,
+      "blocker": null
+    },
+    {
+      "id": "T23",
+      "title": "整体验收与对抗回归",
+      "dependencies": [
+        "T06",
+        "T07",
+        "T08",
+        "T09",
+        "T10",
+        "T11",
+        "T12",
+        "T13",
+        "T14",
+        "T15",
+        "T16",
+        "T17",
+        "T18",
+        "T19",
+        "T20",
+        "T21",
+        "T22"
+      ],
+      "status": "TODO",
+      "checks": {
+        "CPU": "NOT_RUN",
+        "GPU": "NOT_RUN",
+        "LIVE_MODEL": "NOT_RUN",
+        "REVIEW": "NOT_RUN"
+      },
+      "evidence": [],
+      "work_package_record": null,
+      "blocker": null
+    },
+    {
+      "id": "T24",
+      "title": "正式实验冻结与运行",
+      "dependencies": [
+        "T23"
+      ],
+      "status": "TODO",
+      "checks": {
+        "CPU": "NOT_RUN",
+        "GPU": "NOT_RUN",
+        "LIVE_MODEL": "NOT_RUN",
+        "REVIEW": "NOT_RUN"
+      },
+      "evidence": [],
+      "work_package_record": null,
+      "blocker": null
+    },
+    {
+      "id": "T25",
+      "title": "研究分析与实验包",
+      "dependencies": [
+        "T24"
+      ],
+      "status": "TODO",
+      "checks": {
+        "CPU": "NOT_RUN",
+        "GPU": "N/A",
+        "LIVE_MODEL": "N/A",
+        "REVIEW": "NOT_RUN"
+      },
+      "evidence": [],
+      "work_package_record": null,
+      "blocker": null
+    }
+  ]
+}

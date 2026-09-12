@@ -1,0 +1,45 @@
+[
+  {
+    "repository": "BytedTsinghua-SIA/CUDA-Agent",
+    "url": "https://github.com/BytedTsinghua-SIA/CUDA-Agent",
+    "commit": "473025c8af7878e928525138b5cb327d6bcdf9dd",
+    "commit_date": "2026-03-02T08:46:51Z",
+    "retrieved_at": "2026-09-12T01:16:16.293775+00:00",
+    "license": null,
+    "archived": false,
+    "files": [
+      {
+        "path": "README.md",
+        "url": "https://raw.githubusercontent.com/BytedTsinghua-SIA/CUDA-Agent/473025c8af7878e928525138b5cb327d6bcdf9dd/README.md",
+        "sha256": "be4bb0ca30e6a6865c431e65af06403cab62f5321c2b0dbf5be5ecd8b3973665"
+      }
+    ]
+  },
+  {
+    "repository": "NVlabs/kda",
+    "url": "https://github.com/NVlabs/kda",
+    "commit": "4806866492d5c7cad05e07918790bd1e94e976a1",
+    "commit_date": "2026-09-11T05:38:05Z",
+    "retrieved_at": "2026-09-12T01:16:17.522352+00:00",
+    "license": {
+      "key": "other",
+      "name": "Other",
+      "spdx_id": "NOASSERTION",
+      "url": null,
+      "node_id": "MDc6TGljZW5zZTA="
+    },
+    "archived": false,
+    "files": [
+      {
+        "path": "LICENSE",
+        "url": "https://raw.githubusercontent.com/NVlabs/kda/4806866492d5c7cad05e07918790bd1e94e976a1/LICENSE",
+        "sha256": "79a6a78693f4e02b1f43837ceb014aefda32d319e4298425c7314465c26abe23"
+      },
+      {
+        "path": "README.md",
+        "url": "https://raw.githubusercontent.com/NVlabs/kda/4806866492d5c7cad05e07918790bd1e94e976a1/README.md",
+        "sha256": "47e56fd8384fd3f375c89c5f6c94b5e86a097bfa682070136f983535e2babdb0"
+      }
+    ]
+  }
+]

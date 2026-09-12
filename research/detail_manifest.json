@@ -1,0 +1,102 @@
+[
+  {
+    "file": "sources/ScalingIntelligence__KernelBench/EVAL.md",
+    "url": "https://raw.githubusercontent.com/ScalingIntelligence/KernelBench/423217d9fda91e0c2d67e4a43bf62f96f6d104f1/EVAL.md",
+    "sha256": "ad7d15ae20b07db7e325e26a5239ccd3e3f9242912e7a58a15e16734dcfbc3a8"
+  },
+  {
+    "file": "sources/ScalingIntelligence__KernelBench/src/kernelbench/eval.py",
+    "url": "https://raw.githubusercontent.com/ScalingIntelligence/KernelBench/423217d9fda91e0c2d67e4a43bf62f96f6d104f1/src/kernelbench/eval.py",
+    "sha256": "b42ce1268ec64ee7274db307ab98945c1e868792b54689554014b28c41787ee6"
+  },
+  {
+    "file": "sources/ScalingIntelligence__KernelBench/src/kernelbench/timing.py",
+    "url": "https://raw.githubusercontent.com/ScalingIntelligence/KernelBench/423217d9fda91e0c2d67e4a43bf62f96f6d104f1/src/kernelbench/timing.py",
+    "sha256": "eaabdad5dd042cfaac7159713b5f0c17a9244e65622b504eb3ca909d780854c5"
+  },
+  {
+    "file": "sources/ScalingIntelligence__KernelBench/src/kernelbench/dataset.py",
+    "url": "https://raw.githubusercontent.com/ScalingIntelligence/KernelBench/423217d9fda91e0c2d67e4a43bf62f96f6d104f1/src/kernelbench/dataset.py",
+    "sha256": "53d1f24a73bca99855a61de45d0c7bcf21d0bf0f59959e4ad3cc9ded2cee3475"
+  },
+  {
+    "file": "sources/ScalingIntelligence__KernelBench/scripts/run_and_check.py",
+    "url": "https://raw.githubusercontent.com/ScalingIntelligence/KernelBench/423217d9fda91e0c2d67e4a43bf62f96f6d104f1/scripts/run_and_check.py",
+    "sha256": "6c88e6988e36c7f5fedba1bb20b3232ed338f83af757b9176bc9284465eade27"
+  },
+  {
+    "file": "sources/ScalingIntelligence__KernelBench/pyproject.toml",
+    "url": "https://raw.githubusercontent.com/ScalingIntelligence/KernelBench/423217d9fda91e0c2d67e4a43bf62f96f6d104f1/pyproject.toml",
+    "sha256": "121ae3926588615363d111e0c0e28474a38eebc2cef7c01ba045b99e76fccf95"
+  },
+  {
+    "file": "sources/meta-pytorch__tritonbench/tritonbench/utils/triton_op.py",
+    "url": "https://raw.githubusercontent.com/meta-pytorch/tritonbench/cdadd2ea64f487c75c504e1de9d03fb88a06bd2d/tritonbench/utils/triton_op.py",
+    "sha256": "6f3dca2808771481c82cffc17e5c1062f125ba69da4fcc52f60eaa4e99e65d9f"
+  },
+  {
+    "file": "sources/meta-pytorch__tritonbench/tritonbench/operators/gemm/operator.py",
+    "url": "https://raw.githubusercontent.com/meta-pytorch/tritonbench/cdadd2ea64f487c75c504e1de9d03fb88a06bd2d/tritonbench/operators/gemm/operator.py",
+    "sha256": "5cfa8e2907bc678648158f597948be19ce38af083037a529e884286f054debf8"
+  },
+  {
+    "file": "sources/meta-pytorch__KernelAgent/triton_kernel_agent/opt_worker_component/profiling/kernel_profiler.py",
+    "url": "https://raw.githubusercontent.com/meta-pytorch/KernelAgent/e0647170da36ef9b059ac0bd3d60103aa4ed378b/triton_kernel_agent/opt_worker_component/profiling/kernel_profiler.py",
+    "sha256": "a63a292de3a796ea63d4b5f2d724ae2795a7d2e718430f580d82083c7be76a08"
+  },
+  {
+    "file": "sources/meta-pytorch__KernelAgent/triton_kernel_agent/opt_worker_component/orchestrator/optimization_orchestrator.py",
+    "url": "https://raw.githubusercontent.com/meta-pytorch/KernelAgent/e0647170da36ef9b059ac0bd3d60103aa4ed378b/triton_kernel_agent/opt_worker_component/orchestrator/optimization_orchestrator.py",
+    "sha256": "ca53a2f360bb5f4f07e5966b9c02cc6d15a122fc9ba3c6ec07fac9f57050457c"
+  },
+  {
+    "file": "sources/meta-pytorch__KernelAgent/kernel_perf_agent/kernel_opt/roofline/ncu_roofline.py",
+    "url": "https://raw.githubusercontent.com/meta-pytorch/KernelAgent/e0647170da36ef9b059ac0bd3d60103aa4ed378b/kernel_perf_agent/kernel_opt/roofline/ncu_roofline.py",
+    "sha256": "36a476c8e7fee9b5bc0bdb77b884777543edd534bf4eb9c3af52e5d89b0672a4"
+  },
+  {
+    "file": "sources/NVlabs__kda/docs/agent-flow.md",
+    "url": "https://raw.githubusercontent.com/NVlabs/kda/4806866492d5c7cad05e07918790bd1e94e976a1/docs/agent-flow.md",
+    "sha256": "c0bf00c893197cbcebdb8dbbbe742c0fd4b51ac7b34e5bab5c3ea4cd94cdb7de"
+  },
+  {
+    "file": "sources/triton-lang__triton/python/triton/runtime/autotuner.py",
+    "url": "https://raw.githubusercontent.com/triton-lang/triton/979c55829b152507bf2b44815bc7eea4ba7e8803/python/triton/runtime/autotuner.py",
+    "sha256": "b8ad4c3605f36dedba0ed3a0cba0c29ccbede646064343c8923695cb5c9466e0"
+  },
+  {
+    "file": "sources/triton-lang__triton/python/triton/testing.py",
+    "url": "https://raw.githubusercontent.com/triton-lang/triton/979c55829b152507bf2b44815bc7eea4ba7e8803/python/triton/testing.py",
+    "sha256": "587b5e6d6d1986e799277c7b84c0381093e52eab6b556183a678bc5c99f4d7d5"
+  },
+  {
+    "file": "sources/NVIDIA__cutlass/media/docs/cpp/profiler.md",
+    "url": "https://raw.githubusercontent.com/NVIDIA/cutlass/147295a3d4b75f3aeff247c25b8927cea9a7006a/media/docs/cpp/profiler.md",
+    "sha256": "ee9eb83ddca57ae8d86c5a60c648c5cc63a4b30ebdf5b34a19faca3aa2c985bd"
+  },
+  {
+    "file": "sources/nvidia_docs/ncu_profiling_guide.html",
+    "url": "https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html",
+    "sha256": "8707b6fa8a2b6a81f8dd84e20b5bd03b71d584dda219cf54d4622ed2fcdc387b"
+  },
+  {
+    "file": "sources/nvidia_docs/ncu_cli.html",
+    "url": "https://docs.nvidia.com/nsight-compute/NsightComputeCli/index.html",
+    "sha256": "f6037ce5ecf5cb11b4737f28b5892bf45218a25dcab08622c5837de31fbb10b3"
+  },
+  {
+    "file": "sources/nvidia_docs/compute_sanitizer.html",
+    "url": "https://docs.nvidia.com/compute-sanitizer/ComputeSanitizer/index.html",
+    "sha256": "745ad47998f7bf4ec2f2cc5d3e6266cf7b0d70ac4747b7599e787f20eb6bf87c"
+  },
+  {
+    "file": "sources/nvidia_docs/nsight_systems.html",
+    "url": "https://docs.nvidia.com/nsight-systems/UserGuide/index.html",
+    "sha256": "a1a39c40a403c28633fd164222d38a74afaeacd869f3234ad151ffd1559545f4"
+  },
+  {
+    "file": "sources/nvidia_docs/cuda_binary_utilities.html",
+    "url": "https://docs.nvidia.com/cuda/cuda-binary-utilities/index.html",
+    "sha256": "8d77de70364c2afde2ea20f0643e8d2f79ae6e216abc63267ce3ce45ac8e09fc"
+  }
+]
