@@ -17,7 +17,7 @@
     "N/A"
   ],
   "notes": [
-    "Target: Ubuntu + NVIDIA; T03/T04a/T04 (GPU chain), T05 (upstream eval), T06 (extended correctness), T07 (timing), T09 (promotion) ACCEPTED by 2026-09-13; next: T10/T15.",
+    "Target: Ubuntu + NVIDIA; T03-T07 (T04a,T04,T05,T06), T09, T10 ACCEPTED by 2026-09-13; G1 gate (trusted experiment machine) closed; T11/T12/T13/T14/T15/T18/T19/T20 deps now open.",
     "Current evidence is consolidated in docs/evidence/current.json; pre-cleanup history remains at Git commit 1b4a306.",
     "T04a is process mechanics, not a sandbox; T12a is offline model plumbing, not live generation.",
     "No target GPU or live model acceptance is implied by CPU tests or CI. Preserve parent package gates."
@@ -251,15 +251,18 @@
         "T08",
         "T09"
       ],
-      "status": "TODO",
+      "status": "ACCEPTED",
       "checks": {
-        "CPU": "NOT_RUN",
-        "GPU": "NOT_RUN",
+        "CPU": "PASS",
+        "GPU": "PASS",
         "LIVE_MODEL": "N/A",
-        "REVIEW": "NOT_RUN"
+        "REVIEW": "PASS"
       },
-      "evidence": [],
-      "work_package_record": null,
+      "evidence": [
+        "docs/work-packages/T10.md",
+        "artifacts/t10/orchestrator-report.json"
+      ],
+      "work_package_record": "docs/work-packages/T10.md",
       "blocker": null
     },
     {

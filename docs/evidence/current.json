@@ -15,8 +15,8 @@
     "T12a"
   ],
   "pending": {
-    "T10/T15": "Both dependency-satisfied; T10 closes the G1 gate, T15 needs host ncu counter permission (sudo config pending)",
-    "LIVE_MODEL": "NOT_RUN"
+    "T11-T22": "G2 wave: T15 dependency-satisfied (needs ncu counter permission for in-container profiling); T11/T12/T13/T14 need nothing beyond T10",
+    "LIVE_MODEL": "NOT_RUN (T12 requires real provider credentials from user)"
   },
   "target_ubuntu_t04": {
     "status": "ACCEPTED",
@@ -451,5 +451,38 @@
       }
     },
     "scope_note": "Extended track is reported separately and never rewrites the upstream (T05) verdict."
+  },
+  "target_ubuntu_t10": {
+    "status": "ACCEPTED",
+    "accepted_at": "2026-09-13",
+    "gpu_checks": {
+      "status": "PASS",
+      "command": "uv run --locked python examples/orchestrator_smoke.py --output artifacts/t10 --crash-after evaluate (exit 9) then --resume (exit 0)",
+      "report": {
+        "path": "artifacts/t10/orchestrator-report.json",
+        "sha256": "e7732ff7106296e3a9064ae35e55172e9e2a3bb583274c7e911f22ae786f563e"
+      },
+      "flow": "evaluate(T05 adapter, triton candidate) -> time_candidate(T07 protocol) -> time_incumbent(eager) -> confirm(T09 promote); crash simulated by os._exit(9) after action_started; recovery marked interrupted, re-ran and completed; evaluate billed twice (honest)"
+    },
+    "cpu_checks": {
+      "status": "PASS",
+      "unit_tests": "8/8 (budget exhaustion, cancel, crash recovery, forged-finish disown, tampered chain, billing)",
+      "full_check": {
+        "command": "uv run --locked kernelagent check --output artifacts/t10-cpu",
+        "exit_code": 0,
+        "counts": {
+          "total": 376,
+          "passed": 373,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 3
+        },
+        "report": {
+          "path": "artifacts/t10-cpu/c0f56b5beac64cc89f633dba4a579bc9/report.json",
+          "sha256": "0e3b71a31479acd415e2adf044f468dcee0b6af65dc146dc4ec798077f7454c8"
+        }
+      }
+    },
+    "scope_note": "Sequential actions only; remote transport/job IDs belong to T22."
   }
 }
