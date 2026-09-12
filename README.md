@@ -1,6 +1,20 @@
 # NVIDIA 算子优化 Agent 设计
 
-T00 工程基础、T01 核心 domain 契约与 T02 KernelBench 数据适配已验收：Python 包、CPU 验收命令、12 个不可变契约对象与内容 hash 身份，以及固定 commit 的 KernelBench 快照读取器（270 题双 hash 清单、35 题冻结开发清单、协议分离、`kernelagent bench verify` 完整性校验）。[T00 四组跨平台 CI 已通过](https://github.com/yuan-jc/kernelagent/actions/runs/34667461881)。尚未实现 GPU 优化 Agent，T05 及后续 GPU 功能未开始。
+T00 工程基础、T01 核心 domain 契约、T02 KernelBench 数据适配与 T08 证据存储已验收：Python 包、CPU 验收命令、12 个不可变契约对象与内容 hash 身份、固定 commit 的 KernelBench 快照读取器（270 题双 hash 清单、35 题冻结开发清单、`kernelagent bench verify`），以及追加式证据存储（内容寻址 artifact、SQLite 索引、`evaluation_key` 身份、实验记录不可变、完整性审计）。[T00 四组跨平台 CI 已通过](https://github.com/yuan-jc/kernelagent/actions/runs/34667461881)。尚未实现 GPU 优化 Agent，T05 及后续 GPU 功能未开始。
+
+## 证据存储（T08）
+
+```python
+from kernelagent.adapters.storage import EvidenceStore, evaluation_key, new_experiment_id
+
+with EvidenceStore(root) as store:
+    ref = store.put_artifact(b"raw timing samples", kind="timing_samples", producer_version="t08")
+    key = evaluation_key(impl_id, workload_sha, protocol_sha, environment_sha)
+    store.record_experiment(new_experiment_id(), key, impl_id, "passed", [ref])
+    assert store.audit().healthy
+```
+
+存储是追加式的：artifact 按内容寻址、原子发布、读取时验证 hash；实验记录不可变（重复提交相同内容幂等，不同内容硬冲突）；环境/协议变更必然改变 `evaluation_key`，缓存永不误命中；`audit()` 检出损坏、缺失与孤立 artifact。
 
 ## KernelBench 快照（T02）
 

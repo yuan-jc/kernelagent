@@ -1,0 +1,38 @@
+{
+  "work_package": "T08",
+  "status": "ACCEPTED",
+  "repository": "https://github.com/yuan-jc/kernelagent",
+  "local": {
+    "platform": "Windows",
+    "python": "3.13.3",
+    "uv": "0.12.13",
+    "cpu_counts": {"passed": 179, "failed": 0, "errors": 0, "skipped": 0},
+    "run_id": "28d00a87d7bb478a92399146de2baa31",
+    "checks": {
+      "artifact_round_trip_idempotent_put": "PASS",
+      "read_and_put_integrity_verification": "PASS",
+      "evidence_referential_integrity": "PASS",
+      "experiment_idempotent_and_conflict": "PASS",
+      "evaluation_key_identity_and_cache_miss_on_change": "PASS",
+      "event_sequence_and_since_query": "PASS",
+      "audit_corrupted_missing_orphaned": "PASS",
+      "reopen_persistence": "PASS",
+      "t00_t02_regression_suite": "PASS",
+      "ruff_check_and_format": "PASS",
+      "wheel_build_storage_functional_in_clean_venv": "PASS"
+    }
+  },
+  "deliverables": [
+    "adapters/storage/evidence.py: EvidenceStore (content-addressed artifacts with atomic publish and read-time hash verification, SQLite index with append-only artifacts/experiments/events tables, ExperimentRecord immutability with idempotent resubmission and hard conflict, referential integrity for evidence refs, monotonic event log, integrity audit)",
+    "evaluation_key(): sha256 over implementation+workload+protocol+environment+canonical tool versions (design 11.1)",
+    "new_experiment_id(): uuid4 identity for one independent execution",
+    "29 new tests covering identity derivation, store behaviors, negative paths and zero-dependency import"
+  ],
+  "review": "PASS: append-only store (no UPDATE/DELETE), artifacts atomically published before indexing, evaluation cache keyed on full identity so environment/protocol changes cannot return stale hits; implementation notes recorded in work package card",
+  "gpu": "N/A",
+  "live_model": "N/A",
+  "limitations": [
+    "Single-writer assumption per design 11.3; multi-process concurrency is T10 territory.",
+    "runs/<run_id> layout and promotion consumption of this store belong to T10/T22 and T09."
+  ]
+}

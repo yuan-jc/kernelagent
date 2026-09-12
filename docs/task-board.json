@@ -17,7 +17,7 @@
     "N/A"
   ],
   "notes": [
-    "T00, T01 and T02 accepted after local CPU checks; T03-T25 remain TODO (T03 blocked on GPU environment being unspecified).",
+    "T00, T01, T02 and T08 accepted after local CPU checks; GPU packages (T03+) await a user-provided Linux NVIDIA environment; T09/T07 chain blocked on GPU.",
     "Dependencies are hard gates; acceptance requires evidence, not narrative.",
     "GPU N/A means this package is offline; it does not certify integrated GPU behavior.",
     "Create a work-package record from docs/work-package-template.md before implementation; exact acceptance commands are not implemented yet.",
@@ -177,15 +177,18 @@
       "dependencies": [
         "T01"
       ],
-      "status": "TODO",
+      "status": "ACCEPTED",
       "checks": {
-        "CPU": "NOT_RUN",
+        "CPU": "PASS",
         "GPU": "N/A",
         "LIVE_MODEL": "N/A",
-        "REVIEW": "NOT_RUN"
+        "REVIEW": "PASS"
       },
-      "evidence": [],
-      "work_package_record": null,
+      "evidence": [
+        "docs/work-packages/T08.md",
+        "docs/evidence/T08.json"
+      ],
+      "work_package_record": "docs/work-packages/T08.md",
       "blocker": null
     },
     {
