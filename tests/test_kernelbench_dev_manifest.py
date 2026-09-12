@@ -10,6 +10,7 @@ from pathlib import Path
 import pytest
 
 from kernelagent.adapters.benchmarks.kernelbench import (
+    canonical_content_sha256,
     check_dev_manifest,
     load_dev_manifest,
     load_files_manifest,
@@ -52,13 +53,26 @@ def test_dev_manifest_protocol_sections_are_separate():
         dev.protocols.merged()
 
 
-def test_dev_manifest_binds_files_manifest_bytes():
-    import hashlib
-
+def test_dev_manifest_binds_files_manifest_canonical_content():
     dev = load_dev_manifest(DEV_MANIFEST)
-    actual = hashlib.sha256(FILES_MANIFEST.read_bytes()).hexdigest()
-    assert dev.files_manifest_sha256 == actual
+    assert dev.files_manifest_sha256 == canonical_content_sha256(FILES_MANIFEST)
     assert dev.files_manifest_path.endswith("snapshot-files.manifest.json")
+
+
+def test_binding_is_line_ending_independent(tmp_path):
+    """Regression: the binding was once computed over raw file bytes, so a
+    CRLF working tree and an LF checkout hashed differently and CI failed on
+    every platform. The binding must hold for any checkout of the same JSON."""
+    dev_raw = DEV_MANIFEST.read_text(encoding="utf-8")
+    files_raw = FILES_MANIFEST.read_text(encoding="utf-8")
+    crlf_files = tmp_path / "files.crlf.json"
+    crlf_files.write_bytes(files_raw.replace("\n", "\r\n").encode("utf-8"))
+    crlf_dev = tmp_path / "dev.crlf.json"
+    crlf_dev.write_bytes(dev_raw.replace("\n", "\r\n").encode("utf-8"))
+    dev = load_dev_manifest(crlf_dev)
+    files = load_files_manifest(crlf_files)
+    report = check_dev_manifest(dev, files, crlf_files)
+    assert report["problems"] == 35
 
 
 def test_every_dev_problem_references_a_manifest_entry():

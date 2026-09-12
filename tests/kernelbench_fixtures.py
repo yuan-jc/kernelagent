@@ -117,7 +117,12 @@ def dev_manifest(
 ) -> dict:
     manifest_payload = files_manifest(files, commit=commit)
     write_json(manifest_path, manifest_payload)
-    binding = hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+    # The binding is over canonical JSON content, not raw file bytes: it must
+    # hold regardless of the platform's line endings.
+    canonical = json.dumps(
+        manifest_payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+    ).encode("utf-8")
+    binding = hashlib.sha256(canonical).hexdigest()
     return {
         "schema_version": "1.0",
         "suite": "kernelbench",

@@ -69,6 +69,20 @@ def _sha256_file(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def _canonical_bytes(payload: object) -> bytes:
+    return json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode(
+        "utf-8"
+    )
+
+
+def canonical_content_sha256(path: Path) -> str:
+    """Hash the canonical JSON content of a manifest, independent of line
+    endings, key order and checkout platform (raw bytes differ between a
+    Windows working tree and an LF checkout; canonical content does not)."""
+    parsed = json.loads(Path(path).read_text(encoding="utf-8"))
+    return hashlib.sha256(_canonical_bytes(parsed)).hexdigest()
+
+
 @dataclass(frozen=True, slots=True)
 class ManifestEntry:
     path: str
@@ -414,7 +428,7 @@ def check_dev_manifest(
             f"dev manifest pins commit {dev.upstream_commit!r} but files manifest pins "
             f"{files.commit!r}; refusing to mix snapshot versions"
         )
-    actual_binding = _sha256_file(Path(files_manifest_path))
+    actual_binding = canonical_content_sha256(Path(files_manifest_path))
     if dev.files_manifest_sha256 != actual_binding:
         raise DevManifestError(
             "files manifest bytes drifted from the hash recorded in the dev manifest; "

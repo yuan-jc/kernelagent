@@ -2,9 +2,9 @@
 
 - 更新时间：2026-09-12
 - 当前工作包：T08，ACCEPTED；G0 剩 T03（GPU 环境探测，需用户提供 Linux NVIDIA worker），G1 剩 T04–T07/T09/T10（均依赖 GPU 链或 T07）。
-- 当前代码状态：T00 工程验收入口 + T01 domain 契约 + T02 KernelBench 数据适配 + T08 证据存储与身份（内容寻址 artifact、SQLite 追加式索引、evaluation_key 身份、实验记录不可变、完整性审计、事件流，179 项测试）。
+- 当前代码状态：T00 工程验收入口 + T01 domain 契约 + T02 KernelBench 数据适配 + T08 证据存储与身份（内容寻址 artifact、SQLite 追加式索引、evaluation_key 身份、实验记录不可变、完整性审计、事件流，180 项测试）。
 - 已完成：详细设计、任务计划、T00、T01、T02、T08，已上传 GitHub 公开仓库 https://github.com/yuan-jc/kernelagent。
-- 已通过检查：T08 本地 179 项 CPU 测试、ruff、wheel 干净安装含 storage 功能验证、audit 健康检查。
+- 已通过检查：本地 180 项 CPU 测试、ruff、wheel 干净安装含 storage 功能验证、audit 健康检查；CI 修复后待远程确认（T01 起 4 个 run 因 README 代码块格式与清单绑定 hash 平台依赖失败，已修复）。
 - 被验证实现：T08 工作包卡片记录的提交（见 docs/work-packages/T08.md 与 docs/evidence/T08.json）。
 - 尚未执行：T03–T07、T09–T25；没有 GPU/模型实验。
 - 环境未知项：目标 NVIDIA GPU、Linux worker 访问方式、NCU 权限、运行时模型配置。网络：GitHub 走本机代理 127.0.0.1:7893（仓库级 git http.proxy 已配置）。

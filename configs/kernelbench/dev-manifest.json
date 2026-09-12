@@ -9,7 +9,7 @@
     "dataset_module_sha256": "53d1f24a73bca99855a61de45d0c7bcf21d0bf0f59959e4ad3cc9ded2cee3475",
     "selection_rule": "LEVEL1_REPRESENTATIVE_IDS / LEVEL2_REPRESENTATIVE_IDS / LEVEL3_REPRESENTATIVE_IDS from src/kernelbench/dataset.py (equivalent to BaseDataset.get_representative_subset, availability-filtered)",
     "files_manifest": "configs/kernelbench/snapshot-files.manifest.json",
-    "files_manifest_sha256": "52b6ae787155e2ae1431f00c9706278a50aadb804c9241314200017a11349b12"
+    "files_manifest_sha256": "93776f86e45d88d9d502ab9c201f3f074b17d667314508a53db04b77ca76fbd6"
   },
   "problems": [
     {
