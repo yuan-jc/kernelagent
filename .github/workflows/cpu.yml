@@ -35,8 +35,22 @@ jobs:
           name: cpu-${{ matrix.os }}-${{ matrix.python }}
           path: artifacts/ci
           if-no-files-found: error
-      - name: dump pytest diagnostics to job summary
+      - name: dump pytest diagnostics to annotations
         if: failure() && runner.os == 'Windows'
         shell: pwsh
         run: |
-          uv run --locked python -m pytest tests/ -q --tb=short -p no:cacheprovider 2>&1 | Out-File -Encoding utf8 -FilePath $env:GITHUB_STEP_SUMMARY
+          $out = uv run --locked python -m pytest tests/ -q --tb=line -p no:cacheprovider 2>&1 | Out-String
+          $lines = $out -split "`r?`n"
+          $interesting = @($lines | Where-Object { $_ -match '^(FAILED|ERROR)\s' })
+          $i = 0
+          foreach ($f in $interesting) {
+            $i++
+            $safe = $f -replace '%', '%25' -replace "`r", ''
+            if ($safe.Length -gt 300) { $safe = $safe.Substring(0, 300) }
+            Write-Output "::error title=win-fail-$i::$safe"
+          }
+          if ($interesting.Count -eq 0) {
+            $tail = ($lines | Where-Object { $_.Trim() -ne '' } | Select-Object -Last 12) -join ' || '
+            if ($tail.Length -gt 500) { $tail = $tail.Substring(0, 500) }
+            Write-Output "::error title=win-tail::$tail"
+          }
