@@ -26,7 +26,8 @@
     "T30 accepted 2026-09-14: NCU baseline profiling wired into optimize() and 'kernelagent profile' CLI; profiling billed honestly against gpu budget; planner coverage upgrades to ncu_full/ncu_partial. 706 passed / 3 skipped.",
     "2026-09-14 04:50 closeout: RV03 landed (3278f4c, dual-path request parity, 714 passed); frontend closeout 1b1ff61 (unknown-state convergence, baseline lane badge, best-speedup tile, NCU baseline card). Live experiments: 5-candidate method rotation ran 5 distinct methods, all compiled=True but correct=False -> honest no_improvement; max_repair_rounds semantics = tolerated failed candidates (failure budget), needs ADR-level clarification in RV04 round. DeepSeek total spend about 0.05 CNY.",
     "RV04 landed (a554573): actual GPU-lease metering replaces fixed 300s quota; reservations=stage floors, deadline to real ports, actual/estimated labels. Real-GPU spot check run 20260914-050538: completed+champion, settled 32.38s all-actual (was 900 fixed). 725 passed / 3 skipped.",
-    "RV06 landed (9da1918): mount-source boundary preflight before any docker operation; 10 unconditional tests; CI run 34783428574 triggered. 735 passed / 3 skipped local."
+    "RV06 landed (9da1918): mount-source boundary preflight before any docker operation; 10 unconditional tests; CI run 34783428574 triggered. 735 passed / 3 skipped local.",
+    "CI GREEN 2026-09-14: run 34784963289 (cc850bd) 4/4 matrices success. Windows fixes: cross-platform lock holder + hint-byte lock (4096), .gitattributes * -text for byte-faithful frozen hashes, binary workspace fixtures, symlink-fixture skip guard. RV06 TARGET_PASS."
   ],
   "tasks": [
     {

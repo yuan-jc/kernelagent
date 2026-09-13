@@ -359,3 +359,16 @@ uv run --locked python examples/alpha_run.py --mode live --model glm-4.5 --base-
 未验证范围、遗留问题、活动作业：四矩阵最终结论以 GitHub Actions 页面为准（推送已触发）；Windows symlink 权限异常时会显式 ERROR 而非假绿
 下一包与依赖：RV05（独立确认与证据链，未做）；RV07（干净 Ubuntu 验收）
 ```
+
+```text
+包编号：RV06（补充）
+状态：TARGET_PASS
+CI 证据：run 34784963289（commit cc850bd）四矩阵全绿
+  https://github.com/yuan-jc/kernelagent/actions/runs/34784963289
+修复路径：首跑暴露 Windows 专属失败（匿名注解诊断）：①并发锁 holder 子进程 import fcntl 在 Windows 崩溃
+  （改为 msvcrt 回退，锁 hint 字节 4096 与运行时一致）；②Windows 强制锁使 pid 头不可经其他句柄读取
+  （运行时锁移到 4096 hint 字节，头文件保持可读）；③git EOL 转换污染冻结哈希（catalog/userbench manifest
+  校验失败）——新增 .gitattributes `* -text`；④webapp 工作区夹具文本写入 CRLF——改二进制写入；
+  ⑤symlink 夹具在无权限平台显式 skip（仅夹具，断言不 skip）。
+未验证范围：Windows 本机语义（msvcrt/权限）只经 CI 验证，本机无法复现。
+```
