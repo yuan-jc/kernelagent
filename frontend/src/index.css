@@ -1,0 +1,121 @@
+@import "tailwindcss";
+
+/*
+ * 设计 token —— 唯一出处（对齐 research/frontend/frontend-design-spec.md §2.2）。
+ * 暗色为默认主题；亮色通过 :root[data-theme="light"] 覆盖同名变量（预留钩子）。
+ *
+ * 命名：规范名为准（accent / ok / warn / bad / run / muted-s），
+ * 下方"脚手架别名"供本阶段组件使用的语义名（success/warning/error/running/primary/fg/muted），
+ * 两套指向同一色值，不得在组件里写死色值。
+ */
+@theme {
+  /* 表面与边框（分层暗色，不用纯黑） */
+  --color-bg: #0b0f17; /* 应用底 */
+  --color-surface: #111827; /* 面板 = gray-900 */
+  --color-surface-2: #1a2230; /* 次级面板 / 悬停行 */
+  --color-surface-3: #222b3d; /* 输入框 / chip 底 */
+  --color-border: #253046;
+  --color-border-strong: #33405c;
+
+  /* 文字 */
+  --color-text: #e6eaf2; /* 主文字 off-white */
+  --color-text-2: #9aa5b8; /* 次级 */
+  --color-text-3: #64748b; /* 弱化/占位 = slate-500 */
+
+  /* 主色 Accent：Indigo */
+  --color-accent: #6366f1;
+  --color-accent-hover: #818cf8;
+  --color-accent-subtle: rgba(99, 102, 241, 0.14);
+
+  /* 状态色（语义唯一出处；徽章公式 bg=14% alpha / text=状态色 / border=25% alpha） */
+  --color-run: #38bdf8; /* sky-400    running/进行中 */
+  --color-ok: #34d399; /* emerald-400 completed/promoted/pass */
+  --color-warn: #fbbf24; /* amber-400  budget_exhausted/接近预算/skipped/rejected */
+  --color-bad: #f87171; /* red-400    infra_error/journal_corrupt/failed */
+  --color-muted-s: #94a3b8; /* slate-400  no_improvement/retained/unknown/NOT_RUN */
+
+  /* 特例 */
+  --color-champion: #fbbf24; /* champion 金色点缀 */
+  --color-log-bg: #0b0d12; /* 日志/代码块底 */
+
+  /* ---- 脚手架别名（与上面同值，勿单独改） ---- */
+  --color-fg: var(--color-text);
+  --color-muted: var(--color-text-2);
+  --color-surface-raised: var(--color-surface-2);
+  --color-primary: var(--color-accent);
+  --color-primary-hover: var(--color-accent-hover);
+  --color-primary-fg: #ffffff;
+  --color-primary-soft: var(--color-accent-subtle);
+  --color-success: var(--color-ok);
+  --color-warning: var(--color-warn);
+  --color-error: var(--color-bad);
+  --color-running: var(--color-run);
+  --color-success-soft: rgba(52, 211, 153, 0.14);
+  --color-warning-soft: rgba(251, 191, 36, 0.14);
+  --color-error-soft: rgba(248, 113, 113, 0.14);
+  --color-running-soft: rgba(56, 189, 248, 0.14);
+  --color-neutral-soft: rgba(148, 163, 184, 0.14);
+
+  /* 字体（spec §2.3） */
+  --font-sans:
+    "Inter", system-ui, -apple-system, "Segoe UI", "PingFang SC",
+    "Microsoft YaHei", sans-serif;
+  --font-mono:
+    "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* 亮色主题覆盖：规范为"暗色默认，留 light 钩子"；以下为可用的亮色映射 */
+:root[data-theme="light"] {
+  --color-bg: #f4f6fa;
+  --color-surface: #ffffff;
+  --color-surface-2: #eef1f6;
+  --color-surface-3: #e4e9f1;
+  --color-text: #1b2233;
+  --color-text-2: #55607a;
+  --color-text-3: #8a93a6;
+  --color-border: #d9dfea;
+  --color-border-strong: #c0c9da;
+  --color-accent: #4f52e0;
+  --color-accent-hover: #3d40c8;
+  --color-accent-subtle: rgba(79, 82, 224, 0.1);
+  --color-run: #0284c7;
+  --color-ok: #059669;
+  --color-warn: #b45309;
+  --color-bad: #dc2626;
+  --color-muted-s: #64748b;
+  --color-champion: #b45309;
+  --color-log-bg: #10131b;
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+
+  html[data-theme="light"] {
+    color-scheme: light;
+  }
+
+  body {
+    @apply bg-bg font-sans text-fg antialiased;
+  }
+
+  ::selection {
+    @apply bg-accent/30;
+  }
+}
+
+/* 运行中状态徽章的呼吸圆点（spec：running 节点呼吸动画） */
+@keyframes ka-pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.animate-pulse-dot {
+  animation: ka-pulse-dot 1.4s ease-in-out infinite;
+}
