@@ -302,3 +302,20 @@ uv run --locked python examples/alpha_run.py --mode live --model glm-4.5 --base-
 优化方法生成器（849d061）、benchmark 三件套（1e75ecb）、profiler 链路（T30，进行中）。
 全量测试 681 passed / 3 skipped；live 证据见 docs/handoffs/current.md 通宵轮节。
 ```
+
+```text
+包编号：RV03
+状态：CPU_PASS_TARGET_NOT_RUN
+基线与修复提交：基线 21e8df4；修复 3278f4c（此前 849d061 已落地 resume 反馈重建与方法轮转）
+行为变化与对应 R 编号：R5——policy 拒绝的 record detail 改为有界字符串（原为 list，resume 后反馈丢失且
+  方法轮转与连续路径分歧，红测复现后修复）；GenerationPort 返回 request_sha256 并在全部 9 个 record 落点持久化；
+  请求正文不重复落盘（由 manifest 钉死的 problem + 冻结模板 + record 持久化的反馈/方法要素确定性构造，双路径测试即证明）。
+正例、反例及实际命令：parse/policy/correctness/no_improvement 四类反馈 × 连续 vs 中断恢复双路径，
+  断言第二条请求逐字节一致、请求 sha256 一致、失败候选 record 字节级一致、resume 恰好 1 次模型调用、结算/完成各恰 1 次。
+  命令：.venv/bin/python -m pytest tests/test_resume_request_parity.py -q
+测试数量、失败与跳过原因：新增 8 项（修复前 5 failed 红、修复后 8 passed 绿）；全量 714 passed / 3 skipped
+平台、环境身份：Ubuntu 24.04（6.14.0-37-generic），Python 3.11.16（离线固定响应器，无 GPU/模型调用）
+证据 URL/路径及完整 SHA-256：tests/test_resume_request_parity.py、src/kernelagent/optimization.py（提交 3278f4c）
+未验证范围、遗留问题、活动作业：真实模型/Ubuntu 复验属 RV08/RV07；resume 只还原最后一条失败反馈（与连续路径内存行为一致，按构造成立）
+下一包与依赖：RV04（实际用量预算，未做——live 实测固定配额耗尽见 handoff 通宵轮节）
+```

@@ -22,7 +22,9 @@
     "Alpha threat model is cooperative candidates (candidate_trust=cooperative, adversarially_secure=false, ADR-0004); trusted-MVP trust-domain split lands with T23 (plan Task 7).",
     "T17/T20/T22 paused by launch plan; T20 preset artifacts + recovery runbook in docs/handoffs/recovery-runbook.md.",
     "No target GPU or live model acceptance is implied by CPU tests or CI. Preserve parent package gates.",
-    "Night round 2026-09-14 (user-goal main line): frontend rewrite (T26), webapp API v2 (T27), benchmark x3 (T28), optimization method generator (T29), RV01/RV02 cores landed on CPU (REVIEW.md records); R5 fixed in 849d061, R6 fixed in 197904e. 4 real DeepSeek live runs validated generation->method-plan->GPU eval->honest terminal chain (about 0.04 CNY). T30 profiler pipeline in progress. RV07 Ubuntu re-verification still required before any GPU-package acceptance upgrade."
+    "Night round 2026-09-14 (user-goal main line): frontend rewrite (T26), webapp API v2 (T27), benchmark x3 (T28), optimization method generator (T29), RV01/RV02 cores landed on CPU (REVIEW.md records); R5 fixed in 849d061, R6 fixed in 197904e. 4 real DeepSeek live runs validated generation->method-plan->GPU eval->honest terminal chain (about 0.04 CNY). T30 profiler pipeline in progress. RV07 Ubuntu re-verification still required before any GPU-package acceptance upgrade.",
+    "T30 accepted 2026-09-14: NCU baseline profiling wired into optimize() and 'kernelagent profile' CLI; profiling billed honestly against gpu budget; planner coverage upgrades to ncu_full/ncu_partial. 706 passed / 3 skipped.",
+    "2026-09-14 04:50 closeout: RV03 landed (3278f4c, dual-path request parity, 714 passed); frontend closeout 1b1ff61 (unknown-state convergence, baseline lane badge, best-speedup tile, NCU baseline card). Live experiments: 5-candidate method rotation ran 5 distinct methods, all compiled=True but correct=False -> honest no_improvement; max_repair_rounds semantics = tolerated failed candidates (failure budget), needs ADR-level clarification in RV04 round. DeepSeek total spend about 0.05 CNY."
   ],
   "tasks": [
     {
@@ -715,16 +717,19 @@
         "T15",
         "T29"
       ],
-      "status": "IN_PROGRESS",
+      "status": "ACCEPTED",
       "checks": {
-        "CPU": "NOT_RUN",
-        "GPU": "NOT_RUN",
+        "CPU": "PASS",
+        "GPU": "PASS",
         "LIVE_MODEL": "N/A",
-        "REVIEW": "NOT_RUN"
+        "REVIEW": "PASS"
       },
-      "evidence": [],
+      "evidence": [
+        "tests/test_profiling_pipeline.py",
+        "src/kernelagent/adapters/profiling/pipeline.py"
+      ],
       "work_package_record": "docs/handoffs/current.md",
-      "blocker": null
+      "blocker": "GPU 冒烟在本机 4060 实测（LayerNorm baseline，ncu_full，launch_bound）；其它 GPU 型号的指标可得性未验"
     }
   ]
 }
