@@ -23,6 +23,7 @@ import { sampleStats } from "../lib/format";
 import { useApi } from "../lib/useApi";
 import { useRecordsList, useWorkspace } from "../hooks/useRunArtifacts";
 import { prefs } from "../lib/prefs";
+import type { BaselineProfileSummary } from "../api";
 
 /**
  * Profile 报告页（spec §3.7）：timing 记录的批次延迟分布、样本统计、
@@ -194,6 +195,157 @@ function StatsTable({ series }: { series: Array<{ name: string; values: number[]
   );
 }
 
+/** 指标格：数值缺失（null/undefined/非有限数）一律 "—"，绝不画 0 */
+function MetricCell({ label, value, unit }: { label: string; value: unknown; unit?: string }) {
+  const shown =
+    typeof value === "number" && Number.isFinite(value)
+      ? `${Number.isInteger(value) ? value : value.toFixed(2)}${unit ? ` ${unit}` : ""}`
+      : "—";
+  return (
+    <div className="rounded-md border border-border bg-surface-2/40 px-2.5 py-2">
+      <p className="text-[11px] text-muted">{label}</p>
+      <p className="mt-0.5 font-mono text-sm font-medium tabular-nums text-fg">{shown}</p>
+    </div>
+  );
+}
+
+/**
+ * NCU 基线画像卡（P4 records/baseline-eager 的 record.profile）。
+ * - status=collected：渲染 summary 指标（百分比/寄存器/grid/kernel 名），
+ *   null 值显示 "—"，不画 0；
+ * - status=not_run（或记录缺失/字段缺失）：NOT_RUN 徽章 + 服务端 reason；
+ * - profiling 与正式 timing 分开、不决定晋升（语义不可弱化）。
+ */
+function NcuBaselineCard({
+  slot,
+  loading,
+  endpointUnavailable,
+  onRetry,
+}: {
+  slot: RecordSlot | undefined;
+  loading: boolean;
+  endpointUnavailable: boolean;
+  onRetry: () => void;
+}) {
+  const record = slot?.record;
+  const profile = record?.profile;
+  const summary = (profile?.summary ?? null) as BaselineProfileSummary | null;
+  const collected = profile?.status === "collected" && summary !== null;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>NCU 基线画像（baseline-eager · record.profile）</CardTitle>
+        {profile?.status === "collected" ? (
+          <Badge variant="success">collected</Badge>
+        ) : profile?.status === "not_run" ? (
+          <NotRunBadge what="NCU 基线画像（profiler 未运行）" />
+        ) : (
+          <NotRunBadge what="NCU 基线画像（记录或 profile 字段缺失）" />
+        )}
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {loading ? (
+          <LoadingBlock label="读取 baseline-eager 记录（P4）…" />
+        ) : endpointUnavailable ? (
+          <EmptyState
+            title="P4 records 端点未实现（404）"
+            description="NCU 画像来自 records/baseline-eager.json 的 profile 字段，需要后端 P4 端点上线后展示。"
+          />
+        ) : slot?.state === "error" ? (
+          <ErrorPanel
+            title="baseline-eager 记录读取失败"
+            error={new Error(slot.message ?? "未知错误")}
+            onRetry={onRetry}
+          />
+        ) : !record ? (
+          <EmptyState
+            title="无 baseline-eager final 记录（NOT_RUN）"
+            description="该 run 的 records/ 目录中没有 baseline-eager.json（基线 timing 可能未运行或被预算拒绝）。缺失不是失败，也不按零处理。"
+          />
+        ) : collected ? (
+          <>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <MetricCell
+                label="DRAM 吞吐（峰值%）"
+                value={summary!.dram_throughput_pct_max}
+                unit="%"
+              />
+              <MetricCell
+                label="SM 吞吐（峰值%）"
+                value={summary!.sm_throughput_pct_max}
+                unit="%"
+              />
+              <MetricCell
+                label="计算/访存吞吐（峰值%）"
+                value={summary!.compute_memory_throughput_pct_max}
+                unit="%"
+              />
+              <MetricCell
+                label="活跃 warp 占比"
+                value={summary!.warps_active_pct_max}
+                unit="%"
+              />
+              <MetricCell label="每线程寄存器" value={summary!.registers_per_thread_max} />
+              <MetricCell label="grid 规模（最大）" value={summary!.grid_size_max} />
+              <MetricCell label="单次 kernel 时间" value={summary!.gpu_time_us_max} unit="µs" />
+              <MetricCell label="kernel launch 数" value={summary!.launch_count} />
+            </div>
+            <div>
+              <p className="mb-1 text-[11px] text-muted">kernel 名（summary.kernels）</p>
+              {(summary!.kernels ?? []).length > 0 ? (
+                <ul className="space-y-1">
+                  {summary!.kernels!.map((k, i) => (
+                    <li
+                      key={i}
+                      className="break-all rounded border border-border bg-log-bg px-2 py-1 font-mono text-[11px] text-muted"
+                    >
+                      {k}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-xs text-text-3">—</p>
+              )}
+            </div>
+            {(summary!.metrics_missing_in_all_launches ?? []).length > 0 && (
+              <p className="rounded-md border border-warning/30 bg-warning-soft px-2.5 py-1.5 text-[11px] text-warn">
+                以下指标在全部 launch 中缺失（不按零处理）：
+                <span className="font-mono">
+                  {" "}
+                  {summary!.metrics_missing_in_all_launches!.join(", ")}
+                </span>
+              </p>
+            )}
+            <p className="text-[11px] leading-relaxed text-muted">
+              采集来源 {profile?.source ?? "—"}
+              {typeof profile?.gpu_wall_seconds === "number" &&
+                ` · 画像本身 GPU 墙钟 ${profile!.gpu_wall_seconds!.toFixed(2)}s（已计入 GPU 预算）`}
+              {profile?.evidence ? ` · 证据 ${profile!.evidence}` : ""}
+              。profiling 是方法规划证据：不进入正式 timing，不参与晋升判定；
+              SOL 不证明算法最优。
+            </p>
+          </>
+        ) : (
+          <div className="space-y-1.5">
+            <p className="text-xs text-fg">
+              <NotRunBadge what="NCU 基线画像" />{" "}
+              <span className="ml-1 font-mono text-muted">
+                profile.status = {profile?.status ?? "未报告"}
+              </span>
+            </p>
+            <p className="text-[11px] leading-relaxed text-muted">
+              {profile?.reason
+                ? `服务端 reason：${profile!.reason}`
+                : "记录存在但未报告 profile/summary 字段；缺失指标显示 —，不画 0。"}
+            </p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export function RunProfilePage() {
   const { runId = "" } = useParams();
   const snapshotState = useApi(() => api.getRun(runId), [runId], { pollMs: 0 });
@@ -296,6 +448,14 @@ export function RunProfilePage() {
           )}
         </CardContent>
       </Card>
+
+      {/* NCU 基线画像（复用逐条记录请求，不额外发请求） */}
+      <NcuBaselineCard
+        slot={records.map["baseline-eager"]}
+        loading={records.loading}
+        endpointUnavailable={records.unavailable}
+        onRetry={records.reload}
+      />
 
       {/* 容器日志 */}
       <Card>

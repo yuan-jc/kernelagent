@@ -298,6 +298,46 @@ export function useRunReport(runId: string): ArtifactState<RunReport> {
   );
 }
 
+/**
+ * 快照 state=unknown 时的 report 兜底：仅当 trigger 非 null（调用方传入
+ * 「处于 unknown 的快照」）时拉取 report.json，且 trigger 每次变化（新一轮
+ * 轮询得到新快照）都会重拉，保证终态落盘后的下一拍内能读到。
+ * 404（report 尚未生成）不是错误：安静地保持 null，等待下一拍。
+ */
+export function useReportFallback(
+  runId: string,
+  trigger: unknown,
+): { report: RunReport | null; error: Error | null } {
+  const [state, setState] = useState<{ report: RunReport | null; error: Error | null }>({
+    report: null,
+    error: null,
+  });
+
+  useEffect(() => {
+    if (!trigger) return;
+    let cancelled = false;
+    api
+      .getReport(runId)
+      .then((report) => {
+        if (!cancelled) setState({ report, error: null });
+      })
+      .catch((cause: unknown) => {
+        if (cancelled) return;
+        // 404 = report 还没写（与快照一致的中间态）；其余错误记录但不打断轮询
+        setState({
+          report: null,
+          error: cause instanceof ApiError && cause.status === 404 ? null : (cause instanceof Error ? cause : new Error(String(cause))),
+        });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [runId, trigger]);
+
+  if (!trigger) return { report: null, error: null };
+  return state;
+}
+
 export function useRecord(
   runId: string,
   actionId: string | null,

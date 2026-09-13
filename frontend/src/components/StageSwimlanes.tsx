@@ -57,7 +57,11 @@ export function StageSwimlanes({ lanes, onLaneDetail }: StageSwimlanesProps) {
                 <Badge variant="running" dot>
                   运行中
                 </Badge>
-              ) : null}
+              ) : (
+                // 无 status 且无运行依据（如终态 run 里 journal 有轨迹但无
+                // final 记录的动作）：诚实 NOT_RUN，不猜成败，也不留空
+                <NotRunBadge what={`${lane.id} 的 final 记录`} />
+              )}
             </div>
             <div className="flex min-w-0 flex-1 items-center gap-2">
               <div className="flex h-3.5 min-w-0 flex-1 gap-px overflow-hidden rounded-sm">

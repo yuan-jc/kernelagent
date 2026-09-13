@@ -142,6 +142,11 @@ export async function mockRequest<T>(path: string, options: MockRequestOptions =
   const method = options.method ?? "GET";
   const [pathOnly, queryString] = path.split("?");
   const query = new URLSearchParams(queryString ?? "");
+  // 冒烟测试探针：仅 mock 层维护的请求计数（真实后端模式不走这里），
+  // 供 scripts/render-smoke.mjs 验证轮询行为（如 unknown 快照不停轮询）。
+  const probe = globalThis as { __KA_MOCK_COUNTS?: Map<string, number> };
+  probe.__KA_MOCK_COUNTS ??= new Map<string, number>();
+  probe.__KA_MOCK_COUNTS.set(pathOnly, (probe.__KA_MOCK_COUNTS.get(pathOnly) ?? 0) + 1);
   // 模拟真实网络延迟可调；50ms 让 loading 态可见但不拖慢演示
   await new Promise((resolve) => setTimeout(resolve, 40));
 

@@ -27,6 +27,7 @@ import {
 import { parseRunIdTime, relativeTime } from "../lib/format";
 import { buildLanes, primaryLane } from "../lib/lanes";
 import { useApi } from "../lib/useApi";
+import { useBestSpeedup } from "../hooks/useBestSpeedup";
 import { MOCKS_ENABLED } from "../mocks";
 
 function StatTile({ label, value, title }: { label: string; value: React.ReactNode; title?: string }) {
@@ -114,6 +115,21 @@ export function DashboardPage() {
   const completionRate =
     runList.length > 0 ? `${Math.round((completedCount / runList.length) * 100)}%` : "—";
   const recent = runList.slice(0, 8);
+  // 最佳加速比：逐个（限并发/限数量）拉最近 runs 的 report，取 champion CI；
+  // 无任何数据时保持 NOT_RUN（缺失不是 0）
+  const speedup = useBestSpeedup(runs.data?.runs ?? null);
+  const speedupValue = speedup.best ? (
+    <span
+      title={`run ${speedup.best.runId} 的 champion 速度比 95% CI（来自 report.json，需人工审查）`}
+      className="text-ok"
+    >
+      {speedup.best.low.toFixed(2)}× – {speedup.best.high.toFixed(2)}×
+    </span>
+  ) : runs.loading || speedup.loading ? (
+    "…"
+  ) : (
+    <NotRunBadge what="加速比（最近 runs 的 report 中无 champion CI）" />
+  );
 
   return (
     <div className="space-y-5">
@@ -154,8 +170,8 @@ export function DashboardPage() {
         />
         <StatTile
           label="最佳加速比"
-          value={<NotRunBadge what="加速比（需逐 run 读取 report/records）" />}
-          title="列表端点不含 CI 数据；待 P2/P4 端点后统计。缺失不显示 0。"
+          value={speedupValue}
+          title="最近 ≤10 条 runs 逐个读取 report.json（限并发 3），取 champion 候选的速度比 95% CI 下界最高者；无数据保持 NOT_RUN，不显示 0。"
         />
         <StatTile
           label="有 champion 的 runs"

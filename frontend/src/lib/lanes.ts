@@ -10,8 +10,9 @@
  * 二期由 P3 + 后端补 ts 后才允许显示数字）。
  */
 
-import type { CandidateRecord, RunSnapshot } from "../api";
+import type { ActionRecord, CandidateRecord, RunSnapshot } from "../api";
 import type { JournalEntry } from "../api";
+import { isTerminalRunState } from "./states";
 import { STAGES, normalizeStage } from "../components/statusMap";
 
 export type StageNodeState =
@@ -115,12 +116,23 @@ export function journalStageHistory(
   return map;
 }
 
-function stagesFromJournal(history: JournalStageHistory): StageNodeState[] {
+function stagesFromJournal(
+  history: JournalStageHistory,
+  runTerminal: boolean,
+): StageNodeState[] {
   const stages = blankStages();
   for (const key of history.started) {
     const idx = STAGE_KEYS.indexOf(key);
-    if (idx >= 0) {
-      stages[idx] = history.finished.has(key) ? "done" : "running";
+    if (idx < 0) continue;
+    if (history.finished.has(key)) {
+      stages[idx] = "done";
+    } else if (history.finishedAction || history.interrupted || runTerminal) {
+      // action 已收尾/被中断，或 run 已到终态，却仍没有 stage_finished（真实
+      // 后端目前不回写 stage_finished）：段不能再画"运行中"，标 unknown
+      // （无 done/failed 依据，不猜）。
+      stages[idx] = "unknown";
+    } else {
+      stages[idx] = "running";
     }
   }
   return stages;
@@ -130,8 +142,15 @@ function stagesFromJournal(history: JournalStageHistory): StageNodeState[] {
  * 汇总全部泳道。
  * @param snapshot 服务端 run_snapshot
  * @param journal P3 journal 条目（不可用时传 null）
+ * @param baselineRecord P4 records/baseline-eager 的 final 记录（可选）。
+ *   baseline 不出现在 report.candidates 里，其泳道只能来自 journal/in_flight；
+ *   拿到 record 后用它的 status/stage 覆盖，终态徽章才不会误显"运行中"。
  */
-export function buildLanes(snapshot: RunSnapshot, journal: JournalEntry[] | null): Lane[] {
+export function buildLanes(
+  snapshot: RunSnapshot,
+  journal: JournalEntry[] | null,
+  baselineRecord?: ActionRecord | null,
+): Lane[] {
   const lanes = new Map<string, Lane>();
   const make = (id: string, source: Lane["source"]): Lane => {
     let lane = lanes.get(id);
@@ -161,6 +180,7 @@ export function buildLanes(snapshot: RunSnapshot, journal: JournalEntry[] | null
   }
 
   // 2) journal 事件（补充运行中候选的阶段轨迹）
+  const runTerminal = isTerminalRunState(snapshot.state);
   if (journal && journal.length > 0) {
     const history = journalStageHistory(journal);
     for (const [id, h] of history) {
@@ -169,7 +189,7 @@ export function buildLanes(snapshot: RunSnapshot, journal: JournalEntry[] | null
       if (h.started.length === 0 && !h.interrupted) continue;
       if (lanes.has(id) && lanes.get(id)!.source === "report") continue;
       const lane = make(id, "journal");
-      const stages = stagesFromJournal(h);
+      const stages = stagesFromJournal(h, runTerminal);
       // journal 比 in_flight 快照更细：仅在能提供信息时覆盖
       if (lane.source !== "live" || stages.some((s) => s !== "pending")) {
         lane.stages = stages;
@@ -191,6 +211,21 @@ export function buildLanes(snapshot: RunSnapshot, journal: JournalEntry[] | null
       }
     } else if (!stage && lane.source !== "journal") {
       // stage 未知：不猜，保持 pending
+    }
+  }
+
+  // 4) P4 baseline 记录覆盖（baseline 不在 report.candidates，泳道终态只能
+  //    来自 records/baseline-eager；report 来源的泳道不受影响）
+  if (baselineRecord?.candidate) {
+    const lane = lanes.get(baselineRecord.candidate);
+    if (lane && lane.source !== "report") {
+      lane.status = baselineRecord.status ?? lane.status;
+      lane.stage = baselineRecord.stage ?? lane.stage;
+      lane.detail = baselineRecord.detail ?? lane.detail;
+      if (runTerminal) {
+        // 终态 run：以记录为准重画阶段（无 in_flight 依据，不保留"运行中"段）
+        lane.stages = stagesFromReport(baselineRecord as CandidateRecord);
+      }
     }
   }
 

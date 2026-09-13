@@ -17,13 +17,14 @@ import { RunErrorBanner, TerminalNote } from "./rundetail/RunBanners";
 import {
   useJournal,
   useRecord,
+  useReportFallback,
   useRunReport,
   useWorkspace,
   useWorkspaceFile,
 } from "../hooks/useRunArtifacts";
 import { buildLanes, primaryLane } from "../lib/lanes";
 import { journalToLines } from "../lib/journalLines";
-import { isTerminalRunState } from "../lib/states";
+import { isTerminalRunState, mergeRunWithReport, shouldKeepPolling } from "../lib/states";
 import { prefs } from "../lib/prefs";
 import { ApiError } from "../api";
 import {
@@ -64,15 +65,22 @@ function OverviewTab({
   running,
   journalEntries,
   journalMode,
+  baselineRecord,
 }: {
   snapshot: RunSnapshot;
   running: boolean;
   journalEntries: JournalEntry[] | null;
   journalMode: string | null;
+  baselineRecord: ReturnType<typeof useRecord> | null;
 }) {
   const lanes = useMemo(
-    () => buildLanes(snapshot, journalEntries),
-    [snapshot, journalEntries],
+    () =>
+      buildLanes(
+        snapshot,
+        journalEntries,
+        baselineRecord?.data && !baselineRecord.unavailable ? baselineRecord.data : null,
+      ),
+    [snapshot, journalEntries, baselineRecord],
   );
   const primary = primaryLane(lanes);
 
@@ -164,9 +172,15 @@ function OverviewTab({
 
 // -- 候选对比 ------------------------------------------------------------------
 
-function CandidatesTab({ snapshot }: { snapshot: RunSnapshot }) {
-  // baseline 记录需要 P4（records/baseline-eager）；404 时诚实降级
-  const baseline = useRecord(snapshot.run_id, "baseline-eager");
+function CandidatesTab({
+  snapshot,
+  baseline,
+}: {
+  snapshot: RunSnapshot;
+  baseline: ReturnType<typeof useRecord>;
+}) {
+  // baseline 记录需要 P4（records/baseline-eager）；404 时诚实降级。
+  // 记录由页面级 hook 统一获取（概览泳道与对比表共用，避免重复请求）。
   const baselineRecord =
     baseline.data && !baseline.unavailable
       ? {
@@ -197,8 +211,7 @@ function CandidatesTab({ snapshot }: { snapshot: RunSnapshot }) {
             <p className="text-[11px] leading-relaxed text-muted">
               {baseline.unavailableReason}
             </p>
-          )}
-        </CardContent>
+          )}        </CardContent>
       </Card>
       <ChampionCard snapshot={snapshot} />
     </div>
@@ -421,14 +434,24 @@ export function RunDetailPage() {
   const { data, error, loading, degraded, reload } = useApi(
     () => api.getRun(runId),
     [runId],
-    // spec §5：running 时按本地偏好轮询（默认 1.5s）；终态立即停止
+    // spec §5：running 时按本地偏好轮询（默认 1.5s）；终态停止。
+    // "unknown" 是服务端"暂不可知"（job 线程收尾/启动窗口），不能停：
+    // 否则页面会永远停在「未知 + 预算 NOT_RUN」，下一拍永远等不到。
     {
       pollMs: prefs.getPollInterval(),
       shouldPoll: (snapshot) =>
-        snapshot === null || !isTerminalRunState((snapshot as RunSnapshot).state),
+        snapshot === null || shouldKeepPolling((snapshot as RunSnapshot).state),
     },
   );
-  const running = data ? !isTerminalRunState(data.state) : true;
+  // 快照 state=unknown 时按 P2 report 兜底（终态已落盘的场合当拍收敛）；
+  // 非 unknown 时不发请求。trigger 用快照对象本身：每轮轮询新快照都会重试。
+  const fallback = useReportFallback(runId, data?.state === "unknown" ? data : null);
+  // 合并后的展示快照（仅 unknown 分支会被 report 补齐；其余原样透传）
+  const merged = data ? mergeRunWithReport(data, fallback.report) : null;
+  const convergedFromReport = !!data && !!fallback.report && merged!.state !== data.state;
+  // baseline 记录（P4）：概览泳道终态徽章与候选对比表共用
+  const baseline = useRecord(runId, "baseline-eager");
+  const running = merged ? !isTerminalRunState(merged.state) : true;
   // journal 事件流：泳道（概览）与日志 tab 共用；终态后停止轮询
   const journal = useJournal(runId, { pollMs: 1500, enabled: running });
 
@@ -438,7 +461,7 @@ export function RunDetailPage() {
 
   if (loading && !data) return <LoadingBlock />;
 
-  if (error) {
+  if (error && !merged) {
     const notFound = error instanceof ApiError && error.status === 404;
     return (
       <div>
@@ -452,9 +475,9 @@ export function RunDetailPage() {
     );
   }
 
-  if (!data) return null;
+  if (!merged) return null;
 
-  const snapshot = data;
+  const snapshot = merged;
   const startedAgo = snapshot.job?.started_at ? relativeTime(snapshot.job.started_at) : null;
 
   return (
@@ -502,6 +525,13 @@ export function RunDetailPage() {
         <RunErrorBanner snapshot={snapshot} />
       )}
       <TerminalNote snapshot={snapshot} />
+      {convergedFromReport && (
+        <p className="rounded-md border border-border bg-surface px-3 py-2 text-[11px] leading-relaxed text-muted">
+          快照 state=unknown（run 目录在 job 线程收尾窗口内暂不可知）；上方状态按同源的
+          report.json 终态兜底显示，原始快照字段见「证据」页。轮询将继续，直到服务端
+          快照给出终态。
+        </p>
+      )}
 
       <TabBar
         tabs={[
@@ -528,11 +558,13 @@ export function RunDetailPage() {
           running={running}
           journalEntries={journal.source === "live" ? journal.entries : null}
           journalMode={journal.mode}
+          baselineRecord={baseline}
         />
       )}
-      {tab === "candidates" && <CandidatesTab snapshot={snapshot} />}
+      {tab === "candidates" && <CandidatesTab snapshot={snapshot} baseline={baseline} />}
       {tab === "logs" && <LogsTab snapshot={snapshot} running={running} journal={journal} />}
-      {tab === "evidence" && <EvidenceTab snapshot={snapshot} />}
+      {/* 证据页展示服务端原始快照（不吞并 report 兜底），保持可审计 */}
+      {tab === "evidence" && <EvidenceTab snapshot={data!} />}
     </div>
   );
 }

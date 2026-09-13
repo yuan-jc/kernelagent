@@ -12,6 +12,9 @@ export {
 export type {
   ActionRecord,
   ApiErrorBody,
+  BaselineProfile,
+  BaselineProfileCapture,
+  BaselineProfileSummary,
   CandidateRecord,
   HealthResponse,
   JobConfig,

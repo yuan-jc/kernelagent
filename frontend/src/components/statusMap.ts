@@ -41,6 +41,9 @@ export function candidateStatusMeta(status: string | undefined): StatusMeta {
       return { variant: "warning", label: "rejected", dot: false };
     case "failed":
       return { variant: "error", label: "failed", dot: false };
+    case "measured":
+      // timing 记录的终态（baseline-eager / 未晋升候选）：已测量，非运行中
+      return { variant: "success", label: "measured（已测）", dot: false };
     default:
       return { variant: "neutral", label: status ?? "unknown", dot: false };
   }

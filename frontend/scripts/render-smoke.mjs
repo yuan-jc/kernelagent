@@ -93,11 +93,22 @@ async function go(hash, waitMs = 1800) {
 
 // 取 run id：真实模式走 API；mock 模式下应用层使用 mock 数据（网络层
 // 仍是真实后端），所以必须从渲染出的 Runs 表里提取。
+// 终态 run（泳道/收敛断言用）：真实模式选列表中第一个非 running 的；
+// mock 模式从表格提取后按详情页徽章甄别。
 let runId = null;
+let terminalRunId = null;
+const allIds = () => {
+  const seen = new Set();
+  const fromTable = (window.document.body.textContent ?? "").match(/\d{8}-\d{6}/g) ?? [];
+  for (const id of fromTable) seen.add(id);
+  return [...seen];
+};
 if (!MOCK) {
   const runsRes = await fetch(`${BASE}/api/runs`);
   const runsJson = await runsRes.json();
   runId = runsJson.runs?.[0]?.run_id ?? null;
+  terminalRunId =
+    runsJson.runs?.find((r) => r.state !== "running" && r.state !== "unknown")?.run_id ?? null;
 } else {
   const t = await go("#/runs");
   runId = t.match(/\d{8}-\d{6}/)?.[0] ?? null;
@@ -113,7 +124,12 @@ let text = await go("#/");
 check("Dashboard: 标题渲染", text.includes("总览") && text.includes("系统健康"), text.slice(0, 120));
 check("Dashboard: 最近 Runs 表", text.includes("最近 Runs"), "");
 check("Dashboard: trust 常驻警示", text.includes("candidate_trust=cooperative"), "");
-check("Dashboard: 统计瓦片（缺失加速比=NOT_RUN）", text.includes("最佳加速比") && text.includes("NOT_RUN"), "");
+// 最佳加速比瓦片：有数据显示 champion CI（如 1.70× – 1.78×），无数据诚实 NOT_RUN
+check(
+  "Dashboard: 统计瓦片（加速比 CI 或诚实 NOT_RUN）",
+  text.includes("最佳加速比") && (/\d+\.\d+×\s*–\s*\d+\.\d+×/.test(text) || text.includes("NOT_RUN")),
+  "",
+);
 if (!MOCK) check("Dashboard: 真实 GPU 设备", text.includes("GPU-ea248ec5"), "");
 check("Dashboard: run id 可见", text.includes(runId), "");
 
@@ -128,6 +144,32 @@ check("RunDetail: 泳道卡", text.includes("候选流水"), "");
 check("RunDetail: 预算面板", text.includes("GPU 秒") && text.includes("Token"), "");
 check("RunDetail: 六阶段 stepper", text.includes("晋升确认") && text.includes("容器评测"), "");
 check("RunDetail: 终态/审查说明", text.includes("需人工审查") || text.includes("合法结果"), "");
+
+// -- 修复验证：终态 run 的泳道不得出现「运行中」徽章（baseline-eager 行） ------
+// 精确匹配徽章文本（说明文字里允许出现"运行中的实时进度…"字样）；
+// 取「不再包含同样文本子元素」的最内层节点，避免父容器重复计数
+const runningBadges = () =>
+  [...window.document.querySelectorAll("span, div")]
+    .filter((el) => el.textContent?.trim() === "运行中")
+    .filter((el) => ![...el.querySelectorAll("*")].some((c) => c.textContent?.trim() === "运行中"))
+    .length;
+
+if (!MOCK) {
+  // 真实模式：优先用列表中第一个已终态的 run（夜间作业刚结束的场景）
+  const detailRunId = terminalRunId ?? runId;
+  text = await go(`#/runs/${detailRunId}`);
+  check(
+    "RunDetail/终态收敛: 终态 run 泳道无「运行中」徽章",
+    terminalRunId ? runningBadges() === 0 : true,
+    `found ${runningBadges()} exact 运行中 badges`,
+  );
+  check("RunDetail/终态收敛: baseline-eager 行可见", text.includes("baseline-eager"), "");
+  check(
+    "RunDetail/终态收敛: baseline 徽章反映真实终态（measured/NOT_RUN）",
+    text.includes("measured（已测）") || text.includes("NOT_RUN"),
+    "",
+  );
+}
 
 // tabs
 const clickTab = async (label) => {
@@ -160,6 +202,59 @@ text = await go(`#/runs/${runId}/profile`);
 check("Profile: 页面标题", text.includes("Profile 报告"), "");
 check("Profile: NOT_RUN 徽章或批次图", text.includes("NOT_RUN") || text.includes("batch 1.."), "");
 check("Profile: 容器日志区", text.includes("容器日志"), "");
+// NCU 基线画像卡：collected 显示 summary 指标，否则诚实 NOT_RUN
+check(
+  "Profile: NCU 基线画像卡渲染",
+  text.includes("NCU 基线画像"),
+  "",
+);
+check(
+  "Profile: NCU 卡 collected（指标）或 NOT_RUN",
+  text.includes("collected") || text.includes("NOT_RUN"),
+  "",
+);
+if (text.includes("collected")) {
+  check(
+    "Profile: NCU 卡 summary 指标（DRAM/寄存器/grid）",
+    text.includes("DRAM 吞吐") && text.includes("每线程寄存器") && text.includes("grid 规模"),
+    "",
+  );
+}
+
+// collected 分支的确定性验证：真实模式找一个带 profile 的 run；mock 模式用
+// 最老的历史 run（fixtures 保证 baseline 记录带 profile 样例）
+let collectedRunId = null;
+if (!MOCK) {
+  const runsJson = await (await fetch(`${BASE}/api/runs`)).json();
+  for (const r of (runsJson.runs ?? []).slice(0, 10)) {
+    try {
+      const rec = await (await fetch(`${BASE}/api/runs/${r.run_id}/records/baseline-eager`)).json();
+      if (rec?.profile?.status === "collected") {
+        collectedRunId = r.run_id;
+        break;
+      }
+    } catch { /* 该 run 无 baseline 记录，继续 */ }
+  }
+} else {
+  const t = await go("#/runs");
+  const ids = [...new Set(t.match(/\d{8}-\d{6}/g) ?? [])];
+  collectedRunId = ids[ids.length - 1] ?? null; // 最老 = 历史 completed fixture
+}
+if (collectedRunId) {
+  text = await go(`#/runs/${collectedRunId}/profile`);
+  check(
+    `Profile: NCU 卡 collected 分支（run ${collectedRunId}）`,
+    text.includes("NCU 基线画像") && text.includes("collected") && text.includes("DRAM 吞吐"),
+    text.slice(0, 160),
+  );
+  check(
+    "Profile: NCU 卡 kernel 名与语义注记",
+    text.includes("kernel 名") && text.includes("不参与晋升判定"),
+    "",
+  );
+} else {
+  check("Profile: NCU 卡 collected 分支（无带 profile 的 run，跳过数据断言）", true, "");
+}
 
 text = await go("#/launch");
 check("Launch: 模式单选", text.includes("demo-correct") && text.includes("演示 · 非 LIVE_MODEL"), "");
@@ -216,6 +311,54 @@ if (MOCK) {
   await sleep(1800);
   const t3 = window.document.body.textContent ?? "";
   check("Launch E2E: 二次启动展示 409 错误", t3.includes("GPU 被占用") && t3.includes("still using the GPU"), "");
+
+  // -- mock 模式补：终态 run 泳道不得有「运行中」徽章（baseline 行） ----------
+  const findRunByBadge = async (badgeText) => {
+    await go("#/runs", 1200);
+    for (const id of allIds()) {
+      const t = await go(`#/runs/${id}`, 1200);
+      if (t.includes(badgeText)) return id;
+    }
+    return null;
+  };
+  const terminalMockId = await findRunByBadge("无改进");
+  check("mock 终态 run 定位（无改进徽章）", !!terminalMockId, "未找到 no_improvement run");
+  if (terminalMockId) {
+    const t = await go(`#/runs/${terminalMockId}`);
+    check(
+      "mock RunDetail/终态泳道: 无「运行中」徽章",
+      runningBadges() === 0,
+      `found ${runningBadges()} exact 运行中 badges`,
+    );
+    check("mock RunDetail/终态泳道: baseline 行徽章为 measured", t.includes("baseline-eager") && t.includes("measured（已测）"), "");
+  }
+
+  // -- mock 模式补：state=unknown 的 run 不停轮询（终态收敛修复） -------------
+  // unknown fixture：job.json 已落、journal/report 未生成。旧逻辑会把
+  // unknown 当终态停轮询，页面永远停在「未知 + 预算 NOT_RUN」。
+  const unknownMockId = await findRunByBadge("未知");
+  check("mock unknown run 定位（未知徽章）", !!unknownMockId, "未找到 unknown run");
+  if (unknownMockId) {
+    // mock 模式请求不经过 window.fetch，改读 mock 层的计数探针
+    // （注意跨 realm：instanceof Map 不可用，用 duck typing）
+    const counts = window.__KA_MOCK_COUNTS;
+    const keyOf = (n) =>
+      counts && typeof counts.get === "function" ? (counts.get(n) ?? 0) : 0;
+    const before = keyOf(`/api/runs/${unknownMockId}`);
+    await sleep(3500); // >= 2 个轮询间隔（默认 1.5s）
+    const after = keyOf(`/api/runs/${unknownMockId}`);
+    check(
+      "mock unknown 快照: 轮询持续（≥2 次新请求）",
+      after - before >= 2,
+      `delta=${after - before}`,
+    );
+    const t = window.document.body.textContent ?? "";
+    check(
+      "mock unknown 快照: 未知徽章 + 预算诚实 NOT_RUN",
+      t.includes("未知") && t.includes("预算账本尚未报告"),
+      "",
+    );
+  }
 }
 
 const realErrors = consoleErrors.filter(

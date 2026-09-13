@@ -233,6 +233,54 @@ export interface ActionRecord {
   /** 正式 timing 的批次耗时样本（ms）；缺失时 Profile 页显示 NOT_RUN */
   batches_ms?: number[];
   async_leak?: boolean;
+  /** NCU 基线画像（profile-baseline 动作写入 baseline-eager 记录）；缺失/不完整时 UI 显式 NOT_RUN */
+  profile?: BaselineProfile | null;
+  [key: string]: unknown;
+}
+
+// -- baseline-eager 记录的 NCU 画像（P4 record.profile）------------------------
+
+/** summary 数值允许 null/缺失：UI 一律显示 "—"，绝不画 0 */
+export interface BaselineProfileSummary {
+  dram_throughput_pct_max?: number | null;
+  sm_throughput_pct_max?: number | null;
+  compute_memory_throughput_pct_max?: number | null;
+  warps_active_pct_max?: number | null;
+  registers_per_thread_max?: number | null;
+  grid_size_max?: number | null;
+  gpu_time_us_max?: number | null;
+  launch_count?: number | null;
+  kernels?: string[] | null;
+  metrics_missing_in_all_launches?: string[] | null;
+  [key: string]: unknown;
+}
+
+export interface BaselineProfileCapture {
+  mode?: string | null;
+  set_name?: string | null;
+  image?: string | null;
+  device?: number | null;
+  metrics?: string[] | null;
+  launch_count?: number | null;
+  launch_skip?: number | null;
+  warmup_iters?: number | null;
+  measured_iters?: number | null;
+  timeout_seconds?: number | null;
+  seed?: number | null;
+  [key: string]: unknown;
+}
+
+export interface BaselineProfile {
+  /** collected = 已采集；not_run = 未运行（附 reason）；其他值原样呈现 */
+  status?: string | null;
+  reason?: string | null;
+  source?: string | null;
+  summary?: BaselineProfileSummary | null;
+  capture?: BaselineProfileCapture | null;
+  evidence?: string | null;
+  report?: string | null;
+  gpu_wall_seconds?: number | null;
+  billed_against_gpu_budget?: boolean | null;
   [key: string]: unknown;
 }
 
@@ -267,6 +315,10 @@ export interface RunReport {
   journal_entries?: number;
   config?: JobConfig;
   champion?: RunChampion | null;
+  /** report.json 的终态候选列表（含 champion 的 ratio_ci_95） */
+  candidates?: CandidateRecord[];
+  /** report.json 的预算结算；快照 budget 缺失时的兜底来源 */
+  budget?: RunBudget | null;
   candidate_trust?: string;
   adversarially_secure?: boolean;
   [key: string]: unknown;

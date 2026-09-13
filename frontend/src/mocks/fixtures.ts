@@ -135,6 +135,12 @@ const budgetRecords: Record<string, ActionRecord> = {
     status: "measured",
     batches_ms: [11.42, 11.08, 11.63, 11.21, 10.98, 11.34, 11.77, 11.12],
     async_leak: false,
+    // not_run 样例：验证 NCU 卡的 NOT_RUN 徽章 + 服务端 reason 展示
+    profile: {
+      status: "not_run",
+      reason: "budget_exhausted_before_profile",
+      billed_against_gpu_budget: false,
+    },
   },
   "candidate-000": {
     candidate: "candidate-000",
@@ -199,6 +205,50 @@ kernelagent.optimization.OptimizationConfigError: environment variable MODEL_PRO
       gpu_device: MOCK_GPU,
     },
     started_at: Date.now() / 1000 - 55 * 60,
+  },
+};
+
+// -- unknown（手工构造：job.json 已落、journal/report 未生成的启动窗口） ------
+// 用于验证终态收敛：快照 state=unknown 不得终止轮询（否则页面永远停在
+// 「未知 + 预算 NOT_RUN」），下一拍应能收敛到真实状态。
+
+const UNKNOWN_RUN_ID = makeRunId(2 * 60);
+
+const unknownFixture: StaticRunFixture = {
+  snapshot: (): RunSnapshot => ({
+    run_id: UNKNOWN_RUN_ID,
+    state: "unknown",
+    budget: null,
+    in_flight: [],
+    progress: {},
+    candidates: [],
+    champion: null,
+    error_tail: null,
+    job: {
+      run_id: UNKNOWN_RUN_ID,
+      mode: "live",
+      config: {
+        problem: "kernelbench:l1:40",
+        backend: "triton",
+        model_id: "glm-4.5",
+        base_url: "https://api.deepseek.com",
+        gpu_device: MOCK_GPU,
+      },
+      started_at: Date.now() / 1000 - 2 * 60,
+    },
+  }),
+  journal: () => {
+    throw new MockHttpError(404, `run ${UNKNOWN_RUN_ID} has no journal.jsonl (mock)`);
+  },
+  record: (actionId) => {
+    throw new MockHttpError(404, `no record ${actionId} (mock)`);
+  },
+  workspace: () => ({ entries: [] }),
+  file: (path) => {
+    throw new MockHttpError(404, `no such workspace file: ${path} (mock)`);
+  },
+  report: () => {
+    throw new MockHttpError(404, "report.json not written (mock)");
   },
 };
 
@@ -281,10 +331,11 @@ export function staticRunFixtures(): Map<string, StaticRunFixture> {
     [noImprovementRun.runId, fromTimeline(noImprovementRun)],
     [BUDGET_RUN_ID, budgetExhaustedFixture],
     [INFRA_RUN_ID, infraFixture],
+    [UNKNOWN_RUN_ID, unknownFixture],
   ]);
 }
 
-export { completedRun, noImprovementRun };
+export { completedRun, noImprovementRun, UNKNOWN_RUN_ID };
 
 // -- /api/problems（含 KernelBench；新库由 Benchmarks 页以 Planned 卡展示） ----
 

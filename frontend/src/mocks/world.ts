@@ -71,12 +71,13 @@ function planStageTimes(start: number): Array<{ stage: string; from: number; to:
 
 function buildTimeline(outcome: Outcome): Ev[] {
   const ev: Ev[] = [];
-  // baseline-eager：只跑 timing
+  // baseline-eager：只跑 timing。注意与真实后端一致：不回写 stage_finished
+  // （server 端 journal 目前只有 stage_started），终态收敛由前端按
+  // records/baseline-eager 兜底。
   ev.push(
     { t: 0, kind: "budget_reserved", action: "baseline-eager", gpu: 90, tokens: 0 },
     { t: 0, kind: "action_started", action: "baseline-eager" },
     { t: 0, kind: "stage_started", action: "baseline-eager", stage: "timing" },
-    { t: BASELINE_DONE_AT, kind: "stage_finished", action: "baseline-eager", stage: "timing" },
     { t: BASELINE_DONE_AT, kind: "budget_settled", action: "baseline-eager", gpu: 90, tokens: 0 },
     {
       t: BASELINE_DONE_AT,
@@ -273,12 +274,9 @@ export function dynamicSnapshot(run: DynamicRun): RunSnapshot {
     path: null as string | null,
   };
   if (state === "completed" || state === "no_improvement") {
+    // 与真实 report.json 一致：baseline 不进 candidates（服务端只汇总
+    // candidate-*.json）；baseline 终态来自 records/baseline-eager
     candidates.push(
-      {
-        candidate: "baseline-eager",
-        stage: "timing",
-        status: "measured",
-      },
       {
         candidate: "candidate-000",
         stage: "correctness_pro",
@@ -368,6 +366,40 @@ const CANDIDATE_BATCHES = [
   5.98, 5.71, 5.66, 5.81, 5.55, 5.62, 5.77, 5.49, 5.83, 6.02, 5.68, 5.59,
 ];
 
+// NCU 基线画像样例（字段形状对齐真实 artifacts/*/records/baseline-eager.json；
+// 数值为演示用 mock，null 值用于验证 "—" 而非 0 的诚实展示）
+const MOCK_BASELINE_PROFILE = {
+  status: "collected",
+  source: "ncu_profile",
+  reason: null,
+  evidence: "profile/baseline-evidence.json",
+  report: "profile/baseline.ncu-rep",
+  gpu_wall_seconds: 5.87,
+  billed_against_gpu_budget: true,
+  summary: {
+    dram_throughput_pct_max: 41.02,
+    sm_throughput_pct_max: 3.51,
+    compute_memory_throughput_pct_max: 41.02,
+    // null 样例：验证卡片对缺失指标显示 "—" 而不是 0
+    warps_active_pct_max: null,
+    registers_per_thread_max: 40,
+    grid_size_max: 16,
+    gpu_time_us_max: 7.4,
+    launch_count: 8,
+    kernels: ["mock::vectorized_layer_norm_kernel<float>(int, T2, const T1 *, T2 *)"],
+    metrics_missing_in_all_launches: [],
+  },
+  capture: {
+    mode: "metrics",
+    image: "kernelagent-eval:mock",
+    launch_count: 12,
+    launch_skip: 0,
+    warmup_iters: 3,
+    measured_iters: 5,
+    seed: 42,
+  },
+};
+
 export function dynamicRecord(run: DynamicRun, actionId: string): ActionRecord {
   const t = dynamicElapsed(run);
   const fail = (what: string): never => {
@@ -381,6 +413,7 @@ export function dynamicRecord(run: DynamicRun, actionId: string): ActionRecord {
       status: "measured",
       batches_ms: BASELINE_BATCHES,
       async_leak: false,
+      profile: MOCK_BASELINE_PROFILE,
     };
   }
   if (actionId === "candidate-000") {
