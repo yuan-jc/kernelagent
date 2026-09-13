@@ -1,5 +1,7 @@
 # 当前状态与下一步
 
+> 2026-09-13 后续审查：当前开发优先级见 [REVIEW.md](../../REVIEW.md) 的 RV01–RV09。先完成 Windows 可验证修复与 CI，再执行 Ubuntu/GPU 和 U3；下方 Alpha 结果保留为历史快照，不代表这些新发现已修复。
+
 首用环境：**Ubuntu + NVIDIA GPU**。环境安装见 [Ubuntu 指南](../UBUNTU.md)，状态清单见 [task board](../task-board.json)，有效检查索引见 [current.json](../evidence/current.json)。
 本页只保留一份当前快照；历史移交见 Git 历史（及提交 `1b4a306` 前的旧记录）。
 
