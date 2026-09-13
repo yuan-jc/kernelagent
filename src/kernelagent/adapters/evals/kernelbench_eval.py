@@ -20,6 +20,7 @@ import json
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from kernelagent.adapters.models.generation import inspect_candidate_policy
 from kernelagent.worker import ContainerSpec, WorkerRequest, execute_container
 
 EVAL_IMAGE_REPO = "kernelagent-eval"
@@ -188,6 +189,11 @@ def evaluate_case(
     if outcome.status != "completed":
         consistent = False
     matches = adapter_pass is not None and adapter_pass == case.expect_pass
+    # Alpha threat model (ADR-0004): the candidate is exec()'d inside the
+    # evaluator process, so until the trust-domain split the report carries
+    # the cooperative-trust markers and the AST policy findings verbatim -
+    # never an implicit claim of adversarial strength.
+    policy = inspect_candidate_policy(case.candidate_source)
     return EvalCaseResult(
         case_id=case.case_id,
         task_id=case.task_id,
@@ -209,5 +215,9 @@ def evaluate_case(
             "parse_note": parse_note,
             "staged_files_sha256": staged,
             "stderr_tail": outcome.stderr_tail[-1500:],
+            "candidate_trust": "cooperative",
+            "adversarially_secure": False,
+            "policy_allowed": policy.allowed,
+            "policy_violations": list(policy.violations),
         },
     )

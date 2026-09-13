@@ -24,6 +24,116 @@ from kernelagent.adapters.models.errors import ParseError
 from kernelagent.adapters.models.parsing import extract_json_payload
 
 GENERATION_PROTOCOL = "t12-generation-v1"
+CANDIDATE_POLICY_PROTOCOL = "candidate-policy-v1"
+
+# Restricted-module roots (ADR-0004): a candidate that imports these can
+# reach the evaluator's process, host channels, or the /out verdict file.
+_RESTRICTED_IMPORTS = frozenset(
+    {
+        "os",
+        "subprocess",
+        "socket",
+        "shutil",
+        "signal",
+        "ctypes",
+        "importlib",
+        "threading",
+        "asyncio",
+        "pickle",
+        "builtins",
+        "sys",
+    }
+)
+# Calls that execute or rewire code/namespace at evaluator runtime.
+_DYNAMIC_CALLS = frozenset({"eval", "exec", "compile", "globals", "locals", "vars"})
+_DUNDER_ATTRIBUTES = frozenset({"__dict__", "__globals__", "__builtins__"})
+
+
+@dataclass(frozen=True, slots=True)
+class CandidatePolicyResult:
+    allowed: bool
+    violations: tuple[str, ...]
+
+
+def _root_name(node: ast.AST) -> str | None:
+    while isinstance(node, ast.Attribute):
+        node = node.value
+    return node.id if isinstance(node, ast.Name) else None
+
+
+def _dotted(node: ast.AST) -> str:
+    parts: list[str] = []
+    while isinstance(node, ast.Attribute):
+        parts.append(node.attr)
+        node = node.value
+    if isinstance(node, ast.Name):
+        parts.append(node.id)
+    return ".".join(reversed(parts))
+
+
+def inspect_candidate_policy(candidate_source: str) -> CandidatePolicyResult:
+    """AST misuse-prevention gate over candidate source (ADR-0004).
+
+    Flags the documented evaluator-tampering patterns with structured
+    violations: attribute assignment on imported/restricted modules
+    (``torch.allclose = ...``), parent ``/out`` access, dynamic execution
+    (``eval``/``exec``/``compile``/namespace rewiring), restricted imports
+    (``os``/``subprocess``/``socket``/...), ``setattr`` monkeypatching and
+    dunder global access.
+
+    This is a best-effort line of defense against accidental and naive
+    tampering, NOT a security boundary: exec() can do more than the AST
+    surface shows (``getattr`` by computed name, ``__import__``, module
+    aliasing). Until the trusted-MVP trust-domain split, evaluation runs
+    declare ``candidate_trust=cooperative`` and
+    ``adversarially_secure=false``; champions require human review."""
+    try:
+        tree = ast.parse(candidate_source)
+    except SyntaxError as exc:
+        return CandidatePolicyResult(allowed=False, violations=(f"parse-error: {exc.msg}",))
+
+    imported: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            imported.update(alias.asname or alias.name.split(".")[0] for alias in node.names)
+        elif isinstance(node, ast.ImportFrom):
+            imported.update(alias.asname or alias.name for alias in node.names if alias.name != "*")
+
+    violations: list[str] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            violations.extend(
+                f"restricted-import: {alias.name}"
+                for alias in node.names
+                if (alias.asname or alias.name.split(".")[0]) in _RESTRICTED_IMPORTS
+            )
+        elif isinstance(node, ast.ImportFrom):
+            if node.module and node.module.split(".")[0] in _RESTRICTED_IMPORTS:
+                violations.append(f"restricted-import: {node.module}")
+        elif isinstance(node, ast.Attribute) and node.attr in _DUNDER_ATTRIBUTES:
+            violations.append(f"dunder-attribute-access: {node.attr}")
+        elif isinstance(node, (ast.Assign, ast.AnnAssign, ast.AugAssign)):
+            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+            for target in targets:
+                if not isinstance(target, ast.Attribute):
+                    continue
+                root = _root_name(target)
+                if root and (root in imported or root in _RESTRICTED_IMPORTS):
+                    violations.append(f"external-attribute-assignment: {_dotted(target)}")
+        elif isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+            name = node.func.id
+            if name in _DYNAMIC_CALLS:
+                violations.append(f"dynamic-call: {name}")
+            elif name == "setattr":
+                violations.append("setattr-call: setattr")
+        elif isinstance(node, ast.Constant) and isinstance(node.value, str):
+            if "/out" in node.value:
+                violations.append(f"output-path-access: {node.value[:80]!r}")
+
+    deduped = tuple(dict.fromkeys(violations))
+    return CandidatePolicyResult(allowed=not deduped, violations=deduped)
+
+
 PROMPT_TEMPLATE = (
     "You are a CUDA/Triton kernel engineer. Optimize the PyTorch operator below.\n"
     "Problem source:\n{problem_source}\n"
