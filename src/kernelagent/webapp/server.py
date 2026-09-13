@@ -184,7 +184,9 @@ class WebApp:
                     "state": snap["state"],
                     "mode": snap.get("job", {}).get("mode"),
                     "problem": snap.get("job", {}).get("config", {}).get("problem"),
-                    "champion": snap.get("champion", {}).get("candidate_sha256"),
+                    # report.json writes champion: null for no_improvement runs;
+                    # .get(key, {}) does not replace an existing null value.
+                    "champion": (snap.get("champion") or {}).get("candidate_sha256"),
                 }
             )
         return summaries

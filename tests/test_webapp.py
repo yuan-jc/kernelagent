@@ -151,6 +151,19 @@ def test_run_snapshot_finished_reads_report(tmp_path):
     assert snap["adversarially_secure"] is False
 
 
+def test_runs_summary_survives_null_champion(tmp_path):
+    runs = tmp_path / "runs"
+    run_dir = _seed_run(runs, in_flight=False)
+    (run_dir / "report.json").write_text(
+        json.dumps({"state": "no_improvement", "champion": None, "candidates": []}),
+        encoding="utf-8",
+    )
+    app = WebApp(runs, _snapshot(tmp_path))
+    summaries = app.runs()
+    assert summaries[0]["state"] == "no_improvement"
+    assert summaries[0]["champion"] is None
+
+
 def test_start_run_strips_api_key_and_reports_failure(tmp_path, monkeypatch):
     import kernelagent.webapp.server as server_module
 
