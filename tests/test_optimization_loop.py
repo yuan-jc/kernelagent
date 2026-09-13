@@ -395,7 +395,9 @@ def test_resume_replays_manifest_for_unspecified_config(tmp_path):
         tmp_path,
         problem="kernelbench:l1:41",
         model_id="original-model",
-        gpu_budget_seconds=1234.5,
+        # Non-default budget, large enough for the RV04 stage-timeout
+        # floors (baseline 1200 + evaluate 900 + timing 1200).
+        gpu_budget_seconds=41234.5,
     )
     responder = ScriptedResponder([])
     restored_config = _config(
@@ -405,7 +407,7 @@ def test_resume_replays_manifest_for_unspecified_config(tmp_path):
         resume=True,
         problem="kernelbench:l1:41",
         model_id="original-model",
-        gpu_budget_seconds=1234.5,
+        gpu_budget_seconds=41234.5,
     )
     result2 = _run(restored_config, responder)
     assert responder.calls == 0
@@ -414,7 +416,7 @@ def test_resume_replays_manifest_for_unspecified_config(tmp_path):
     report1 = json.loads(result1.report_path.read_text(encoding="utf-8"))
     assert report2["config"]["problem"] == "kernelbench:l1:41"
     assert report2["config"]["model_id"] == "original-model"
-    assert report2["budget"]["gpu_seconds_limit"] == 1234.5
+    assert report2["budget"]["gpu_seconds_limit"] == 41234.5
     assert report2["budget"]["settled_tokens"] == report1["budget"]["settled_tokens"]
 
 

@@ -25,11 +25,38 @@ Journal ``stage_started`` events plus the finished/terminal records let an
 external reader reconstruct each candidate's pipeline stage sequence.
 
 The stage ports are injectable so the loop is testable offline; the CLI
-wires the real T05/T06/T07/T09 adapters over the container boundary."""
+wires the real T05/T06/T07/T09 adapters over the container boundary.
+
+GPU-second metering (RV04): the GPU-second unit is the MEASURED
+wall-clock time of an exclusive GPU lease, read from an injectable
+monotonic clock (``time.monotonic`` by default). Each GPU stage's lease
+spans everything inside its stage call - staging/build, container
+execution, and teardown/cleanup (the real ports run container removal
+inside :func:`kernelagent.worker.container.execute_container`). Actions
+whose path entered no GPU stage settle 0 actual GPU seconds (tokens are
+billed as before); the fixed 300-second-per-stage quota is gone. Before
+a candidate action starts, the orchestrator reserves the SUM of its
+stages' configured timeouts (evaluate 900 s, correctness_pro 900 s when
+enabled, timing 1200 s) - the per-stage floors folded into one
+reservation because RV02 bills one settlement per attempt; a budget too
+small for those floors refuses the action (``budget_refused`` ->
+``budget_exhausted``) before any GPU work. Each stage launch also
+derives a deadline from the remaining budget - ``min(stage_timeout,
+limit - settled - reservations held by OTHER attempts)`` - and passes it
+to ports that accept the optional ``deadline_seconds`` keyword (the real
+adapters do; offline fakes without the keyword are unchanged). Every
+settlement is labeled ``gpu_metering="actual"`` (measured lease time) or
+``"estimated"`` (only the reservation estimate known); interrupted
+attempts keep their estimate held and are labeled ``estimated=true`` in
+their journal event. Measured per-attempt GPU seconds live in the
+journal's ``budget_settled`` entries - NOT in the candidate records,
+which must stay byte-identical between uninterrupted and resumed paths
+(RV03 record parity)."""
 
 from __future__ import annotations
 
 import hashlib
+import inspect
 import json
 import math
 import os
@@ -37,6 +64,7 @@ import re
 import subprocess
 import time
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -82,6 +110,7 @@ from kernelagent.orchestrator import (
     Journal,
     Orchestrator,
     reconstruct_budget,
+    settled_metering_split,
 )
 from kernelagent.promotion import (
     TERMINAL_PROMOTE,
@@ -118,7 +147,31 @@ EXIT_BUDGET_EXHAUSTED = 2
 EXIT_CONFIG_ERROR = 3
 EXIT_INFRA_ERROR = 4
 
-_EST_GPU_SECONDS_PER_STAGE = 300.0
+# RV04 stage-timeout floors: the configured wall-clock timeout of each GPU
+# stage (matching the real adapters' defaults). They are the single source
+# of truth for (a) the real stage ports' container timeout (config.py
+# passes them explicitly) and (b) the per-stage reservation floor the loop
+# reserves before an action may start - a GPU stage may never be launched
+# without budget covering at least its floor.
+EVALUATE_TIMEOUT_SECONDS = 900.0
+CORRECTNESS_PRO_TIMEOUT_SECONDS = 900.0
+TIMING_TIMEOUT_SECONDS = 1200.0
+
+# Honest definition carried into every report so a reader never has to
+# guess what a GPU-second number means.
+GPU_SECONDS_DEFINITION = (
+    "GPU seconds are the measured wall-clock time of exclusive GPU leases "
+    "read from a monotonic clock (time.monotonic): each GPU stage's lease "
+    "spans staging/build, container execution and teardown/cleanup inside "
+    "that stage's call. Stages that entered no GPU work settle 0. "
+    "Reservations and interrupted attempts are estimates and are reported "
+    "separately from measured usage, never as measured."
+)
+
+# Injectable monotonic clock for GPU-lease metering (RV04): tests pass a
+# fake callable; production uses time.monotonic.
+Clock = Callable[[], float]
+
 _EST_TOKENS_PER_CANDIDATE = 2048
 
 # Name of the env var holding the provider credential. The credential value
@@ -227,6 +280,16 @@ def _atomic_write_text(path: Path, text: str) -> None:
 
 @dataclass(frozen=True, slots=True)
 class OptimizationConfig:
+    """One optimization run's user configuration.
+
+    ``max_repair_rounds`` semantics (clarified RV04, ADR handoff): it is
+    a FAILURE ALLOWANCE, not a number of extra repair attempts. The loop
+    runs at most ``max_candidates`` generate->...->confirm attempts; it
+    tolerates at most ``max_repair_rounds`` failed/rejected candidates
+    before stopping with ``no_improvement`` (``repairs >
+    max_repair_rounds`` ends the loop). It never schedules additional
+    repair attempts beyond ``max_candidates``."""
+
     problem: str
     backend: str
     model_id: str
@@ -365,6 +428,39 @@ def parse_exit_code(result: OptimizationResult) -> int:
 
 def _sha256_text(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def _port_accepts_deadline(port: object) -> bool:
+    """Whether a stage port declares the optional ``deadline_seconds``
+    keyword (RV04). The real adapter closures do; injected offline fakes
+    with plain ``(source, name)`` signatures do not and keep their exact
+    behavior. Un-introspectable callables are treated as not accepting
+    it."""
+    try:
+        parameters = inspect.signature(port).parameters
+    except (TypeError, ValueError):
+        return False
+    if "deadline_seconds" in parameters:
+        return True
+    return any(parameter.kind == inspect.Parameter.VAR_KEYWORD for parameter in parameters.values())
+
+
+def _stage_deadline_seconds(
+    budget: Budget, action_estimate_gpu: float, stage_floor: float
+) -> float:
+    """Remaining-budget deadline for one GPU stage of a running attempt
+    (RV04).
+
+    The attempt reserved ``action_estimate_gpu`` (the sum of its stages'
+    floors), so the budget this stage may spend is bounded by the limit
+    minus what is already settled and minus reservations held by OTHER
+    attempts (crashed attempts keep theirs). The deadline never falls
+    below what this attempt's own reservation funds:
+    ``min(stage_floor, limit - settled - held_by_others)``, clamped at 0.
+    The port applies ``min(its own timeout, deadline)``."""
+    held_by_others = budget.reserved_gpu_seconds - action_estimate_gpu
+    remaining = budget.gpu_seconds_limit - budget.settled_gpu_seconds - held_by_others
+    return max(0.0, min(stage_floor, remaining))
 
 
 def _git_commit() -> str:
@@ -588,6 +684,9 @@ def _run_baseline_profile(
             attempt_id=attempt_id,
             gpu_seconds=wall,
             tokens=0,
+            # B3 precedent, RV04 label: profiling bills its measured GPU
+            # wall time as an actual, into the same durable budget.
+            gpu_metering="actual",
         )
         if budget is not None:
             budget.apply_settlement(PROFILE_ACTION_ID, attempt_id, wall, 0)
@@ -715,6 +814,7 @@ def optimize(
     confirm=None,
     planner: MethodPlanner | None = _PLANNER_UNSET,
     profiler: object = _PROFILER_UNSET,
+    clock: Clock | None = None,
 ) -> OptimizationResult:
     """Run the alpha optimization loop for one pinned problem.
 
@@ -763,7 +863,12 @@ def optimize(
     on the run directory (``run.lock``, an OS-level lock the kernel
     releases when the owning process dies). A second concurrent resume of
     the same run fails with :class:`RunLockHeldError` before touching any
-    durable state, instead of interleaving journal appends."""
+    durable state, instead of interleaving journal appends.
+
+    Budget metering (RV04): GPU stages settle their measured lease time
+    (see the module docstring for the GPU-second definition). ``clock``
+    injects the monotonic clock used for those measurements - production
+    uses ``time.monotonic``; tests pass a fake to make metering exact."""
     if planner is _PLANNER_UNSET:
         planner = MethodPlanner(load_method_catalog())
 
@@ -810,6 +915,7 @@ def optimize(
             confirm=confirm,
             planner=planner,
             profiler=profiler,
+            clock=clock,
         )
     finally:
         run_lock.release()
@@ -829,6 +935,7 @@ def _optimize_under_lock(
     confirm,
     planner: MethodPlanner | None,
     profiler: object = _PROFILER_UNSET,
+    clock: Clock | None = None,
 ) -> OptimizationResult:
     """Run the optimization loop body while holding the run directory's
     single-writer lock. Called only from :func:`optimize`, which has
@@ -836,6 +943,8 @@ def _optimize_under_lock(
     resume, and acquired the lock - every durable write below (journal,
     manifest, records, champion, report) happens under that lock."""
     from kernelagent.config import build_stage_ports, default_generator
+
+    monotonic = clock if clock is not None else time.monotonic
 
     # Profiling default: only real runs (real timing port, feature not
     # disabled) profile; offline tests with injected timing fakes never do.
@@ -1004,10 +1113,46 @@ def _optimize_under_lock(
         path = records_dir / f"{name}.json"
         return json.loads(path.read_text(encoding="utf-8")) if path.is_file() else None
 
+    def _run_gpu_stage(
+        port,
+        args: tuple,
+        *,
+        floor: float,
+        estimate: float,
+        measured: dict[str, float],
+        key: str,
+    ):
+        """Run one GPU stage under its budget deadline and meter the lease
+        (RV04): the measured wall-clock span of this call - staging/build,
+        container execution and teardown for the real ports - is the
+        stage's actual GPU seconds. Ports that accept the optional
+        ``deadline_seconds`` keyword (the real adapters) receive the
+        remaining-budget deadline; offline fakes without the keyword keep
+        their exact behavior. If the stage raises, the elapsed lease time
+        is still recorded in ``measured`` (the attempt then propagates as
+        interrupted and only its estimate stays held)."""
+        deadline = _stage_deadline_seconds(orchestrator.budget, estimate, floor)
+        started_at = monotonic()
+        try:
+            if _port_accepts_deadline(port):
+                return port(*args, deadline_seconds=deadline)
+            return port(*args)
+        finally:
+            measured[key] = max(0.0, monotonic() - started_at)
+
     def _baseline_action():
         def run() -> dict:
             _mark_stage("baseline-eager", PipelineStage.TIMING.value)
-            result = timing(problem_source, "eager")
+            measured: dict[str, float] = {}
+            result = _run_gpu_stage(
+                timing,
+                (problem_source, "eager"),
+                floor=TIMING_TIMEOUT_SECONDS,
+                estimate=TIMING_TIMEOUT_SECONDS,
+                measured=measured,
+                key="timing",
+            )
+            lease = measured.get("timing", 0.0)
             batches = list(result.get("batches") or ())
             ok, note = validate_batch_samples(batches, expected_count=len(batches))
             if not (result.get("source_ok") and ok):
@@ -1015,7 +1160,8 @@ def _optimize_under_lock(
                     "status": "infra_error",
                     "stage": "timing",
                     "reason": f"baseline timing invalid: {note or 'source rejected'}",
-                    "gpu_seconds": _EST_GPU_SECONDS_PER_STAGE,
+                    "gpu_seconds": lease,
+                    "gpu_metering": "actual",
                     "tokens": 0,
                 }
             record = {
@@ -1028,23 +1174,42 @@ def _optimize_under_lock(
             _persist_record("baseline-eager", record)
             return {
                 "result_ref": "baseline-eager",
-                "gpu_seconds": _EST_GPU_SECONDS_PER_STAGE,
+                "gpu_seconds": lease,
+                "gpu_metering": "actual",
                 "tokens": 0,
             }
 
         return Action(
             name="baseline-eager",
             input_hash=f"baseline:{problem_sha256[:16]}",
-            estimated_gpu_seconds=_EST_GPU_SECONDS_PER_STAGE,
+            estimated_gpu_seconds=TIMING_TIMEOUT_SECONDS,
             estimated_tokens=0,
             run=run,
         )
 
     def _attempt_action(index: int):
         name = f"candidate-{index:03d}"
+        # RV04 reservation floor: the sum of the configured timeouts of the
+        # GPU stages this attempt may run (correctness_pro is optional).
+        # The per-stage floors are folded into this one reservation because
+        # RV02 bills exactly one settlement per attempt; the floors are
+        # replaced by measured lease seconds at settlement.
+        gpu_estimate = (
+            EVALUATE_TIMEOUT_SECONDS
+            + (CORRECTNESS_PRO_TIMEOUT_SECONDS if correctness_pro is not None else 0.0)
+            + TIMING_TIMEOUT_SECONDS
+        )
 
         def run() -> dict:
             nonlocal feedback
+            measured: dict[str, float] = {}
+
+            def metered_gpu() -> float:
+                """Actual GPU seconds metered inside this attempt so far:
+                the sum of the GPU-lease spans of the stages that ran. Paths
+                that entered no GPU stage settle exactly 0.0."""
+                return sum(measured.values())
+
             # Method planning (generator-design §4): replan from the current
             # attempt history before every generation so demotion and the
             # single-factor rotation happen without hidden state. The plan
@@ -1097,7 +1262,12 @@ def _optimize_under_lock(
                     )
                 )
                 feedback = _feedback_note("generation", gen["reason"])
-                return {"result_ref": f"{name}:generation-failed", "tokens": gen["tokens"]}
+                return {
+                    "result_ref": f"{name}:generation-failed",
+                    "gpu_seconds": metered_gpu(),
+                    "gpu_metering": "actual",
+                    "tokens": gen["tokens"],
+                }
 
             _mark_stage(name, PipelineStage.POLICY.value)
             source = gen["candidate_source"]
@@ -1132,10 +1302,22 @@ def _optimize_under_lock(
                     )
                 )
                 feedback = _feedback_note("policy", policy_note)
-                return {"result_ref": f"{name}:policy-rejected", "tokens": gen["tokens"]}
+                return {
+                    "result_ref": f"{name}:policy-rejected",
+                    "gpu_seconds": metered_gpu(),
+                    "gpu_metering": "actual",
+                    "tokens": gen["tokens"],
+                }
 
             _mark_stage(name, PipelineStage.EVALUATE.value)
-            evaluation = evaluate(source, name)
+            evaluation = _run_gpu_stage(
+                evaluate,
+                (source, name),
+                floor=EVALUATE_TIMEOUT_SECONDS,
+                estimate=gpu_estimate,
+                measured=measured,
+                key="evaluate",
+            )
             if evaluation.get("adapter_pass") is None:
                 # The evaluator itself failed to produce a verdict: this is
                 # infrastructure, not a candidate failure - record it and
@@ -1149,7 +1331,12 @@ def _optimize_under_lock(
                     "request_sha256": gen["request_sha256"],
                 }
                 _persist_record(name, record)
-                return {"result_ref": f"{name}:eval-infra", "tokens": gen["tokens"]}
+                return {
+                    "result_ref": f"{name}:eval-infra",
+                    "gpu_seconds": metered_gpu(),
+                    "gpu_metering": "actual",
+                    "tokens": gen["tokens"],
+                }
             if evaluation.get("adapter_pass") is not True:
                 reason = (
                     f"upstream evaluator verdict: compiled={evaluation.get('compiled')} "
@@ -1176,13 +1363,25 @@ def _optimize_under_lock(
                     )
                 )
                 feedback = _feedback_note("evaluate", reason)
-                return {"result_ref": f"{name}:eval-failed", "tokens": gen["tokens"]}
+                return {
+                    "result_ref": f"{name}:eval-failed",
+                    "gpu_seconds": metered_gpu(),
+                    "gpu_metering": "actual",
+                    "tokens": gen["tokens"],
+                }
 
             _mark_stage(name, PipelineStage.CORRECTNESS_PRO.value)
             pro_note = "not_run"
             pro_ok = True
             if correctness_pro is not None:
-                pro = correctness_pro(source, name)
+                pro = _run_gpu_stage(
+                    correctness_pro,
+                    (source, name),
+                    floor=CORRECTNESS_PRO_TIMEOUT_SECONDS,
+                    estimate=gpu_estimate,
+                    measured=measured,
+                    key="correctness_pro",
+                )
                 pro_ok, pro_note = pro
             if not pro_ok:
                 record = {
@@ -1204,10 +1403,22 @@ def _optimize_under_lock(
                     )
                 )
                 feedback = _feedback_note("correctness_pro", str(pro_note))
-                return {"result_ref": f"{name}:pro-failed", "tokens": gen["tokens"]}
+                return {
+                    "result_ref": f"{name}:pro-failed",
+                    "gpu_seconds": metered_gpu(),
+                    "gpu_metering": "actual",
+                    "tokens": gen["tokens"],
+                }
 
             _mark_stage(name, PipelineStage.TIMING.value)
-            timing_result = timing(source, "candidate")
+            timing_result = _run_gpu_stage(
+                timing,
+                (source, "candidate"),
+                floor=TIMING_TIMEOUT_SECONDS,
+                estimate=gpu_estimate,
+                measured=measured,
+                key="timing",
+            )
             batches = list(timing_result.get("batches") or ())
             ok, note = validate_batch_samples(batches, expected_count=len(batches))
             if not timing_result.get("source_ok") or not ok:
@@ -1231,7 +1442,12 @@ def _optimize_under_lock(
                     )
                 )
                 feedback = _feedback_note("timing", reason)
-                return {"result_ref": f"{name}:timing-invalid", "tokens": gen["tokens"]}
+                return {
+                    "result_ref": f"{name}:timing-invalid",
+                    "gpu_seconds": metered_gpu(),
+                    "gpu_metering": "actual",
+                    "tokens": gen["tokens"],
+                }
             if timing_result.get("async_leak"):
                 record = {
                     "candidate": name,
@@ -1254,7 +1470,12 @@ def _optimize_under_lock(
                 feedback = _feedback_note(
                     "timing", "Async leak: work continued past the timed region."
                 )
-                return {"result_ref": f"{name}:async-leak", "tokens": gen["tokens"]}
+                return {
+                    "result_ref": f"{name}:async-leak",
+                    "gpu_seconds": metered_gpu(),
+                    "gpu_metering": "actual",
+                    "tokens": gen["tokens"],
+                }
 
             _mark_stage(name, PipelineStage.CONFIRM.value)
             baseline_record = _load_record("baseline-eager") or {}
@@ -1315,7 +1536,8 @@ def _optimize_under_lock(
                 return {
                     "result_ref": f"{name}:promoted",
                     "tokens": gen["tokens"],
-                    "gpu_seconds": _EST_GPU_SECONDS_PER_STAGE,
+                    "gpu_seconds": metered_gpu(),
+                    "gpu_metering": "actual",
                 }
             record = {
                 "candidate": name,
@@ -1337,12 +1559,17 @@ def _optimize_under_lock(
                 )
             )
             feedback = _feedback_note("confirm", decision.reason)
-            return {"result_ref": f"{name}:retained", "tokens": gen["tokens"]}
+            return {
+                "result_ref": f"{name}:retained",
+                "tokens": gen["tokens"],
+                "gpu_seconds": metered_gpu(),
+                "gpu_metering": "actual",
+            }
 
         return Action(
             name=name,
             input_hash=f"{problem_sha256[:16]}:{config.backend}:{index}",
-            estimated_gpu_seconds=_EST_GPU_SECONDS_PER_STAGE,
+            estimated_gpu_seconds=gpu_estimate,
             estimated_tokens=_EST_TOKENS_PER_CANDIDATE,
             run=run,
         )
@@ -1397,6 +1624,7 @@ def _optimize_under_lock(
                 state = "no_improvement"
 
     durable = reconstruct_budget(orchestrator.journal.entries)
+    actual_gpu, estimated_gpu = settled_metering_split(orchestrator.journal.entries)
     candidate_records = [
         _load_record(path.stem)
         for path in sorted(records_dir.glob("candidate-*.json"))
@@ -1456,9 +1684,12 @@ def _optimize_under_lock(
             "gpu_seconds_limit": config.gpu_budget_seconds,
             "tokens_limit": config.token_budget,
             "settled_gpu_seconds": durable.settled_gpu_seconds,
+            "settled_gpu_seconds_actual": actual_gpu,
+            "settled_gpu_seconds_estimated": estimated_gpu,
             "settled_tokens": durable.settled_tokens,
             "reserved_gpu_seconds": durable.reserved_gpu_seconds,
             "reserved_tokens": durable.reserved_tokens,
+            "gpu_seconds_definition": GPU_SECONDS_DEFINITION,
         },
         "profile": profile_section,
         "journal_entries": len(orchestrator.journal.entries),
@@ -1484,10 +1715,13 @@ def run_status(output: Path) -> dict:
         raise OptimizationConfigError(f"no run found at {output}")
     journal = Journal(journal_path)
     durable = reconstruct_budget(journal.entries)
+    actual_gpu, estimated_gpu = settled_metering_split(journal.entries)
     summary = {
         "output": str(output),
         "journal_entries": len(journal.entries),
         "settled_gpu_seconds": durable.settled_gpu_seconds,
+        "settled_gpu_seconds_actual": actual_gpu,
+        "settled_gpu_seconds_estimated": estimated_gpu,
         "settled_tokens": durable.settled_tokens,
         "reserved_gpu_seconds": durable.reserved_gpu_seconds,
         "reserved_tokens": durable.reserved_tokens,

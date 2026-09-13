@@ -40,6 +40,7 @@ from kernelagent.orchestrator import (
     Journal,
     Orchestrator,
     reconstruct_budget,
+    settled_metering_split,
 )
 
 # ------------------------------------------------------------------------
@@ -419,7 +420,14 @@ def test_optimize_settlement_crash_recovers_twice_and_never_double_bills(tmp_pat
     assert len(uncertain) == 1, "the settled-without-finish attempt keeps its marker"
     state = reconstruct_budget(Journal(output / "journal.jsonl").entries)
     assert state.settled_tokens == 60, "baseline 0 + two generations x 30 tokens"
-    assert state.settled_gpu_seconds == pytest.approx(900.0), "three timed executions x 300"
+    # RV04: settlements are the MEASURED offline lease times (well below
+    # one old fixed 300-second quota), each labeled actual - never the
+    # retired fixed quota. All three executions are real work, so every
+    # settled GPU second is measured, none estimated.
+    assert 0.0 <= state.settled_gpu_seconds < 300.0
+    actual, estimated = settled_metering_split(Journal(output / "journal.jsonl").entries)
+    assert actual == pytest.approx(state.settled_gpu_seconds)
+    assert estimated == 0.0
     report = json.loads(result2.report_path.read_text(encoding="utf-8"))
     assert report["budget"]["settled_tokens"] == 60
     assert len(report["candidates"]) == 1

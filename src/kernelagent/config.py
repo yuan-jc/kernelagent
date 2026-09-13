@@ -26,6 +26,9 @@ from kernelagent.adapters.models.generation import CandidateGenerator
 from kernelagent.adapters.models.openai_compat import OpenAICompatModelClient
 from kernelagent.optimization import (
     API_KEY_ENV,
+    CORRECTNESS_PRO_TIMEOUT_SECONDS,
+    EVALUATE_TIMEOUT_SECONDS,
+    TIMING_TIMEOUT_SECONDS,
     OptimizationConfig,
     OptimizationConfigError,
     ProblemSpec,
@@ -64,6 +67,16 @@ class RealStagePorts:
     protocol: TimingProtocol
 
 
+def _stage_timeout(default_seconds: float, deadline_seconds: float | None) -> float:
+    """Effective container timeout for one GPU stage (RV04): the stage's
+    configured timeout capped by the remaining-budget deadline when one
+    was passed - ``min(own timeout, deadline)``. ``None`` (offline fakes
+    and any caller that does not meter) keeps the configured timeout."""
+    if deadline_seconds is None:
+        return default_seconds
+    return min(default_seconds, max(0.0, float(deadline_seconds)))
+
+
 def build_stage_ports(
     config: OptimizationConfig,
     spec: ProblemSpec,
@@ -75,7 +88,9 @@ def build_stage_ports(
     workspace = Path(config.output) / "workspace"
     protocol = TimingProtocol()
 
-    def evaluate(candidate_source: str, candidate_name: str) -> dict:
+    def evaluate(
+        candidate_source: str, candidate_name: str, *, deadline_seconds: float | None = None
+    ) -> dict:
         result = evaluate_case(
             EvalCase(
                 case_id=candidate_name,
@@ -89,6 +104,7 @@ def build_stage_ports(
             snapshot_root=snapshot_root,
             workspace_root=workspace,
             gpu_devices=(gpu_device,),
+            timeout_seconds=_stage_timeout(EVALUATE_TIMEOUT_SECONDS, deadline_seconds),
         )
         return {
             "adapter_pass": result.adapter_pass,
@@ -99,7 +115,9 @@ def build_stage_ports(
             "upstream_metadata": "",
         }
 
-    def correctness_pro(candidate_source: str, candidate_name: str) -> tuple[bool, str]:
+    def correctness_pro(
+        candidate_source: str, candidate_name: str, *, deadline_seconds: float | None = None
+    ) -> tuple[bool, str]:
         pro = run_pro_case(
             case_id=candidate_name,
             level=spec.level,
@@ -111,10 +129,11 @@ def build_stage_ports(
             workspace_root=workspace,
             gpu_devices=(gpu_device,),
             backend=config.backend,
+            timeout_seconds=_stage_timeout(CORRECTNESS_PRO_TIMEOUT_SECONDS, deadline_seconds),
         )
         return overall_verdict(pro)
 
-    def timing(candidate_source: str, role: str) -> dict:
+    def timing(candidate_source: str, role: str, *, deadline_seconds: float | None = None) -> dict:
         is_candidate = role == "candidate"
         result = run_timing_case(
             TimingCase(
@@ -131,6 +150,7 @@ def build_stage_ports(
             snapshot_root=snapshot_root,
             workspace_root=workspace,
             gpu_devices=(gpu_device,),
+            timeout_seconds=_stage_timeout(TIMING_TIMEOUT_SECONDS, deadline_seconds),
         )
         return {
             "source_ok": result.source_ok,

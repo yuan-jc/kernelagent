@@ -93,7 +93,9 @@ def _seed_completed_run(tmp_path):
         base_url="http://127.0.0.1:9/v1",
         max_candidates=1,
         max_repair_rounds=0,
-        gpu_budget_seconds=1234.5,
+        # Non-default budget, large enough for the RV04 stage-timeout
+        # floors (baseline 1200 + evaluate 900 + timing 1200).
+        gpu_budget_seconds=41234.5,
         token_budget=100000,
         output=tmp_path / "run",
         snapshot_root=snapshot,
@@ -135,7 +137,7 @@ def test_resume_with_only_output_and_base_url_restores_original_config(tmp_path,
         "resume must not fall back to the CLI default problem"
     )
     assert report2["config"]["model_id"] == "original-model"
-    assert report2["budget"]["gpu_seconds_limit"] == 1234.5
+    assert report2["budget"]["gpu_seconds_limit"] == 41234.5
     assert report2["champion"]["candidate_sha256"] == report1["champion"]["candidate_sha256"]
     assert report2["budget"]["settled_tokens"] == report1["budget"]["settled_tokens"], (
         "identical-identity resume must not re-execute or re-bill finished actions"

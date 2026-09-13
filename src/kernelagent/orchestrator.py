@@ -74,6 +74,18 @@ settled costs. When the budget cannot cover a reservation the machine
 refuses to start the next action and ends ``budget_exhausted`` - no
 partial free work.
 
+Metering honesty (RV04): every settlement carries a ``gpu_metering``
+label - ``"actual"`` when the amount is the measured wall-clock GPU-lease
+time the action reported, ``"estimated"`` when only the action's
+reservation estimate is known (legacy results without a measurement, or
+any caller that cannot measure). An attempt interrupted before its
+settlement keeps its reservation held as a conservative ESTIMATE and its
+``action_interrupted`` event says so explicitly (``estimated=true`` plus
+the held amounts); it is never counted as measured usage. The journal is
+the spending truth; :func:`reconstruct_budget` totals both kinds and
+:func:`settled_metering_split` separates actual from estimated so
+reports never have to claim a guess was a measurement.
+
 The state machine is pure control plane: actions are callables supplied
 by the caller (the T10 smoke wires the real T05/T07/T09 adapters)."""
 
@@ -211,6 +223,30 @@ def reconstruct_budget(entries: tuple[dict, ...]) -> DurableBudgetState:
     return _replay_budget(entries)[0]
 
 
+def settled_metering_split(entries: tuple[dict, ...]) -> tuple[float, float]:
+    """Split settled GPU seconds into ``(actual, estimated)`` by each
+    settlement's ``gpu_metering`` label (RV04).
+
+    Only settlements explicitly labeled ``"actual"`` count as measured;
+    unlabeled settlements (legacy journals, or callers that never measured)
+    count as estimated - a missing label can never be claimed as a
+    measurement. Tokens keep no split: they are provider-reported usage or
+    the conservative per-call estimate either way."""
+    actual = 0.0
+    estimated = 0.0
+    for entry in entries:
+        if entry.get("kind") != "budget_settled":
+            continue
+        gpu = entry.get("gpu_seconds", 0.0)
+        if isinstance(gpu, bool) or not isinstance(gpu, (int, float)) or gpu < 0:
+            continue
+        if entry.get("gpu_metering") == "actual":
+            actual += float(gpu)
+        else:
+            estimated += float(gpu)
+    return (actual, estimated)
+
+
 def _hash_entry(entry: dict) -> str:
     canonical = json.dumps(entry, sort_keys=True, separators=(",", ":"), default=str)
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
@@ -333,6 +369,7 @@ class Journal:
         result_ref: object,
         gpu_seconds: float,
         tokens: int,
+        gpu_metering: str = "estimated",
     ) -> tuple[dict, dict]:
         """Atomically commit one attempt's settlement and finish record as a
         single durable block (RV02): a crash before this call leaves an
@@ -340,7 +377,12 @@ class Journal:
         (handled by the loader rule), and a crash after it leaves both
         records durable - the review R2 window where a settlement existed
         without a completion record is closed for whole-block writes and
-        reducible to the tail rule for torn ones."""
+        reducible to the tail rule for torn ones.
+
+        ``gpu_metering`` (RV04) labels the settlement's GPU-seconds amount
+        as ``"actual"`` (measured lease time) or ``"estimated"`` (only the
+        reservation estimate is known); the conservative default is
+        ``"estimated"``."""
         settled: dict = {
             "kind": "budget_settled",
             "prev_hash": self._chain,
@@ -348,6 +390,7 @@ class Journal:
             "attempt_id": attempt_id,
             "gpu_seconds": gpu_seconds,
             "tokens": tokens,
+            "gpu_metering": gpu_metering,
         }
         settled["entry_hash"] = _hash_entry(settled)
         finished: dict = {
@@ -512,7 +555,12 @@ class Orchestrator:
             done.add(entry["action_id"])
         return done
 
-    def _reconcile_attempts(self, actions: list[Action]) -> None:
+    def _reconcile_attempts(
+        self,
+        actions: list[Action],
+        open_gpu: dict[tuple[str, str], list[float]] | None = None,
+        open_tokens: dict[tuple[str, str], list[int]] | None = None,
+    ) -> None:
         """Recovery pass (RV02): pair every started attempt with its finish.
         A started attempt with no finish and no settlement becomes
         ``action_interrupted`` (re-runnable, never completed). A started
@@ -523,7 +571,14 @@ class Orchestrator:
         for the same attempt. Reconciliation is idempotent: an attempt
         already carrying its marker is never marked a second time, so any
         number of consecutive recoveries produces exactly one marker per
-        unresolved attempt."""
+        unresolved attempt.
+
+        RV04 metering honesty: an interrupted attempt's GPU cost is
+        UNKNOWN - only its reservation estimate is held - so the
+        ``action_interrupted`` event is labeled ``estimated=true`` and
+        records the still-held conservative estimate amounts."""
+        open_gpu = open_gpu or {}
+        open_tokens = open_tokens or {}
         known = {action.name for action in actions}
         open_starts: dict[tuple[str, str], dict] = {}
         settled: dict[tuple[str, str], dict] = {}
@@ -557,10 +612,19 @@ class Orchestrator:
                     "re-executed under a fresh attempt id",
                 )
             else:
+                held_gpu = sum(open_gpu.get(key, ()))
+                held_tokens = sum(open_tokens.get(key, ()))
                 self.journal.append(
                     "action_interrupted",
                     action_id=start["action_id"],
                     attempt_id=start.get("attempt_id"),
+                    estimated=True,
+                    held_gpu_estimate=held_gpu,
+                    held_tokens_estimate=held_tokens,
+                    reason="started attempt has no settlement and no finish: its GPU "
+                    "cost is unknown and only the reservation estimate stays "
+                    "conservatively held (billed if the lease really ran, never "
+                    "reported as measured usage)",
                 )
 
     def _settled_from_journal(self) -> tuple[float, int]:
@@ -604,7 +668,7 @@ class Orchestrator:
             # (launch-plan P0-2).
             state, open_gpu, open_tokens = _replay_budget(self.journal.entries)
             self.budget.restore(state, open_gpu, open_tokens)
-            self._reconcile_attempts(actions)
+            self._reconcile_attempts(actions, open_gpu, open_tokens)
         done = self._trusted_finished(actions)
         cancel_requested = bool(getattr(cancel, "is_set", lambda: False)()) if cancel else False
         for action in actions:
@@ -638,7 +702,17 @@ class Orchestrator:
                 budget_reservation=reservation["entry_hash"],
             )
             result = action.run() or {}
-            settled_gpu = float(result.get("gpu_seconds", action.estimated_gpu_seconds))
+            # RV04 metering honesty: a result that carries a measured
+            # ``gpu_seconds`` settles as "actual"; falling back to the
+            # action's reservation estimate settles as "estimated" - a
+            # guess is never booked as a measurement.
+            raw_gpu = result.get("gpu_seconds")
+            if raw_gpu is None:
+                settled_gpu = float(action.estimated_gpu_seconds)
+                gpu_metering = "estimated"
+            else:
+                settled_gpu = float(raw_gpu)
+                gpu_metering = str(result.get("gpu_metering", "actual"))
             settled_tokens = int(result.get("tokens", action.estimated_tokens))
             # One atomic durable block: settlement + finish of THIS attempt
             # (see Journal.commit_settlement_and_finish).
@@ -649,6 +723,7 @@ class Orchestrator:
                 result_ref=result.get("result_ref"),
                 gpu_seconds=settled_gpu,
                 tokens=settled_tokens,
+                gpu_metering=gpu_metering,
             )
             self.budget.apply_settlement(action.name, attempt_id, settled_gpu, settled_tokens)
         journal_settled = self._settled_from_journal()
