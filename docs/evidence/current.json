@@ -668,5 +668,49 @@
       }
     },
     "scope_note": "Single candidate + fallback; multi-impl competitive selection deferred."
+  },
+  "target_ubuntu_t16_alpha": {
+    "date": "2026-09-13",
+    "kind": "gpu_alpha_acceptance",
+    "summary": "Launch-plan Tasks 1-6: trustability fixes + kernelagent optimize/resume/status loop; private alpha accepted on RTX 4060 Laptop.",
+    "commits": [
+      "5e9e51f",
+      "3d636df",
+      "3d2db2f",
+      "db33c6d",
+      "754d8f8",
+      "69ef32c"
+    ],
+    "reports": {
+      "u1_correct_promoted": {
+        "path": "artifacts/alpha/layernorm-003/report.json",
+        "sha256": "b1fec23084c1bbeed942dcc45f49148dad0f24bf03f7c5802e08d15912e3b091",
+        "state": "completed",
+        "champion_sha256": "fd0eac1c8d305aed23730ba9af43b79b69ea7ba439e00b886d0c79da023ad343",
+        "promotion_ci_95": [
+          1.6539488427325917,
+          1.705579369760132
+        ]
+      },
+      "u2_wrong_rejected": {
+        "path": "artifacts/alpha/layernorm-003-wrong/report.json",
+        "sha256": "313e3494a4a53627010dfe1598828ca571b66fd3f274434bc0f85993a30fbfa0",
+        "state": "no_improvement"
+      },
+      "resume_after_sigkill": {
+        "path": "artifacts/alpha/layernorm-007/report.json",
+        "sha256": "c6d6bbca18cf317379f8b240603d76c78924b2283398746389e4c5c871fd59f4",
+        "state": "completed",
+        "note": "action_interrupted marker; exactly one settlement per attempt; no leftover worker containers after runbook cleanup"
+      }
+    },
+    "threat_model": {
+      "candidate_trust": "cooperative",
+      "adversarially_secure": false,
+      "adr": "docs/adr/0004-candidate-evaluator-trust-model.md"
+    },
+    "pending": {
+      "U3_LIVE_MODEL": "requires user-configured MODEL_PROVIDER_API_KEY; recorded replay must never be reported as live"
+    }
   }
 }

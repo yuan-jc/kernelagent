@@ -2,7 +2,11 @@
 
 面向 **Ubuntu + NVIDIA GPU** 的算子优化 agent：自动执行、证据驱动、面向对象，优先复用 KernelBench、Triton 和现有优化工具。
 
-目前是可测试的工程基础，**尚未实现完整 GPU 自动优化闭环**。已具备纯 Domain 契约、KernelBench 静态适配、证据存储、环境探针、进程执行机制和模型客户端离线层。下一步是目标 Ubuntu 环境验收与可信 GPU worker。
+当前状态（v1 Alpha）：`kernelagent optimize` 产品入口已在真实 GPU 上打通
+**生成 → 策略门 → 容器评测 → 增强正确性 → 正式计时 → 晋升 → 报告导出**的最小纵向闭环，
+支持断点恢复与 durable 预算。Alpha 威胁模型为"合作型候选"（每份报告显式携带
+`candidate_trust=cooperative`、`adversarially_secure=false`，见 ADR-0004）；
+champion 晋升后需人工审查。真实模型从零生成（LIVE_MODEL）待配置 provider 凭据后开启。
 
 ## 从这里开始
 
@@ -10,6 +14,31 @@
 2. [当前状态与下一步](docs/handoffs/current.md)：唯一当前交接；机器状态见 [task board](docs/task-board.json)。
 3. [设计文档](docs/NVIDIA算子优化Agent设计文档.md)：对象职责、工具复用、评测与证据协议。
 4. [任务与验收计划](docs/开发任务与验收计划.md)：T00–T25 的依赖、范围与阶段门。
+
+## 快速上手（GPU 优化闭环）
+
+前置：Ubuntu + NVIDIA GPU、Docker + NVIDIA Container Toolkit、已恢复 KernelBench 快照（见下）、
+ADR-0002 评测镜像（构建见 `docs/UBUNTU.md` 与 `configs/eval-image/`）。
+
+```bash
+# 三组 Alpha 验收（固定正确/错误候选，真实 GPU 容器评测与计时）
+.venv/bin/python examples/alpha_run.py --mode correct --output artifacts/alpha/run
+.venv/bin/python examples/alpha_run.py --mode wrong   --output artifacts/alpha/run
+
+# 真实模型生成（需要自己的 OpenAI 兼容凭据，仅存控制端环境变量）
+export MODEL_PROVIDER_API_KEY='<你的密钥>'
+kernelagent optimize \
+  --problem kernelbench:l1:40 --backend triton \
+  --model glm-4.5 --base-url '<OpenAI-compatible base URL>' \
+  --max-candidates 5 --max-repair-rounds 2 \
+  --gpu-budget-seconds 1800 --output artifacts/alpha/run
+
+kernelagent status --output artifacts/alpha/run      # durable 状态与预算
+kernelagent resume --base-url '...' --output artifacts/alpha/run  # 断点续跑
+```
+
+退出码：成功 0 / 无改进 1 / 预算耗尽 2 / 配置错误 3 / 基础设施错误 4。
+详见 [Alpha Runbook](docs/alpha-runbook.md)。
 
 ## 快速自检
 
@@ -42,8 +71,10 @@ uv run --locked kernelagent bench verify
 | `src/kernelagent/domain/` | 不可变对象、严格 JSON、内容身份；不依赖 GPU/模型 SDK |
 | `adapters/benchmarks/` | 固定 KernelBench 文件与协议校验；尚不执行评测 |
 | `adapters/storage/` | 追加式记录，artifact/索引/记录哈希验证 |
-| `adapters/models/` | 离线回放、解析、有限重试、token 预算；尚无真实提供方 |
-| `src/kernelagent/worker/` | 私有目录、进程生命周期、环境过滤；不是不可信代码沙箱 |
+| `adapters/models/` | OpenAI 兼容真实提供方 + 离线回放、解析、有限重试、token 预算 |
+| `src/kernelagent/worker/` | 容器边界（ADR-0001：禁网/只读输入/非 root/cgroup 限额）+ 进程机制 |
+| `src/kernelagent/adapters/evals/` | pinned KernelBench 评测、增强正确性、正式计时（TimingProtocol v1） |
+| `src/kernelagent/optimization.py` | `optimize/resume/status` 产品主循环：生成→策略门→评测→计时→晋升→持久化 |
 | `src/kernelagent/probe.py` | 真实 CUDA 小探针与工具状态；不是性能 benchmark |
 
 当前 worker 只运行受控开发载荷。任意模型生成代码必须等 [T04 容器隔离](docs/work-packages/T04.md)验收后执行。正式计时与 profiling 分开，候选不能自行宣布正确或晋升。

@@ -14,29 +14,14 @@
 ## 一、当前交接快照
 
 - 更新时间：2026-09-13
-- 交出方：ZCode/GLM Agent（T05 验收轮）
+- 交出方：ZCode/GLM Agent（launch plan Task 1–6 轮）
 - 接收方：Codex / 用户
 - 仓库：`/home/y/kernelagent`
-- 基线分支：`main`
-- 基线提交：`15ee8a4`（T05 验收 + lint；其前 `db7e4a1` T05 契约与适配器、`4ae3489` 宿主工具链记录、`9e593cb` T04 验收）
-- 当前工作包：**T07 正式计时协议（GLM 下一轮认领）；T06 增强正确性未被认领，可由 Codex 认领**
-- 当前状态：T00–T05、T08、T12a 均 `ACCEPTED`（T03/T04/T04a/T05 为目标真机验收；T05 correctness-only，正式计时归 T07）。宿主工具链、ncu sudo 配置等事项见 `docs/handoffs/current.md`。
-
-### 目标机器已知事实
-
-- 系统：Ubuntu 25.04，x86_64
-- Python：系统 Python 3.13.3；开发环境 uv 托管 Python 3.11.16
-- GPU：NVIDIA GeForce RTX 4060 Laptop GPU
-- GPU UUID：`GPU-ea248ec5-1f33-d90f-c598-1c94dfdc6998`
-- 驱动：580.95.05
-- CUDA 计算能力：8.9
-- 显存：8188 MiB
-- Docker：28.2.2
-- NVIDIA Container Toolkit：`nvidia-container-cli` 1.19.1
-- 宿主工具链：CUDA 13.0.2 用户级（nvcc/ncu/nsys/compute-sanitizer/cuda-gdb）；非 root ncu profiling 待用户 sudo 开启计数器权限
-- 网络备注：Docker Hub 直连超时（daemon 无代理），`docker.m.daocloud.io` 可直连；下载用 Mihomo `127.0.0.1:7890`
-
-`nvcc`、`ncu` 缺少时必须按探针语义记录为 `unavailable`，不能伪造为通过，也不要为了“全绿”盲目更换驱动或 CUDA。T03 先运行现有探针并保存真实结果，再判断工具缺口是否需要用户授权安装。
+- 基线分支：`main`（含本轮提交链 `5e9e51f`→`69ef32c`，见回执）
+- 当前工作包：**T16 IN_PROGRESS（仅差 U3 LIVE_MODEL）；下一步 launch plan Task 7（可信 MVP 信任域分离，落在 T23）**
+- 当前状态：按 `CODEX_REVIEW_AND_LAUNCH_PLAN.md` 完成 Task 1–6——五项可信性缺陷全部修复（红-绿），
+  `kernelagent optimize|resume|status` 产品入口交付，固定正确/错误候选 + SIGKILL 恢复三组 Alpha 验收在真实 GPU 通过。
+  T17/T20/T22 按 launch plan 暂停；完整快照见 `docs/handoffs/current.md`。
 
 ## 二、给 ZCode/GLM Agent 的当前指令
 
@@ -238,31 +223,31 @@ curl -I --proxy http://127.0.0.1:7890 --max-time 15 https://github.com
 
 GLM 完成或遇到阻塞时，请覆盖更新下面这一节，不要追加聊天记录。
 
-### GLM 回执（第二轮：宿主 CUDA 工具链安装，2026-09-13）
+### GLM 回执（launch plan Task 1–6 轮，2026-09-13）
 
 - 更新时间：2026-09-13
-- 当前分支与提交：`main` @ 本轮文档提交（工具链证据索引+交接更新；其下为并行会话的 T04/T04a 验收提交链 `45bef25`/`9875048`/`9e593cb`）。未推送、未建远端分支。
-- 工作包状态：工具链安装属 T03 遗留缺口的用户授权补装，不改变包状态；T03/T04a/T04 已 ACCEPTED（后者由并行会话完成），下一步 T05。
-- 行为变化：无仓库源码变化。宿主机新增用户级 CUDA 13.0.2 toolkit（`/home/y/toolchains/cuda-13.0`，~7.1GB；`~/toolchains/cuda` 稳定软链；`~/.profile` 导出 `CUDA_HOME` 并前置 PATH）；驱动未动。安装包保留 `~/cuda-dl/cuda_13.0.2_580.95.05_linux.run`（sha256 `81a5d0d0…`）供容器镜像复用。
-- 修改文件：`docs/evidence/current.json`（新增 `target_ubuntu_toolchain`、`pending.NCU_COUNTER_PERMISSION`）、`docs/handoffs/current.md`（工具链移交章节、限制与下一步更新）；本文件。第一轮（T03 验收）回执见 Git 历史与本文件历史。
-- 执行命令及退出码（关键项）：
-  - 下载：8 段并行+断点续传经 Mihomo 代理，与并行会话协作完成（其间发生双写者分片损坏，坏片隔离后单写者重下；runfile makeself 负载 MD5 校验 OK）
-  - `env -u DISPLAY sh cuda_13.0.2_580.95.05_linux.run --silent --toolkit --toolkitpath=/home/y/toolchains/cuda-13.0 --override --no-man-page --tmpdir=...` → 0（免 root；`/tmp` 为 7.5G tmpfs 故显式指定 tmpdir）
-  - nvcc 修复：安装后一次软链覆盖事故致 `bin/nvcc` 变为自引用包装器（与并行会话同因），已从 runfile payload 按 cpio 偏移 14769 选择性提取 `builds/cuda_nvcc/bin/nvcc`（30153384 字节）原样还原；教训记录于证据索引（nvcc 按 `$0` 定位 TOP，禁用 `~/.local/bin/nvcc` 软链/包装）
-  - `nvcc -O2 -arch=sm_89 toolchain_saxpy.cu -o toolchain_saxpy` → 0；运行 → 0（driver/runtime 13.0，saxpy n=1048576 数学校验通过）
-  - `ncu --set basic ... ./toolchain_saxpy` → 应用正常运行但 profiling 被 ERR_NVGPUCTRPERM 拦截（`RmProfilingAdminOnly=1`，预期内，已记录）
-  - `nsys profile ...` → 0（真实 `.nsys-rep` 189290 字节）
-  - `uv run --locked kernelagent probe --target native --output artifacts/ubuntu/toolchain/probe --evidence-root artifacts/ubuntu/toolchain/evidence` → 0（**pass=6 / fail=0 / unavailable=0**；nvcc 13.0.88、ncu 2025.3.1.0 检查转 pass）
-- CPU 验证：本轮未重跑（代码零改动；上一轮 312/3/0 与并行会话 331/3/0 均在案）。
-- GPU 验证：PASS——见上探针与 saxpy 实测。
-- 未通过或未执行项：非 root ncu 真实 profiling（需用户 sudo 配置计数器权限后重启；sudo ncu 当前可用）。KernelBench 快照恢复、torch/triton 冻结环境、T05 评测未动（T05 范围）。
-- 证据路径与 hash：`artifacts/ubuntu/toolchain/{install.txt,nvcc_version.txt,ncu_version.txt,nsys_version.txt,nsys_test.txt,saxpy_compile_run.txt,ncu_permission_test.txt,toolchain_saxpy.cu}`；`artifacts/ubuntu/toolchain/probe/gpu-probe-report.json` sha256 `d5e5a0049dd3744ebc490af2de63238db265a4759327e104bfeb6cc538a9e1dd`（EvidenceStore audit healthy）。索引：`docs/evidence/current.json` 的 `target_ubuntu_toolchain`。
-- 当前活动进程：无（所有下载/安装进程已退出）
-- 阻塞与所需用户决定：无阻塞。请用户在方便时执行一条 sudo 动作（T15 前完成即可）：
-  ```bash
-  echo 'options nvidia NVreg_RestrictProfilingToAdminUsers=0' | sudo tee /etc/modprobe.d/nvidia-profiling.conf
-  # 之后重启（或重载 nvidia 模块）生效
-  ```
-- 建议 Codex 审查重点：① 工具链为用户级安装是否符合"T04/T05 环境冻结"预期（容器内 toolkit 仍以镜像为准，宿主 toolkit 供 T05 原生构建与探针）；② CUDA 13.0.2（对齐驱动 580.95.05）是否与 T05 计划的上游 KernelBench/PyTorch 版本兼容，如需 cu126/cu128 更低版本 toolkit 请指出；③ nvcc 调用约定（仅真实路径，`CUDA_HOME` 已入 `~/.profile`）是否需要写入 UBUNTU.md 正式文档。
+- 当前分支与提交：`main` @ `69ef32c`。提交链（逐项红-绿、独立提交）：
+  `5e9e51f`（Task 1 篡改反例 + AST 门 + ADR-0004）、`3d636df`（Task 2 durable 预算重建）、
+  `3d2db2f`（Task 3 计时证据严格校验）、`db33c6d`（Task 4 dispatch guard + lint）、
+  `754d8f8`（Task 5 optimize/resume/status 闭环）、`69ef32c`（Task 6 Alpha 验收 + pro driver triton 修复）。
+- 行为变化：新增 `kernelagent optimize/resume/status` 产品入口与 `examples/alpha_run.py`；
+  `inspect_candidate_policy`/`reconstruct_budget`/`validate_batch_samples` 新接口；
+  T06 pro driver 对 triton 族 backend 改用 tempfile 加载器（真实 GPU 首跑暴露的集成缺口）。
+  每份评测/优化报告携带 `candidate_trust=cooperative`、`adversarially_secure=false`（ADR-0004）。
+- 执行命令及退出码：统一验收命令（计划 §6）每提交均跑——`ruff check src tests examples configs` exit 0；
+  pytest 最终 **468 passed / 3 skipped / 0 failed**；`PYTHONPATH=src python -m kernelagent --help` 含 optimize/resume/status。
+- GPU 验证（RTX 4060 Laptop，ADR-0002 镜像 `cb7a9f4c…`）：
+  - U1 正确候选：state=completed，champion `fd0eac1c…`，晋升 CI [1.654, 1.706]（report sha256 `b1fec230…`）
+  - U2 错误候选：evaluate 阶段 `correct=False` 拒绝，state=no_improvement（sha256 `313e3494…`）
+  - SIGKILL→resume：`action_interrupted` 标记、恰 2 次结算、无重复计费（sha256 `c6d6bbca…`）
+  - 首次 U1 失败证据保留在 `artifacts/alpha/layernorm-001/002`（pro baseline 失败 → 驱动修复的根因）
+- 未通过或未执行项：**U3 LIVE_MODEL NOT_RUN**——等待用户提供 `MODEL_PROVIDER_API_KEY`（T12 同一阻塞）；
+  T05–T07 在对抗候选下不可称可信（合作型候选限定，信任域分离归 Task 7/T23）。
+- 证据路径：`docs/work-packages/T16.md`（K/U 矩阵）、`docs/alpha-runbook.md`、`docs/evidence/current.json` 的 `target_ubuntu_t16_alpha`。
+- 当前活动进程：无；`docker ps -a --filter label=kernelagent.worker=1` 无残留。
+- 阻塞与所需用户决定：请用户提供 provider 凭据并运行 `examples/alpha_run.py --mode live`（命令见 runbook）。
+- 建议 Codex 审查重点：① ADR-0004 的 AST 门实现与"非安全边界"表述是否一致；
+  ② `_replay_budget` 的 LIFO 预留语义（中断尝试保留预留、重复崩溃收敛 budget_exhausted）；
+  ③ T16 卡片验收矩阵与报告 hash 是否与 `docs/evidence/current.json` 一致。
 
 回执完成后，同时按 `AGENTS.md` 更新正式的 `docs/task-board.json`、`docs/handoffs/current.md` 和 `docs/evidence/current.json`；只有实际检查证据支持时才改变状态。

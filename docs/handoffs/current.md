@@ -1,66 +1,57 @@
 # 当前状态与下一步
 
-首用环境：**Ubuntu + NVIDIA GPU**（已确认）。环境安装见 [Ubuntu 指南](../UBUNTU.md)，状态清单见 [task-board](../task-board.json)，有效检查索引见 [current.json](../evidence/current.json)。
+首用环境：**Ubuntu + NVIDIA GPU**。环境安装见 [Ubuntu 指南](../UBUNTU.md)，状态清单见 [task board](../task-board.json)，有效检查索引见 [current.json](../evidence/current.json)。
+本页只保留一份当前快照；历史移交见 Git 历史（及提交 `1b4a306` 前的旧记录）。
 
-| 范围 | 状态与能力边界 |
+## 当前快照（2026-09-13，v1 Alpha 收口）
+
+**主线**：按 `CODEX_REVIEW_AND_LAUNCH_PLAN.md`（launch plan）完成 Task 1–6：
+修复全部已复现的可信性缺陷（P0-1 评测篡改、P0-2 恢复预算超支、P1-2 计时证据崩溃、P2-1 guard 误判、P2-2 lint），
+交付产品入口 `kernelagent optimize|resume|status`，并在真实 GPU（RTX 4060 Laptop, UUID `GPU-ea248ec5-…`）上
+完成固定正确/错误候选与中断恢复三组 Alpha 验收。U3（真实 GLM 从零生成）诚实标记 NOT_RUN，等待用户提供
+`MODEL_PROVIDER_API_KEY`。
+
+**能力边界（诚实声明）**：
+
+- Alpha 威胁模型为"合作型候选"：候选在 pinned evaluator 同进程 exec 执行，AST policy 门
+  （`inspect_candidate_policy`，ADR-0004）只是 misuse 防线而非安全边界；每份评测/优化报告显式携带
+  `candidate_trust=cooperative`、`adversarially_secure=false`；champion 需人工审查。
+  可信 MVP 的信任域分离（候选容器只见输入、verdict 由不加载候选的 verifier 产生）按 launch plan Task 7 落在 T23。
+- LIVE_MODEL 未验收：T12 停在 READY_FOR_ACCEPTANCE，T16 U3 停在 NOT_RUN；
+  两者都需要用户配置 `MODEL_PROVIDER_API_KEY` 后以 `--mode live` 实测，不得用回放冒充。
+
+**任务板**：T00–T10、T12a、T13–T15、T18、T19、T21 ACCEPTED；T12 READY_FOR_ACCEPTANCE（仅差 LIVE_MODEL）；
+**T16 IN_PROGRESS**（K1–K5、U1、U2、U2b PASS，见 [T16.md](../work-packages/T16.md)）；T11/T17/T20/T22–T25 TODO。
+T20 已预置（镜像未建，CUTLASS tarball 已下载校验，恢复手册 `docs/handoffs/recovery-runbook.md`）。
+
+## 本轮提交链（launch plan Task 1–6，逐项红-绿）
+
+| 提交 | 内容 |
 |---|---|
-| T00/T01/T02/T08/T12a | ACCEPTED：工程、纯契约、静态基准适配、证据存储、离线模型客户端；当前 CPU 回归持续覆盖 |
-| T03 | ACCEPTED（2026-09-12）：目标 Ubuntu/NVIDIA 真机验收通过；探针 4 pass / 0 fail / 2 unavailable（nvcc、ncu 不在 PATH） |
-| T04a | ACCEPTED（2026-09-13）：Ubuntu 复核通过——check 315 项 312 pass / 3 Windows 专用 skip / 0 fail，worker_smoke completed；仅进程机制，不是沙箱 |
-| T04 | ACCEPTED（2026-09-13）：容器边界（Docker+CDI、禁网、只读输入、非 root、cgroup 限额）+ 真实 GPU 请求通路（PTX JIT 写 42 验证通过、写 43 负例被父端拒绝）；ADR-0001 |
-| T05 | ACCEPTED（2026-09-13）：pinned 上游 evaluator 经容器边界在真实 GPU 上通过三类别正反例（matmul/LayerNorm/Conv2d+ReLU+BiasAdd，correct 全过、wrong 全拒）+ torch.compile 基线；correctness-only 赛道；ADR-0002 |
-| T07 | ACCEPTED（2026-09-13）：TimingProtocol v1 正式计时——A/A 噪声 CI 覆盖 1.0（0.9969–1.0190）、侧 stream 异步反例被检出、eager/compile/Triton 同口径各 12 批原始样本、source=cuda_event 隔离 NCU |
-| T09 | ACCEPTED（2026-09-13，CPU）：晋升规则 v1——硬约束优先、batch 级 bootstrap 确认（δ=0.02/置信 0.95 显式）、不确定保留 incumbent、分母完整性 + fast_p/coverage；G1 阶段门（T04–T10 可信实验机）仅剩 T10 |
-| T06/T10–T25（除 T08 及 T12a 子包） | 按任务计划依赖推进，未实现完整自动优化闭环 |
+| `5e9e51f` | Task 1：篡改反例 + `inspect_candidate_policy` AST 门 + ADR-0004 + 报告带 `candidate_trust` 标记 |
+| `3d636df` | Task 2：`reconstruct_budget` durable 预算重建；resume 不再超支；中断预留显式保留，反复崩溃收敛 budget_exhausted |
+| `3d2db2f` | Task 3：`validate_batch_samples` 严格校验；`confirm_promotion` 对 NaN/0/负样本抛类型化 ValueError 而非 IndexError |
+| `db33c6d` | Task 4：dispatch 逐输入逐维 guard（多输入不再相乘）；T20 lint 修复，ruff 全门恢复 |
+| `754d8f8` | Task 5：`kernelagent optimize/resume/status` 最小可恢复闭环 + T16 卡片 |
+| `69ef32c` | Task 6：Alpha 验收（U1 晋升 CI [1.654,1.706]、U2 拒绝+反馈、SIGKILL→resume 无重复计费）+ pro driver triton tempfile 修复 + [alpha-runbook](../alpha-runbook.md) |
 
-## 本次移交内容（2026-09-13，ZCode/GLM，第二轮）
+全量回归 468 passed / 3 skipped（Windows 专用），`ruff check src tests examples configs` 干净。
 
-- T05 实现并转 ACCEPTED：
-  - KernelBench 快照经代理恢复（273 文件，manifest 校验 PASS，上游 commit `423217d9…`）；`bench verify` PASS。
-  - ADR-0002：锁定评测镜像（pytorch 2.5.1-cuda12.4-devel 按 digest + 提交的 `configs/eval-image/Dockerfile`，image ID `sha256:b598274a…`）；dev manifest 仅追加 `src/kernelbench/utils.py` 协议引用（同一 pinned commit；题集/容差/files-manifest 绑定不变）。
-  - 控制端适配器（不导入 torch）+ 冻结容器驱动：判定只从上游序列化 `KernelExecResult` 派生，缺失判定永不为 pass。GPU 冒烟 7/7 接受（三类别 correct 全过 / wrong 全拒 / compile 基线过），报告 sha256 `5d59e859…`；全量回归 343 项 340 过 / 0 失败（sha256 `5bb1729a…`）。
-  - 实证修订两处：① 首次 GPU 运行暴露镜像缺 litellm → 补齐并重建镜像（换新 image ID）；② Docker tmpfs 默认 noexec 阻断 triton/inductor JIT → ADR-0001 修订二（/tmp 显式 exec）。
-  - 与宿主工具链章节的关系：T05 评测在锁定容器镜像内完成（镜像自带 CUDA 12.4 nvcc），不依赖宿主工具链；宿主 CUDA 13.0.2/ncu 供后续原生路径与 T15。
+## Alpha 证据（GPU 实测，2026-09-13）
 
-## 本次移交内容（2026-09-13，ZCode/GLM，宿主 CUDA 工具链安装）
+- U1 正确候选：`artifacts/alpha/layernorm-003/report.json` sha256 `b1fec230…`——state=completed，
+  champion `fd0eac1c…`（triton LayerNorm 对 eager 晋升 CI [1.654, 1.706]，12 批原始样本）。
+- U2 错误候选：`artifacts/alpha/layernorm-003-wrong/report.json` sha256 `313e3494…`——evaluate 阶段
+  `correct=False` 被拒，state=no_improvement，反馈含上游 metadata/stderr 尾。
+- 中断恢复：`artifacts/alpha/layernorm-007/report.json` sha256 `c6d6bbca…`——SIGKILL 父进程组后
+  `--resume`：`action_interrupted` 显式标记、恰好 2 次结算（无重复计费）、孤儿 Exited 容器按 runbook 清理后为 0。
 
-- 应用户要求安装宿主工具链（用户已授权安装，无 sudo 密码故全程免 root）：CUDA 13.0.2 runfile 用户级安装到 `/home/y/toolchains/cuda-13.0`（~7.1GB，`~/toolchains/cuda` 为稳定软链；`~/.profile` 导出 `CUDA_HOME` 并前置 PATH）。runfile sha256 `81a5d0d0…`、makeself 负载 MD5 校验通过；选 13.0.2 因其捆绑驱动 580.95.05 与主机完全一致。安装包保留在 `~/cuda-dl/` 供 T04/T05 容器镜像复用。
-- 组件：nvcc 13.0.88、Nsight Compute 2025.3.1.4、Nsight Systems 2025.3.2.474、compute-sanitizer、cuda-gdb。注意 nvcc 脚本按 `$0` 定位顶层目录，只能从真实路径调用（一次软链覆盖事故已从 runfile payload 原样修复，记录于证据索引）。
-- 端到端验证：`-arch=sm_89` 编译 SAXPY 并在 RTX 4060 上运行通过（driver/runtime 13.0，n=1048576 结果校验）；nsys 生成真实 `.nsys-rep`；重跑 gpu-probe：**6 pass / 0 fail / 0 unavailable**（nvcc、ncu 检查转 pass），报告 sha256 `d5e5a004…`，EvidenceStore audit healthy。
-- 遗留一条 sudo 动作：非 root ncu profiling 被 `NVreg_RestrictProfilingToAdminUsers=1` 拦截（ERR_NVGPUCTRPERM）；sudo ncu 当前可用，普通用户需写入 `/etc/modprobe.d/nvidia-profiling.conf` 后重启。T15 前完成即可。
-- 证据：`artifacts/ubuntu/toolchain/`（install.txt、各工具版本、saxpy 编译运行、ncu 权限测试、probe/ 与 evidence/）；索引见 `docs/evidence/current.json` 的 `target_ubuntu_toolchain`。
+## 遗留与下一步
 
-## 本次移交内容（2026-09-13，ZCode/GLM）
+1. **用户动作**：配置 `MODEL_PROVIDER_API_KEY`（+ `--base-url`）后运行 U3 live——T12 与 T16 才能走完 LIVE_MODEL 验收。
+2. launch plan Task 7（可信 MVP 信任域分离）→ T23 对抗回归；Task 8 已部分完成（本页单一快照化、任务板同步）。
+3. 暂停中的扩展包：T17/T20/T22（按 launch plan §7 指令暂停；T20 预置见恢复手册）→ 之后 T24/T25 研究包。
+4. 一条可选 sudo 配置（T15 深度 profiling 前）：非 root ncu 计数器权限
+   （`/etc/modprobe.d/nvidia-profiling.conf` + 重启）。
 
-- T04a 转 ACCEPTED：`kernelagent check`（315 项 312 过 / 3 跳过 Windows 专用 / 0 失败）+ worker_smoke 在目标 Ubuntu 复核通过。
-- T04 实现并转 ACCEPTED（ADR-0001 + 子步1 容器边界 + 子步2 GPU 通路）：
-  - 容器执行器 `kernelagent.worker.container`：`--network none`、只读 rootfs 与只读可信输入、非 root uid 20000、cap-drop ALL、no-new-privileges、cgroup 内存/CPU/PID 限额、随机容器名、kill+rm 回收经 inspect 确认、container-record.json 证据；19/19 项边界测试在目标机真实运行（C1–C10：协议身份、自报拒绝、只读输入、路径越界、禁网、环境净化、超时/取消含 setsid 后代、内存/PID/输出/日志限额、基础设施失败）。
-  - GPU 通路：`examples/container_gpu_smoke.py` 按冻结 PTX 载荷经容器边界在真实 GPU 上执行，父端独立验证；正例写 42 通过，负例写 43（exit 0）被父端拒绝——候选退出码/工件不能自证正确。GPU 按 CDI UUID 独占分配。
-  - 实证发现（ADR-0001 修订）：容器退出后 tmpfs 随 mount namespace 销毁，`docker cp` 对已停止容器返回 rc=0 但目录为空——输出通道改为宿主 bind 目录 + 父端 0.5s 监视限额（内核 cgroup 限额兜底）。
-  - 全量回归：334 项 331 过 / 3 Windows 专用 skip / 0 失败；报告 sha256 `e5eff8f1…`。
-- 镜像与网络事实：Docker Hub 直连超时、无密码 sudo；`docker.m.daocloud.io` 直连可用。已按 digest 锁定 `python:3.11-slim-bookworm`（`sha256:528257d4…`）与 `ubuntu:24.04`（`sha256:224a1869…`）。
-- 证据：`artifacts/t04-gpu/container-gpu-smoke.json`（sha256 `13c9fd64…`）、`artifacts/t04-cpu/32ef3cc1…/report.json`、`docs/work-packages/T04.md`、`docs/adr/0001-…md`；索引见 `docs/evidence/current.json` 的 `target_ubuntu_t04`。
-
-## 本次移交内容（2026-09-12，ZCode/GLM）
-
-- 目标机建立锁定开发环境：`.bootstrap` 内 uv 0.12.13 + uv 托管 Python 3.11.16；`uv sync --locked` 13 个依赖。系统 `python3.13-venv` 缺失导致 `python3 -m venv` 失败，改用 `venv --without-pip` + 系统 pip `--python` 目标安装，未动系统 Python、未用 sudo。
-- CPU 自检全过：ruff check/format、`kernelagent check`（315 项：312 过 / 3 跳过均为 Windows Job Object 专用 / 0 失败）、`examples/worker_smoke.py` status=completed、`uv build` sdist+wheel。
-- 真实 GPU 探针（`--target native`）：nvidia_smi、cuda_driver_api、cuda_kernel_launch 均 pass；PTX JIT kernel 真实写 42 并经设备内存回读验证，13 步 CUresult trace 全为 0x0。报告通过 `schemas/gpu-probe.schema.json` 校验，sha256 `ab9f5627797f…` 已入 EvidenceStore，audit healthy。GPU 身份：RTX 4060 Laptop / UUID `GPU-ea248ec5-1f33-d90f-c598-1c94dfdc6998` / 驱动 580.95.05 / CC 8.9。
-- nvcc、ncu 缺失按探针语义记为 `unavailable`：影响为 T04 容器镜像需自带 CUDA toolkit、T05 上游评测需 nvcc、T15 真实 `.ncu-rep` profiling 需 ncu。本轮未安装，也未改动驱动。
-- 证据与结果位置：`artifacts/ubuntu/`（commit.txt、worktree.patch（空）、os.txt、nvidia-smi.txt、probe/、probe-run.txt、evidence/）与 `artifacts/ubuntu-cpu/2ebe2e803bd14621a9fce08bf049c1bf/`；索引见 `docs/evidence/current.json` 的 `target_ubuntu_t03`。
-
-## 已知限制
-
-- 当前 POSIX 进程组回收不能阻止 setsid 逃逸；文件权限、网络和 GPU/内存资源边界必须由 T04 容器/cgroup 强制执行。只用受控载荷测试现有 runner。
-- 记录状态 completed 只表示进程成功退出，不能代表候选正确、性能有效或允许晋升。
-- 模型层只有离线能力；回放要求请求/响应 model_id 精确一致。未来 provider 的别名映射须显式设计并测试。
-- 证据存储约定单写入器、同一内容 hash 对应一组索引元数据；hash 是完整性检查，不是抵御整个存储被任意修改的签名。
-- 宿主 nvcc/ncu 已装（CUDA 13.0.2 用户级，见上文工具链章节）；ncu 非 root profiling 有一条待用户执行的 sudo 配置。torch/triton 按计划仍归 T05 的冻结 GPU 环境。
-
-## 下一步
-
-T09 已验收，G1 阶段门（可信实验机 T04–T10）仅剩 **T10（状态机与预算恢复，依赖 T05/T08/T09 均已 ACCEPTED）**；**T06（增强正确性，依赖 T05）** 可并行认领。T10 之后 T11 开启 G2。ncu 非 root profiling 的一条 sudo 配置在 T15 前完成即可。
-
-本地调研/实验缓存未随 Git 分发。清理前记录可在提交 `1b4a306` 查阅；不要将历史摘要当作当前验收事实。每包收尾替换本页的当前状态、活动作业、结果位置与下一步，避免追加聊天流水。
-
-当前无持续 GPU/模型实验作业。T03 验收对应本页记录的本地命令与证据；推送后按惯例绑定发布 CI。
+当前无持续 GPU/模型作业；`docker ps -a --filter label=kernelagent.worker=1` 无残留。
