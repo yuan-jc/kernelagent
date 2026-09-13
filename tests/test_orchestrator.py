@@ -309,3 +309,205 @@ def test_repeated_crash_resumes_converge_to_budget_exhausted(tmp_path):
     assert state.reserved_gpu_seconds == pytest.approx(90.0), (
         "three crashing attempts each hold their 30-second estimate"
     )
+
+
+# --- RV02: attempt identity, per-attempt settlement, atomic result commit --
+
+
+def _lifecycle_attempts(entries: tuple[dict, ...], kinds: tuple[str, ...]) -> dict[str, set]:
+    """attempt ids seen per journal event kind."""
+    seen: dict[str, set] = {kind: set() for kind in kinds}
+    for entry in entries:
+        if entry["kind"] in seen:
+            seen[entry["kind"]].add(entry.get("attempt_id"))
+    return seen
+
+
+def test_attempt_id_links_lifecycle_events(tmp_path):
+    """Every execution of an action is one attempt: the attempt id links
+    reservation, start, settlement and finish of that execution, and two
+    actions get distinct attempt ids."""
+    journal_path = tmp_path / "journal.jsonl"
+    orchestrator = Orchestrator(journal_path, Budget(gpu_seconds_limit=100, tokens_limit=1000))
+    orchestrator.run([_action("evaluate", []), _action("time", [])])
+    kinds = ("budget_reserved", "action_started", "budget_settled", "action_finished")
+    seen = _lifecycle_attempts(orchestrator.journal.entries, kinds)
+    for kind in kinds:
+        assert len(seen[kind]) == 2, f"{kind} must carry one attempt id per execution"
+    reserved, started = seen["budget_reserved"], seen["action_started"]
+    settled, finished = seen["budget_settled"], seen["action_finished"]
+    assert reserved == started == settled == finished, (
+        "one attempt id spans reservation -> start -> settlement -> finish"
+    )
+
+
+def test_settled_without_finish_keeps_cost_and_never_fake_completes(tmp_path):
+    """Reproduces review R2: a settlement is durable but the finish record
+    was never written (crash in the window, or a torn commit-block tail).
+    Recovery must (a) refuse to bill the same attempt twice, (b) keep the
+    uncertainty and the already-paid cost, (c) re-execute the action under
+    a FRESH attempt id whose settlement is a new, honest cost, and (d)
+    stay replayable - the old code crashed the next replay with
+    'duplicate settlement for action'."""
+    journal_path = tmp_path / "journal.jsonl"
+    journal = Journal(journal_path)
+    journal.append(
+        "budget_reserved",
+        action_id="evaluate",
+        attempt_id="attempt-1",
+        gpu_seconds=30.0,
+        tokens=50,
+    )
+    journal.append(
+        "action_started",
+        action_id="evaluate",
+        attempt_id="attempt-1",
+        input_hash="evaluate-input",
+        budget_reservation="genesis",
+    )
+    journal.append(
+        "budget_settled",
+        action_id="evaluate",
+        attempt_id="attempt-1",
+        gpu_seconds=30.0,
+        tokens=50,
+    )
+    # ...and no action_finished: the process died right here.
+
+    calls: list = []
+    first = Orchestrator(journal_path, Budget(gpu_seconds_limit=1000.0, tokens_limit=10000))
+    report = first.run([_action("evaluate", calls, gpu=30.0, tokens=50)], resume=True)
+    assert report["state"] == STATE_DONE
+    assert calls == ["evaluate"], "the uncertain attempt is re-executed exactly once"
+
+    entries = first.journal.entries
+    uncertain = [e for e in entries if e["kind"] == "attempt_uncertain"]
+    assert len(uncertain) == 1
+    assert uncertain[0]["attempt_id"] == "attempt-1"
+    assert uncertain[0]["settled_gpu_seconds"] == 30.0, "the paid cost is preserved"
+
+    settled = [e for e in entries if e["kind"] == "budget_settled"]
+    assert len(settled) == 2, "two real executions, each settled exactly once"
+    assert len({e.get("attempt_id") for e in settled}) == 2, (
+        "the re-execution settles under a fresh attempt id, never the same one"
+    )
+    assert report["settled_gpu_seconds"] == 60.0, (
+        "both executions are honestly billed: the uncertain attempt's cost stands"
+    )
+    finished = [e for e in entries if e["kind"] == "action_finished"]
+    assert len(finished) == 1, "completion comes only from the confirmed re-run"
+
+    # A third process replays the journal: nothing re-runs, nothing re-bills.
+    calls.clear()
+    second = Orchestrator(journal_path, Budget(gpu_seconds_limit=1000.0, tokens_limit=10000))
+    replay = second.run([_action("evaluate", calls, gpu=30.0, tokens=50)], resume=True)
+    assert calls == [], "a completed action must not execute again on replay"
+    assert replay["settled_gpu_seconds"] == 60.0, "replay adds no billing"
+    state = reconstruct_budget(second.journal.entries)
+    assert state.settled_gpu_seconds == 60.0
+    assert state.settled_tokens == 100
+
+
+def test_duplicate_settlement_for_same_attempt_is_rejected(tmp_path):
+    """Settlement uniqueness is per attempt: a second settlement of the
+    same attempt is duplicate billing and refuses to replay (the legacy
+    no-attempt-id form keeps its one-settlement-per-action rule)."""
+    journal = Journal(tmp_path / "journal.jsonl")
+    journal.append(
+        "budget_reserved",
+        action_id="x",
+        attempt_id="attempt-1",
+        gpu_seconds=1.0,
+        tokens=1,
+    )
+    journal.append(
+        "budget_settled", action_id="x", attempt_id="attempt-1", gpu_seconds=1.0, tokens=1
+    )
+    journal.append(
+        "budget_settled", action_id="x", attempt_id="attempt-1", gpu_seconds=1.0, tokens=1
+    )
+    with pytest.raises(ValueError, match="duplicate settlement"):
+        reconstruct_budget(journal.entries)
+
+
+def test_distinct_attempts_of_one_action_each_settle_once(tmp_path):
+    """Two real executions of the same logical action (an uncertain attempt
+    re-run) are two honest costs: per-attempt settlement keys must NOT
+    reject them, and totals add."""
+    journal = Journal(tmp_path / "journal.jsonl")
+    journal.append(
+        "budget_settled", action_id="x", attempt_id="attempt-1", gpu_seconds=30.0, tokens=50
+    )
+    journal.append(
+        "budget_settled", action_id="x", attempt_id="attempt-2", gpu_seconds=30.0, tokens=50
+    )
+    state = reconstruct_budget(journal.entries)
+    assert state.settled_gpu_seconds == 60.0
+    assert state.settled_tokens == 100
+
+
+def test_torn_commit_block_leaves_settled_without_finish(tmp_path, monkeypatch):
+    """A crash mid-way through the atomic settlement+finish block can tear
+    the tail so only the settled line is durable. The loader's tail rule
+    drops the fragment, recovery marks the attempt uncertain, re-runs it
+    under a fresh attempt id, and the journal replays cleanly."""
+    journal_path = tmp_path / "journal.jsonl"
+    journal = Journal(journal_path)
+    journal.append(
+        "budget_reserved",
+        action_id="evaluate",
+        attempt_id="attempt-1",
+        gpu_seconds=30.0,
+        tokens=50,
+    )
+    journal.append(
+        "action_started",
+        action_id="evaluate",
+        attempt_id="attempt-1",
+        input_hash="evaluate-input",
+        budget_reservation="genesis",
+    )
+    real_write = Journal._write_block
+
+    def torn_write(self, payload: bytes) -> None:
+        # Persist the settled line fully plus a partial fragment of the
+        # finish line (no terminating newline), then die: exactly what a
+        # crash inside the single block write leaves on disk.
+        first_newline = payload.index(b"\n")
+        real_write(self, payload[: first_newline + 1 + 24])
+        raise RuntimeError("simulated SIGKILL inside the commit block")
+
+    monkeypatch.setattr(Journal, "_write_block", torn_write)
+    with pytest.raises(RuntimeError, match="SIGKILL"):
+        journal.commit_settlement_and_finish(
+            action_id="evaluate",
+            attempt_id="attempt-1",
+            input_hash="evaluate-input",
+            result_ref="evaluate-result",
+            gpu_seconds=30.0,
+            tokens=50,
+        )
+    monkeypatch.undo()  # the crash is on disk; the next process writes normally
+
+    # The torn tail fragment on disk is an unfinished partial record.
+    calls: list = []
+    orchestrator = Orchestrator(journal_path, Budget(gpu_seconds_limit=1000.0, tokens_limit=10000))
+    report = orchestrator.run([_action("evaluate", calls, gpu=30.0, tokens=50)], resume=True)
+    assert report["state"] == STATE_DONE
+    assert calls == ["evaluate"]
+    recovered = [e for e in orchestrator.journal.entries if e["kind"] == "journal_recovered"]
+    assert len(recovered) == 1, "the dropped fragment is recorded, never silently deleted"
+    uncertain = [e for e in orchestrator.journal.entries if e["kind"] == "attempt_uncertain"]
+    assert len(uncertain) == 1 and uncertain[0]["attempt_id"] == "attempt-1"
+    state = reconstruct_budget(orchestrator.journal.entries)
+    assert state.settled_gpu_seconds == pytest.approx(60.0)
+
+
+def test_experiment_done_carries_durable_totals(tmp_path):
+    journal_path = tmp_path / "journal.jsonl"
+    orchestrator = Orchestrator(journal_path, Budget(gpu_seconds_limit=100, tokens_limit=1000))
+    orchestrator.run([_action("evaluate", [], gpu=2.5, tokens=7)])
+    done = [e for e in orchestrator.journal.entries if e["kind"] == "experiment_done"]
+    assert len(done) == 1
+    assert done[0]["settled_gpu_seconds"] == 2.5
+    assert done[0]["settled_tokens"] == 7

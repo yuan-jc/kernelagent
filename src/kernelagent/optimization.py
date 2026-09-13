@@ -32,6 +32,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import os
 import re
 import subprocess
 import time
@@ -106,9 +107,103 @@ _EST_TOKENS_PER_CANDIDATE = 2048
 # enters the manifest, journal, or reports.
 API_KEY_ENV = "MODEL_PROVIDER_API_KEY"
 
+# Single-writer lock file inside a run directory (RV02).
+RUN_LOCK_FILENAME = "run.lock"
+
+try:  # POSIX file locking; the msvcrt fallback keeps Windows dev boxes working.
+    import fcntl
+except ImportError:  # pragma: no cover - Windows
+    fcntl = None  # type: ignore[assignment]
+try:
+    import msvcrt
+except ImportError:
+    msvcrt = None  # type: ignore[assignment]
+
 
 class OptimizationConfigError(ValueError):
     """Raised for user-fixable configuration problems (exit code 3)."""
+
+
+class RunLockHeldError(OptimizationConfigError):
+    """Another process holds the run directory's single-writer lock, so a
+    concurrent resume of the same run was refused (RV02). Recovery is
+    user-fixable: wait for the other process, or take over after it died
+    (the OS releases the lock when its process exits)."""
+
+
+@dataclass
+class RunLock:
+    """An OS-level exclusive lock over one run directory.
+
+    The lock lives in ``<output>/run.lock`` and is held with
+    ``fcntl.flock`` (POSIX) or ``msvcrt.locking`` (Windows), so the kernel
+    releases it when the owning process dies - a crashed run never leaves
+    a stale lock that blocks recovery forever."""
+
+    path: Path
+    _fd: int | None = None
+
+    def release(self) -> None:
+        if self._fd is None:
+            return
+        fd, self._fd = self._fd, None
+        try:
+            if fcntl is not None:
+                fcntl.flock(fd, fcntl.LOCK_UN)
+            elif msvcrt is not None:  # pragma: no cover - Windows
+                os.lseek(fd, 0, os.SEEK_SET)
+                msvcrt.locking(fd, msvcrt.LK_UNLCK, 1)
+        finally:
+            os.close(fd)
+
+
+def acquire_run_lock(output: Path) -> RunLock:
+    """Acquire the run directory's single-writer lock (RV02).
+
+    Exactly one process may append to a run's journal at a time: journal
+    appends are crash-consistent for one writer, not for two processes
+    interleaving writes. A second concurrent resume fails with
+    :class:`RunLockHeldError` before touching any durable state."""
+    output = Path(output)
+    output.mkdir(parents=True, exist_ok=True)
+    lock_path = output / RUN_LOCK_FILENAME
+    fd = os.open(lock_path, os.O_RDWR | os.O_CREAT, 0o644)
+    try:
+        if fcntl is not None:
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        elif msvcrt is not None:  # pragma: no cover - Windows
+            msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
+        else:  # pragma: no cover - no locking primitive
+            raise OSError("no file-locking primitive available on this platform")
+    except OSError as exc:
+        os.close(fd)
+        raise RunLockHeldError(
+            f"run at {output} is already owned by another process "
+            f"(single-writer lock {lock_path} is held); concurrent resume of one "
+            "run is not allowed - wait for the other process to finish"
+        ) from exc
+    try:
+        os.ftruncate(fd, 0)
+        os.write(fd, f"pid={os.getpid()}\n".encode("utf-8"))
+    except OSError:  # pragma: no cover - diagnostics only, never fatal
+        pass
+    return RunLock(path=lock_path, _fd=fd)
+
+
+def _atomic_write_text(path: Path, text: str) -> None:
+    """Atomically replace ``path`` with ``text`` (RV02): the payload is
+    fully written and fsynced to a temp file in the same directory, then
+    moved into place with ``os.replace``, which is atomic within one
+    filesystem. Readers and a crash can therefore never observe a
+    half-written result record, champion, manifest, or report; the
+    previous content stays complete until the instant of replacement."""
+    path = Path(path)
+    tmp = path.with_name(f".{path.name}.tmp")
+    with open(tmp, "w", encoding="utf-8") as handle:
+        handle.write(text)
+        handle.flush()
+        os.fsync(handle.fileno())
+    os.replace(tmp, path)
 
 
 @dataclass(frozen=True, slots=True)
@@ -444,9 +539,13 @@ def optimize(
     budgets) may be overridden on resume; each override is recorded as an
     explicit ``manifest_revised`` journal event. A non-resume run into an
     existing non-empty output directory is a configuration error raised
-    before any model or GPU call."""
-    from kernelagent.config import build_stage_ports, default_generator
+    before any model or GPU call.
 
+    Concurrency (RV02): the whole run executes under a single-writer lock
+    on the run directory (``run.lock``, an OS-level lock the kernel
+    releases when the owning process dies). A second concurrent resume of
+    the same run fails with :class:`RunLockHeldError` before touching any
+    durable state, instead of interleaving journal appends."""
     if planner is _PLANNER_UNSET:
         planner = MethodPlanner(load_method_catalog())
 
@@ -466,6 +565,50 @@ def optimize(
             f"output directory {output} already exists and is not empty; refusing to mix "
             "experiments - use the resume command to continue this run or pick a new --output"
         )
+
+    # RV02 single-writer lock: at most one process may work on a run
+    # directory. The lock is taken after the pure configuration checks and
+    # before any durable write (journal, manifest, records); a failed
+    # resume therefore never leaves the directory created mid-boot.
+    run_lock = acquire_run_lock(output)
+    try:
+        return _optimize_under_lock(
+            config,
+            output=output,
+            journal_path=journal_path,
+            manifest_path=manifest_path,
+            stored_manifest=stored_manifest,
+            generator=generator,
+            evaluate=evaluate,
+            correctness_pro=correctness_pro,
+            timing=timing,
+            confirm=confirm,
+            planner=planner,
+        )
+    finally:
+        run_lock.release()
+
+
+def _optimize_under_lock(
+    config: OptimizationConfig,
+    *,
+    output: Path,
+    journal_path: Path,
+    manifest_path: Path,
+    stored_manifest: RunManifest | None,
+    generator: CandidateGenerator | None,
+    evaluate,
+    correctness_pro,
+    timing,
+    confirm,
+    planner: MethodPlanner | None,
+) -> OptimizationResult:
+    """Run the optimization loop body while holding the run directory's
+    single-writer lock. Called only from :func:`optimize`, which has
+    already validated the configuration, restored the stored manifest on
+    resume, and acquired the lock - every durable write below (journal,
+    manifest, records, champion, report) happens under that lock."""
+    from kernelagent.config import build_stage_ports, default_generator
 
     snapshot_root = config.snapshot_root
     if snapshot_root is None and stored_manifest is not None:
@@ -580,8 +723,8 @@ def optimize(
                 reason="explicit resume override of a revisable manifest field",
             )
     else:
-        # Persisted before the first billable action of the run.
-        manifest_path.write_text(domain_dumps(run_manifest), encoding="utf-8")
+        # Persisted (atomically) before the first billable action of the run.
+        _atomic_write_text(manifest_path, domain_dumps(run_manifest))
 
     state = "completed"
     champion_sha: str | None = None
@@ -592,19 +735,20 @@ def optimize(
     stop = False
 
     def _persist_record(name: str, record: dict) -> None:
-        (records_dir / f"{name}.json").write_text(
-            json.dumps(record, indent=2, sort_keys=True), encoding="utf-8"
+        _atomic_write_text(
+            records_dir / f"{name}.json", json.dumps(record, indent=2, sort_keys=True)
         )
 
     def _mark_stage(name: str, stage: str) -> None:
         """Record the stage a candidate entered, twice: a lightweight
-        heartbeat file for live status readers, and an append-only
-        ``stage_started`` journal event so an external timeline can be
-        reconstructed from journal.jsonl alone. The durable record written
-        at the end of the attempt stays the source of truth for outcomes."""
-        (records_dir / f"{name}.progress.json").write_text(
+        heartbeat file (atomically replaced, RV02) for live status readers,
+        and an append-only ``stage_started`` journal event so an external
+        timeline can be reconstructed from journal.jsonl alone. The durable
+        record written at the end of the attempt stays the source of truth
+        for outcomes."""
+        _atomic_write_text(
+            records_dir / f"{name}.progress.json",
             json.dumps({"candidate": name, "stage": stage, "ts": time.time()}, sort_keys=True),
-            encoding="utf-8",
         )
         orchestrator.journal.append("stage_started", action_id=name, stage=stage, ts=time.time())
 
@@ -858,8 +1002,9 @@ def optimize(
             if decision.outcome == TERMINAL_PROMOTE:
                 champion_dir.mkdir(exist_ok=True)
                 champion_file = champion_dir / f"{name}_{gen['candidate_sha256'][:12]}.py"
-                champion_file.write_text(source, encoding="utf-8")
-                (champion_dir / "champion.json").write_text(
+                _atomic_write_text(champion_file, source)
+                _atomic_write_text(
+                    champion_dir / "champion.json",
                     json.dumps(
                         {
                             "candidate": name,
@@ -878,7 +1023,6 @@ def optimize(
                         indent=2,
                         sort_keys=True,
                     ),
-                    encoding="utf-8",
                 )
                 record = {
                     "candidate": name,
@@ -1018,7 +1162,7 @@ def optimize(
         "adversarially_secure": False,
     }
     report_path = output / "report.json"
-    report_path.write_text(json.dumps(report_payload, indent=2, sort_keys=True), encoding="utf-8")
+    _atomic_write_text(report_path, json.dumps(report_payload, indent=2, sort_keys=True))
     return OptimizationResult(
         state=state,
         champion_sha256=champion_sha,
