@@ -181,6 +181,9 @@ API_KEY_ENV = "MODEL_PROVIDER_API_KEY"
 
 # Single-writer lock file inside a run directory (RV02).
 RUN_LOCK_FILENAME = "run.lock"
+# Byte offset of the Windows mandatory lock: far enough past the small pid
+# header that reading the header through another handle is never blocked.
+RUN_LOCK_HINT_OFFSET = 4096
 
 try:  # POSIX file locking; the msvcrt fallback keeps Windows dev boxes working.
     import fcntl
@@ -223,7 +226,7 @@ class RunLock:
             if fcntl is not None:
                 fcntl.flock(fd, fcntl.LOCK_UN)
             elif msvcrt is not None:  # pragma: no cover - Windows
-                os.lseek(fd, 0, os.SEEK_SET)
+                os.lseek(fd, RUN_LOCK_HINT_OFFSET, 0)
                 msvcrt.locking(fd, msvcrt.LK_UNLCK, 1)
         finally:
             os.close(fd)
@@ -244,7 +247,12 @@ def acquire_run_lock(output: Path) -> RunLock:
         if fcntl is not None:
             fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
         elif msvcrt is not None:  # pragma: no cover - Windows
+            # Windows locks are mandatory: lock a hint byte well past the pid
+            # header so diagnostics readers of the small pid file through
+            # another handle are never blocked.
+            os.lseek(fd, RUN_LOCK_HINT_OFFSET, 0)
             msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
+            os.lseek(fd, 0, 0)
         else:  # pragma: no cover - no locking primitive
             raise OSError("no file-locking primitive available on this platform")
     except OSError as exc:

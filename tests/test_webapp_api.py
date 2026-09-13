@@ -112,13 +112,11 @@ def _seed_run(runs: Path, run_id: str = RUN_ID, *, started_at: float | None = 17
     if started_at is not None:
         job["started_at"] = started_at
     (run_dir / "job.json").write_text(json.dumps(job), encoding="utf-8")
-    (run_dir / "workspace" / "container-deadbeef" / "stdout.log").write_text(
-        "hello\n", encoding="utf-8"
-    )
-    (run_dir / "workspace" / "container-deadbeef" / "candidate.py").write_text(
-        "x = 1\n", encoding="utf-8"
-    )
-    (run_dir / "workspace" / "notes.md").write_text("# notes\n", encoding="utf-8")
+    # Binary writes keep the workspace bytes identical on every platform
+    # (text mode would translate "\n" to "\r\n" on Windows).
+    (run_dir / "workspace" / "container-deadbeef" / "stdout.log").write_bytes(b"hello\n")
+    (run_dir / "workspace" / "container-deadbeef" / "candidate.py").write_bytes(b"x = 1\n")
+    (run_dir / "workspace" / "notes.md").write_bytes(b"# notes\n")
     return run_dir
 
 
