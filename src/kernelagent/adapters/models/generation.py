@@ -159,13 +159,22 @@ class GenerationFailure:
     request_sha256: str
 
 
-def build_request(problem_source: str, model_id: str, seed_note: str = "") -> ModelRequest:
-    """Frozen prompt assembly; the request hash is the generation identity."""
+GENERATION_MAX_TOKENS = 8192
+
+
+def build_request(
+    problem_source: str, model_id: str, seed_note: str = "", max_tokens: int | None = None
+) -> ModelRequest:
+    """Frozen prompt assembly; the request hash is the generation identity.
+
+    The default token cap leaves headroom for reasoning-style providers:
+    they emit an invisible ``reasoning_content`` block first, and a small
+    cap is consumed entirely by thinking with an empty ``content``."""
     return ModelRequest(
         model_id=model_id,
         messages=(("user", PROMPT_TEMPLATE.format(problem_source=problem_source) + seed_note),),
         temperature=0.0,
-        max_tokens=2048,
+        max_tokens=max_tokens if max_tokens is not None else GENERATION_MAX_TOKENS,
         purpose="candidate-generation",
     )
 

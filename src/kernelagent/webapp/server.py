@@ -135,7 +135,7 @@ class WebApp:
             )
             thread = threading.Thread(
                 target=self._run_job,
-                args=(mode, config, api_key, run_id),
+                args=(mode, config, api_key, run_id, bool(payload.get("disable_thinking"))),
                 daemon=True,
                 name=f"optimize-{run_id}",
             )
@@ -143,10 +143,21 @@ class WebApp:
             thread.start()
         return {"run_id": run_id, "state": "running"}
 
-    def _run_job(self, mode: str, config: OptimizationConfig, api_key: str, run_id: str) -> None:
+    def _run_job(
+        self,
+        mode: str,
+        config: OptimizationConfig,
+        api_key: str,
+        run_id: str,
+        disable_thinking: bool = False,
+    ) -> None:
         try:
             generator = build_generator(
-                mode, config.base_url, api_key, fixtures_root=self.fixtures_root
+                mode,
+                config.base_url,
+                api_key,
+                disable_thinking=disable_thinking,
+                fixtures_root=self.fixtures_root,
             )
             optimize(config, generator=generator)
         except Exception:  # noqa: BLE001 - the job's error channel is the run dir

@@ -70,6 +70,12 @@ def main() -> int:
     parser.add_argument("--live", action="store_true", help="Attempt the real provider call")
     parser.add_argument("--base-url", default="https://api.zhipuai.cn/api/paas/v4/")
     parser.add_argument("--model-id", default="glm-4-flash")
+    parser.add_argument(
+        "--disable-thinking",
+        action="store_true",
+        help="Send thinking:{type:disabled} (reasoning-style providers burn the "
+        "token budget before emitting content)",
+    )
     args = parser.parse_args()
     gpu_device = args.gpu_device or _default_gpu_device()
 
@@ -155,7 +161,11 @@ def main() -> int:
         else:
             from kernelagent.adapters.models.openai_compat import OpenAICompatModelClient
 
-            live_client = OpenAICompatModelClient(base_url=args.base_url, api_key=api_key)
+            live_client = OpenAICompatModelClient(
+                base_url=args.base_url,
+                api_key=api_key,
+                extra_body={"thinking": {"type": "disabled"}} if args.disable_thinking else None,
+            )
             live_outcome, _ = generator.__class__(live_client, ledger).generate(
                 problem_source, args.model_id
             )

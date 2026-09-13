@@ -17,15 +17,16 @@ improvement, 2 budget, 3 config, 4 infra)."""
 
 import argparse
 import json
+import os
 from pathlib import Path
 
-from kernelagent.config import default_generator
 from kernelagent.optimization import (
     OptimizationConfig,
     OptimizationConfigError,
     optimize,
     parse_exit_code,
 )
+from kernelagent.webapp.jobs import build_generator
 
 SNAPSHOT_DEFAULT = Path("research/sources/ScalingIntelligence__KernelBench")
 FIXTURES_DEFAULT = Path("configs/kernelbench/eval-fixtures")
@@ -50,6 +51,12 @@ def main() -> int:
     parser.add_argument("--fixtures-root", type=Path, default=FIXTURES_DEFAULT)
     parser.add_argument("--gpu-device", default=None)
     parser.add_argument("--resume", action="store_true")
+    parser.add_argument(
+        "--disable-thinking",
+        action="store_true",
+        help="Send thinking:{type:disabled} (reasoning-style providers burn the "
+        "token budget before emitting content)",
+    )
     args = parser.parse_args()
 
     output = args.output
@@ -75,7 +82,12 @@ def main() -> int:
 
     try:
         if args.mode == "live":
-            generator = default_generator(config)
+            generator = build_generator(
+                "live",
+                config.base_url,
+                os.environ.get("MODEL_PROVIDER_API_KEY", ""),
+                disable_thinking=args.disable_thinking,
+            )
         else:
             fixture = (
                 "triton_l1_p40_layernorm.py"

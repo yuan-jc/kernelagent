@@ -57,16 +57,18 @@ def build_generator(
     base_url: str,
     api_key: str,
     *,
+    disable_thinking: bool = False,
     fixtures_root: Path = FIXTURES_DEFAULT,
 ) -> CandidateGenerator:
     """Build the CandidateGenerator for one job; credentials stay local."""
     if mode == "live":
+        extra = {"thinking": {"type": "disabled"}} if disable_thinking else None
         if api_key.strip():
-            client = OpenAICompatModelClient(base_url=base_url, api_key=api_key)
+            client = OpenAICompatModelClient(base_url=base_url, api_key=api_key, extra_body=extra)
             return CandidateGenerator(client, CostLedger())
         # No key in the request: fall back to the control-plane env var,
         # which raises an explicit config error when it is unset too.
-        return default_generator(base_url)
+        return default_generator(base_url, extra_body=extra)
     fixture = _DEMO_FIXTURES.get(mode)
     if fixture is None:
         raise OptimizationConfigError(f"unknown run mode {mode!r}")

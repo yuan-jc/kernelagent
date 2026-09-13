@@ -53,6 +53,7 @@ class OpenAICompatModelClient:
         api_key: str,
         timeout_seconds: float = 120.0,
         sleep=time.sleep,
+        extra_body: dict | None = None,
     ):
         if not isinstance(base_url, str) or not base_url.strip():
             raise PermanentModelError("provider base_url is not configured")
@@ -62,6 +63,10 @@ class OpenAICompatModelClient:
         self._api_key = api_key
         self._timeout = timeout_seconds
         self._sleep = sleep
+        # Provider-specific request knobs outside the frozen ModelRequest
+        # identity (e.g. {"thinking": {"type": "disabled"}} for
+        # reasoning-style models); merged into every chat payload.
+        self.extra_body = dict(extra_body) if extra_body else {}
 
     def complete(self, request: ModelRequest) -> ModelResponse:
         payload = {
@@ -71,6 +76,7 @@ class OpenAICompatModelClient:
         }
         if request.max_tokens is not None:
             payload["max_tokens"] = request.max_tokens
+        payload.update(self.extra_body)
         body = json.dumps(payload).encode("utf-8")
         attempts = 0
         while True:
@@ -113,6 +119,13 @@ class OpenAICompatModelClient:
         except (KeyError, IndexError, TypeError) as exc:
             raise PermanentModelError(f"provider response malformed: {exc}") from exc
         if not isinstance(content, str) or not content.strip():
+            reasoning = choice["message"].get("reasoning_content")
+            reasoning_len = len(reasoning) if isinstance(reasoning, str) else 0
+            if finish_reason == "length" or reasoning_len:
+                raise PermanentModelError(
+                    "provider produced no content: the token budget was consumed by "
+                    f"reasoning ({reasoning_len} chars); raise max_tokens"
+                )
             raise PermanentModelError("provider returned empty content")
         response = ModelResponse(
             request_sha256=request.request_sha256,
