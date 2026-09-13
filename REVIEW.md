@@ -319,3 +319,24 @@ uv run --locked python examples/alpha_run.py --mode live --model glm-4.5 --base-
 未验证范围、遗留问题、活动作业：真实模型/Ubuntu 复验属 RV08/RV07；resume 只还原最后一条失败反馈（与连续路径内存行为一致，按构造成立）
 下一包与依赖：RV04（实际用量预算，未做——live 实测固定配额耗尽见 handoff 通宵轮节）
 ```
+
+```text
+包编号：RV04
+状态：CPU_PASS_TARGET_NOT_RUN（真实 GPU 计量已抽验，正式账单核对留 RV07）
+基线与修复提交：基线 3278f4c；修复 a554573
+行为变化与对应 R 编号：R3——GPU 秒口径定义为独占租约实测墙钟（monotonic、可注入时钟）；删除固定 300 秒/动作；
+  预留=各阶段超时下限之和，不足在调用前拒绝（0 模型/GPU 调用）；deadline=min(下限,剩余) 仅传给声明支持的真实端口；
+  每笔结算带 gpu_metering=actual/estimated，中断尝试保守持有并标 estimated；无 GPU 工作结算 0 秒（token 照旧）；
+  profile（T30）计费并入同口径。
+正例、反例及实际命令：假时钟实测求和、两级预留拒绝、deadline 传递/钳 0、中断保守记账恢复两次、
+  unknown 结算记 estimated、record 不含计量字段（保 RV03 字节一致）。命令：.venv/bin/python -m pytest tests/test_budget_metering.py -q
+测试数量、失败与跳过原因：新增 11 项；全量 725 passed / 3 skipped（既有两处断言随语义更新：预算 1234.5→41234.5、
+  settled==900 改为实测区间——语义随包而变，非放松）
+平台、环境身份：Ubuntu 24.04，Python 3.11.16（离线可控时钟）；真实 GPU 抽验 run
+  artifacts/webui/20260914-050538（completed+champion；settled 32.38s 全部 actual：baseline 5.15+profile 6.34+candidate 20.89；
+  同流程旧口径为固定 900s）
+证据 URL/路径及完整 SHA-256：tests/test_budget_metering.py（提交 a554573）
+未验证范围、遗留问题、活动作业：Ubuntu 真实账单核对留 RV07；RV08 示例预算 1800s 在新预留口径下将 budget_exhausted
+  （候选预留 2100/3000），示例预算需上调；--max-repair-rounds CLI 文案澄清留 ADR（当前语义=容忍失败候选数）
+下一包与依赖：RV05（未做）、RV06（进行中）
+```
