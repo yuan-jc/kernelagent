@@ -8,16 +8,23 @@
  */
 
 import type {
+  ActionRecord,
   ApiErrorBody,
   HealthResponse,
+  JournalResponse,
   ListModelsRequest,
   ListModelsResponse,
   ProblemsResponse,
+  RecordsListResponse,
+  RunReport,
   RunSnapshot,
   StartRunRequest,
   StartRunResponse,
   RunsResponse,
+  WorkspaceFileResponse,
+  WorkspaceResponse,
 } from "./types";
+import { MOCKS_ENABLED, MockHttpError, mockRequest } from "../mocks";
 
 /** 服务端默认端口（server.py: serve(port=8501)） */
 export const BACKEND_PORT = 8501;
@@ -58,6 +65,17 @@ interface RequestOptions {
 }
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  // Mock 数据源开关（VITE_USE_MOCKS / localStorage ka-use-mocks）：
+  // 打开后全部请求走 frontend/src/mocks/ 的内存后端，便于在 C3 新端点
+  // （P2-P5）落地前开发与演示。切换说明见 README。
+  if (MOCKS_ENABLED) {
+    try {
+      return await mockRequest<T>(path, options);
+    } catch (cause) {
+      if (cause instanceof MockHttpError) throw new ApiError(cause.status, cause.message);
+      throw toApiError(cause);
+    }
+  }
   const { method = "GET", body } = options;
   const init: RequestInit = { method };
   if (body !== undefined) {
@@ -122,6 +140,52 @@ export const api = {
   /** GET /api/runs/<id> — 单个 run 的持久化快照；未知 id 返回 404 */
   getRun(runId: string): Promise<RunSnapshot> {
     return request<RunSnapshot>(`/api/runs/${encodeURIComponent(runId)}`);
+  },
+
+  /**
+   * GET /api/runs/<id>/journal?after=N — 设计规范提案 P3（journal 增量）。
+   * C3 未上线时 server.py 会以 404 {"error":"not found"} 应答，调用方
+   * （hooks/useJournal）负责降级：先试全量，再显示"端点未实现"。
+   */
+  getJournal(runId: string, after?: number): Promise<JournalResponse> {
+    const query = typeof after === "number" ? `?after=${after}` : "";
+    return request<JournalResponse>(
+      `/api/runs/${encodeURIComponent(runId)}/journal${query}`,
+    );
+  },
+
+  /** GET /api/runs/<id>/records/<action_id> — 提案 P4（单条 action 记录） */
+  getRecord(runId: string, actionId: string): Promise<ActionRecord> {
+    return request<ActionRecord>(
+      `/api/runs/${encodeURIComponent(runId)}/records/${encodeURIComponent(actionId)}`,
+    );
+  },
+
+  /** GET /api/runs/<id>/records — C3 后端的 records 只读清单 */
+  getRecords(runId: string): Promise<RecordsListResponse> {
+    return request<RecordsListResponse>(
+      `/api/runs/${encodeURIComponent(runId)}/records`,
+    );
+  },
+
+  /** GET /api/runs/<id>/workspace — 提案 P5（工作区顶层只读清单） */
+  getWorkspace(runId: string): Promise<WorkspaceResponse> {
+    return request<WorkspaceResponse>(
+      `/api/runs/${encodeURIComponent(runId)}/workspace`,
+    );
+  },
+
+  /** GET /api/runs/<id>/workspace/file?path=… — 提案 P5（只读文件内容） */
+  getWorkspaceFile(runId: string, filePath: string): Promise<WorkspaceFileResponse> {
+    const query = `?path=${encodeURIComponent(filePath)}`;
+    return request<WorkspaceFileResponse>(
+      `/api/runs/${encodeURIComponent(runId)}/workspace/file${query}`,
+    );
+  },
+
+  /** GET /api/runs/<id>/report — 提案 P2（report.json 原文，证据链） */
+  getReport(runId: string): Promise<RunReport> {
+    return request<RunReport>(`/api/runs/${encodeURIComponent(runId)}/report`);
   },
 
   /**

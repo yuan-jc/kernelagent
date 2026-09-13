@@ -74,6 +74,8 @@ export interface RunSummary {
   problem: string | null;
   /** champion 的 candidate_sha256；无 champion 时为 null */
   champion: string | null;
+  /** C3 后端新增：run 启动时间（job.json 或目录时间推导）；缺失时为 undefined */
+  started_at?: number | null;
 }
 
 export interface RunsResponse {
@@ -94,8 +96,9 @@ export interface RunBudget {
 }
 
 export interface RunChampion {
-  candidate_sha256?: string;
-  path?: string;
+  /** 服务端对无 champion 会写 null（report.json 原样），类型如实反映 */
+  candidate_sha256?: string | null;
+  path?: string | null;
   [key: string]: unknown;
 }
 
@@ -174,6 +177,99 @@ export interface StartRunRequest {
 export interface StartRunResponse {
   run_id: string;
   state: string;
+}
+
+// -- GET /api/runs/<id>/journal（设计规范提案 P3；C3 未上线时前端降级）--------
+
+/** journal.jsonl 单条事件（服务端按行返回；无时间戳字段，前端不编造） */
+export interface JournalEntry {
+  /** P3 规范中的行号；服务端未实现时前端以数组下标代替展示序号 */
+  seq?: number;
+  kind: string;
+  action_id?: string;
+  stage?: string;
+  gpu_seconds?: number;
+  tokens?: number;
+  entry_hash?: string;
+  prev_hash?: string;
+  input_hash?: string;
+  budget_reservation?: string;
+  budget_settlement?: string;
+  result_ref?: string;
+  settled_gpu_seconds?: number;
+  settled_tokens?: number;
+  actions?: string[];
+  [key: string]: unknown;
+}
+
+export interface JournalResponse {
+  run_id: string;
+  next_after: number;
+  entries: JournalEntry[];
+}
+
+// -- GET /api/runs/<id>/records/<action_id>（提案 P4）------------------------
+
+/** C3 后端的 records 只读清单（GET /api/runs/<id>/records） */
+export interface RecordListItem {
+  record: string;
+  variant: "final" | "progress" | string;
+  file: string;
+  size: number;
+}
+
+export interface RecordsListResponse {
+  run_id: string;
+  records: RecordListItem[];
+}
+
+/** timing/评测单条 action 记录；timing 记录含 batches_ms 与 async_leak */
+export interface ActionRecord {
+  candidate?: string;
+  stage?: string;
+  status?: string;
+  detail?: string;
+  ratio_ci_95?: [number, number];
+  /** 正式 timing 的批次耗时样本（ms）；缺失时 Profile 页显示 NOT_RUN */
+  batches_ms?: number[];
+  async_leak?: boolean;
+  [key: string]: unknown;
+}
+
+// -- GET /api/runs/<id>/workspace（提案 P5，只读）----------------------------
+
+export interface WorkspaceEntry {
+  path: string;
+  type: "dir" | "file";
+  files?: string[];
+}
+
+export interface WorkspaceResponse {
+  entries: WorkspaceEntry[];
+}
+
+export interface WorkspaceFileResponse {
+  path: string;
+  size: number;
+  content: string;
+}
+
+// -- GET /api/runs/<id>/report（提案 P2，原始报告）---------------------------
+
+/** report.json 的持久化身份链字段（P2 未上线时无法读取，UI 显式降级） */
+export interface RunReport {
+  state?: RunState;
+  commit?: string;
+  protocol?: string;
+  problem_sha256?: string;
+  problem_path?: string;
+  gpu_device?: string;
+  journal_entries?: number;
+  config?: JobConfig;
+  champion?: RunChampion | null;
+  candidate_trust?: string;
+  adversarially_secure?: boolean;
+  [key: string]: unknown;
 }
 
 // -- POST /api/models --------------------------------------------------------
