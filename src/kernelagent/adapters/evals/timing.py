@@ -10,6 +10,7 @@ exit/stdout claims never enter the report."""
 
 import hashlib
 import json
+import math
 import random
 from dataclasses import dataclass
 from pathlib import Path
@@ -94,10 +95,33 @@ class TimingCaseResult:
     detail: dict
 
 
+def validate_batch_samples(samples: object, *, expected_count: int) -> tuple[bool, str]:
+    """Strict evidence gate for batch timing samples: a list of exactly
+    ``expected_count`` finite, strictly-positive, non-boolean numbers.
+    NaN/Inf/zero/negative/boolean/string entries are invalid evidence -
+    they must be rejected structurally here, never flowed into statistics
+    (a NaN candidate list used to crash promotion with IndexError)."""
+    if not isinstance(samples, list):
+        return False, f"batch samples must be a list; got {type(samples).__name__}"
+    if expected_count < 0 or len(samples) != expected_count:
+        return False, (
+            f"batch sample count {len(samples)} does not match the protocol count {expected_count}"
+        )
+    for index, sample in enumerate(samples):
+        if isinstance(sample, bool) or not isinstance(sample, (int, float)):
+            return False, f"batch sample {index} is not a real number: {sample!r}"
+        if not math.isfinite(sample):
+            return False, f"batch sample {index} is not finite: {sample!r}"
+        if sample <= 0:
+            return False, f"batch sample {index} is not strictly positive: {sample!r}"
+    return True, ""
+
+
 def validate_timing_payload(payload: dict, expected_protocol_hash: str) -> tuple[bool, str]:
     """Gate for any object claiming to be a formal timing result. Profile
     sources are rejected outright (NCU time must not enter formal
-    results); a protocol identity mismatch is a hard failure."""
+    results); a protocol identity mismatch is a hard failure; batch
+    samples must be exactly num_batches finite positive numbers."""
     if payload.get("source") != SOURCE_TAG:
         return False, f"source must be {SOURCE_TAG!r}; got {payload.get('source')!r}"
     protocol = payload.get("protocol")
@@ -109,6 +133,12 @@ def validate_timing_payload(payload: dict, expected_protocol_hash: str) -> tuple
     samples = payload.get("batch_samples_ms")
     if not isinstance(samples, list) or not samples:
         return False, "raw batch samples missing"
+    expected_count = protocol.get("num_batches")
+    ok, note = validate_batch_samples(
+        samples, expected_count=expected_count if isinstance(expected_count, int) else -1
+    )
+    if not ok:
+        return False, f"batch samples invalid: {note}"
     return True, ""
 
 
@@ -133,6 +163,10 @@ def bootstrap_ratio_ci(
         mean_c = sum(c) / n
         if mean_c > 0:
             ratios.append(sum(b) / n / mean_c)
+    if not ratios:
+        # No usable resample (e.g. degenerate candidate totals): report an
+        # unusable interval instead of indexing into an empty list.
+        return (float("nan"), float("nan"))
     ratios.sort()
     alpha = (1.0 - confidence) / 2.0
     low = ratios[int(len(ratios) * alpha)]

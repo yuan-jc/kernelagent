@@ -21,6 +21,7 @@ from kernelagent.adapters.evals.timing import (
     TimingProtocol,
     bootstrap_ratio_ci,
     run_timing_case,
+    validate_batch_samples,
     validate_timing_payload,
 )
 
@@ -39,5 +40,6 @@ __all__ = [
     "overall_verdict",
     "run_pro_case",
     "run_timing_case",
+    "validate_batch_samples",
     "validate_timing_payload",
 ]

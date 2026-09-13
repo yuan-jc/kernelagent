@@ -150,3 +150,47 @@ def test_coverage_reports_attempted_vs_measured():
     assert coverage["with_candidate_measurement"] == 2
     assert coverage["attempted_coverage"] == 0.5
     assert coverage["without_measurement"] == 2
+
+
+# --- Launch-plan Task 3 (P1-2): malformed timing evidence must not crash
+# confirm_promotion with IndexError; it raises a typed ValueError. ---
+
+
+def test_confirm_promotion_rejects_nan_samples_with_value_error():
+    facts = CandidateFacts(compiled=True, correct=True)
+    with pytest.raises(ValueError, match="candidate"):
+        confirm_promotion(
+            facts=facts,
+            incumbent_batches_ms=[1.0] * 12,
+            candidate_batches_ms=[float("nan")] + [1.0] * 11,
+        )
+
+
+def test_confirm_promotion_rejects_zero_and_negative_samples():
+    facts = CandidateFacts(compiled=True, correct=True)
+    for bad in ([0.0] + [1.0] * 11, [-1.0] + [1.0] * 11):
+        with pytest.raises(ValueError, match="candidate"):
+            confirm_promotion(
+                facts=facts, incumbent_batches_ms=[1.0] * 12, candidate_batches_ms=bad
+            )
+
+
+def test_confirm_promotion_rejects_non_list_samples():
+    facts = CandidateFacts(compiled=True, correct=True)
+    with pytest.raises(ValueError, match="incumbent"):
+        confirm_promotion(
+            facts=facts,
+            incumbent_batches_ms=(1.0,) * 12,  # tuple, not list
+            candidate_batches_ms=[1.0] * 12,
+        )
+
+
+def test_confirm_promotion_still_rejects_incorrect_candidate_without_timing():
+    """Hard rejections never read timing: a failed candidate with no
+    timing evidence keeps its rejection instead of raising."""
+    decision = confirm_promotion(
+        facts=CandidateFacts(compiled=False, correct=False),
+        incumbent_batches_ms=[],
+        candidate_batches_ms=[],
+    )
+    assert decision.outcome == REJECT_INCORRECT

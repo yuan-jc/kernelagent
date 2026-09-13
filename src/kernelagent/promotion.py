@@ -27,7 +27,7 @@ import json
 import math
 from dataclasses import dataclass, field
 
-from kernelagent.adapters.evals.timing import bootstrap_ratio_ci
+from kernelagent.adapters.evals.timing import bootstrap_ratio_ci, validate_batch_samples
 
 TERMINAL_PROMOTE = "promote"
 TERMINAL_RETAIN = "retain_incumbent"
@@ -106,6 +106,19 @@ def confirm_promotion(
                 f"required={min_batches})"
             )
         else:
+            # Invalid evidence is a typed error, never a crash and never a
+            # decision: the caller records reject_invalid_evidence and the
+            # incumbent stays (launch-plan P1-2).
+            for label, samples in (
+                ("incumbent", incumbent_batches_ms),
+                ("candidate", candidate_batches_ms),
+            ):
+                ok, note = validate_batch_samples(
+                    samples,
+                    expected_count=len(samples) if isinstance(samples, list) else -1,
+                )
+                if not ok:
+                    raise ValueError(f"{label} batch samples invalid: {note}")
             ratio_ci = bootstrap_ratio_ci(
                 incumbent_batches_ms, candidate_batches_ms, seed=seed, confidence=confidence
             )
