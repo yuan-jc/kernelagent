@@ -21,10 +21,18 @@
 | `1e75ecb` | benchmark 三件套：MultiKernelBench（305 文件钉死快照+20 题冻结子集）、GPU-MODE reference-kernels（12 题，上游 eval.py 判定）、自建 user-bench（torch-free loader+examples_v1）；协议身份独立注册+漂移拒绝 |
 | `d53753d` | RV02：attempt 身份、结算+完成原子单写、撕裂尾恢复/中部损坏拒绝、单写者锁；5 写入边界故障注入 + 连续双恢复（**修复 R2**，duplicate settlement 反例覆盖） |
 
-**Live 验证（DeepSeek，控制台 UI 发起，GPU 实测）**：4 次真实运行（`artifacts/webui/20260914-{025856,030053,030346,030641,030902}`）：
-生成→方法规划→Triton 编译→上游正确性判定→诚实终态全链路真实工作（candidate-001 换用了与 candidate-000 不同的方法——失败反馈+方法降级生效）；候选被上游判 correct=False 是合法拒绝。
-关键发现：① provider 将 `deepseek-chat` 别名到 `deepseek-flash`，模型身份校验会正确拒绝（须用 provider 实际模型名）；② deepseek-flash 是混合推理模型，必须 `disable_thinking`（UI 勾选框）否则 8192 max_tokens 全被推理吃掉；③ R3 的固定 300 秒/动作配额确认仍在（600 秒总预算被 baseline+1 候选耗尽，预算拒绝行为诚实正确）——RV04 待做。
-DeepSeek 消耗合计约 **¥0.04**（余额 19.71）。控制台启动：`set -a; source .env; set +a; .venv/bin/python -m kernelagent.webapp` → http://127.0.0.1:8501。
+**Live 验证（DeepSeek，控制台 UI 发起，GPU 实测）**：6 次真实运行（`artifacts/webui/20260914-{025856,030053,030346,030641,030902,034551,034934}`）：
+生成→方法规划→Triton 编译→上游正确性判定→诚实终态全链路真实工作。关键发现：
+① provider 将 `deepseek-chat` 别名到 `deepseek-flash`，模型身份校验会正确拒绝（须用 provider 实际模型名，UI 可拉取列表）；
+② deepseek-flash 是混合推理模型，必须 `disable_thinking`（UI 勾选框）否则 8192 max_tokens 全被推理吃掉；
+③ R3 的固定 300 秒/动作配额确认仍在（600 秒总预算被 baseline+1 候选耗尽）——RV04 修复中；
+④ `max_repair_rounds` 实际语义是"容忍的失败候选数"（失败预算），非额外修复尝试数——行为诚实但语义需 ADR 澄清；
+⑤ 5 候选×失败容忍 4 的最终实验：方法规划器按序轮转了 **5 种不同方法**（online_streaming→register_pressure_reduction→
+two_pass_deterministic→warp_block_staged→autotune_space_design），全部 `compiled=True` 但 `correct=False`，
+诚实终态 no_improvement——瓶颈清晰定位在模型生成质量（LayerNorm 数值），而非 agent 链路；与 2026-09-13 会话结论一致。
+DeepSeek 消耗合计约 **¥0.08**（余额 19.67）。控制台启动：`set -a; source .env; set +a; .venv/bin/python -m kernelagent.webapp` → http://127.0.0.1:8501。
+demo-correct 端到端（034346）：**completed + champion 晋升**，NCU 画像采集 6.18s 如实计费，method_plan 以
+`launch_bound / ncu_full` 分类——profile→规划→晋升全证据链在真实 GPU 上闭合。
 
 **已知小问题（前端，待修）**：运行刚结束的轮询间隙 Run 详情可能瞬态显示"未知/预算 NOT_RUN"（刷新即正确）；baseline 泳道行状态徽章在终态误显"运行中"；Dashboard"最佳加速比"瓦片因摘要无 CI 数据恒为 NOT_RUN。
 
