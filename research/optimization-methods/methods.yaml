@@ -1,0 +1,940 @@
+# 优化方法目录（A2 通宵调研产物，2026-09-14）
+#
+# 用途：优化方法生成器的知识基础。每个条目是一个可检验假设的模板，
+# 不是"看到某指标就必然使用"的规则（设计文档 §6.3 的边界在这里同样适用）。
+#
+# 字段约定：
+# - applicability_signals 分三层（与 generator-design.md 的证据分层一致）：
+#     tier_a_ncu : 依赖 NCU 计数器（adapters/profiling/ncu.py MetricCatalog 现有字段名）。
+#                  引用缺失指标时该信号记 metric=MISSING，不得当作 0 或不成立。
+#     tier_b_task: TaskProfile/Workload 级特征（category、shape、dtype、stride、kernel 数）。
+#     tier_c_history: 迭代历史反馈（generation/evaluate/correctness_pro/timing/confirm 各阶段失败原因）。
+# - expected_gain：qualitative（low/medium/high）+ 有来源的数字锚点（标注硬件，不外推到所有 NVIDIA GPU）。
+# - triton_howto：应用层 prompt/模板材料；domain 层不 import torch/triton。
+# - references：[P]=paper, [T]=tutorial/docs, [B]=blog, [R]=repo。URL 见 README.md 来源清单。
+#
+# 硬件基线：RTX 4060 Laptop 8GB（SM89/Ada，约 24 SM、GDDR6，具体 SM 数/带宽待运行微基准核实）。
+# SM89 能力边界（方法适用性硬约束）：有 cp.async、TF32/BF16/FP16/FP8 mma；无 TMA、无
+# warp-group 专用化、无 distributed shared memory（均为 SM90+）。
+
+meta:
+  version: 0.1
+  date: 2026-09-14
+  hardware_target: "RTX 4060 Laptop 8GB / SM89 (Ada) / CUDA 13"
+  evidence_fields_source: "src/kernelagent/adapters/profiling/ncu.py MetricCatalog + LaunchMetrics; src/kernelagent/methods.py TaskProfile"
+  disclaimer: >
+    每个方法是可证伪假设模板：expected_gain 是先验启发式评分素材，
+    不是统计校准概率；收益与前提必须由 trusted evaluator 的正式 timing/正确性结果确认。
+
+methods:
+
+  # ============ 内存流量类（memory-bound: DRAM 流量为主） ============
+
+  - id: memory.coalesce_contiguous_access
+    name: 全局访存合并（coalescing）
+    category: memory_layout
+    mechanism: 重排线程到数据的映射，使同一 warp 的 32 个连续线程访问同一段连续内存，让每次访存合并为尽可能少的 32B sector 事务。
+    mechanism_detail: >
+      DRAM 以 sector（32B）为粒度服务请求；warp 内 stride 访问会把一条 128B cacheline
+      拆成多次事务并浪费带宽。对 row-major 输入按最内维展开线程、对列访问改为按 tile
+      转置后读取、对 A[x][y] 形状的数据选最内维做连续轴，是三类标准改法。
+      该方法是纯索引变换，不改数学语义，正确性风险低，适合作为早期轮次的低风险动作。
+    applicability_signals:
+      tier_a_ncu:
+        - "gpu__compute_memory_throughput.avg.pct_of_peak_sustained_elapsed 高（>60%）但 dram__throughput 未达微基准标定带宽，提示事务效率而非纯带宽受限"
+        - "注：sector/transactions 细分指标不在当前 MetricCatalog；若要精确归因需扩展采集（扩展评测单独报告）"
+      tier_b_task:
+        - "operator_class in {elementwise, reduction, transpose, embedding/gather} 且问题源中存在 stride!=1 的内维访问或转置布局"
+        - "输入 dtype 为打包类型（fp16/bf16/fp32），内维连续但 kernel 按 stride 轴展开 pid"
+      tier_c_history: []
+    expected_gain: medium（带宽受限算子上常接近"把无效事务变成有效事务"的差额；上限是标定带宽/当前有效带宽）
+    risks_preconditions:
+      - "mask/边界处理必须同步修改，防止越界（配合 numerics.boundary_masking）"
+      - "非对齐 stride 输入（KernelBench 少数题）可能使向量化前提不成立，需要 guard"
+    triton_howto:
+      - "pid 映射让 pid 最快维对应内存最内维：offs = pid_n * BLOCK_N + tl.arange(0, BLOCK_N)"
+      - "对列主序数据先在 tile 内转置索引再 tl.load，而不是让 tl.arange 沿 stride 维展开"
+      - "向 hint 编译器声明连续性：tl.max_contiguous(tl.multiple_of(offs, BLOCK), BLOCK)"
+      - "2D load 用 [rows[:, None] * stride + cols[None, :]] 形式，保持 cols 连续"
+    references: ["[B] GPU-MODE lecture_008 CUDA Performance Checklist", "[T] CUDA C++ Programming Guide memory coalescing 章节", "[T] triton tutorials/01-vector-add"]
+
+  - id: memory.vectorize_wide_loads
+    name: 128-bit 向量化全局访存
+    category: memory_layout
+    mechanism: 让每个线程一次加载/存储 128 bit（如 fp16 的 8 元素向量），用更少的 load 指令填满内存事务，提高每 SM 在途字节数。
+    mechanism_detail: >
+      向量化是 coalescing 的补强：合并决定事务数，向量化决定每线程指令数与延迟覆盖。
+      Triton 在连续性可证明时会自动向量化；当索引经过算术变换（pid 分解、stride 乘法）
+      后，编译器无法证明对齐，需要 tl.multiple_of / tl.max_contiguous 显式提示。
+      尾部非整除 BLOCK 的维度必须保持 mask，不能为了对齐静默丢弃元素。
+    applicability_signals:
+      tier_a_ncu:
+        - "launch__registers_per_thread 正常、occupancy 尚可，但 gpu__compute_memory_throughput 低于同类算子标定值"
+      tier_b_task:
+        - "内维长度对 4/8 元素向量可整除（或可分块到可整除），dtype 大小 <= 4B"
+        - "代码信号：索引含非平凡算术且未使用对齐 hint"
+      tier_c_history: []
+    expected_gain: low-medium（与 coalescing 叠加；elementwise 常见 1.1-1.5x 量级，具体依题）
+    risks_preconditions:
+      - "对齐前提不成立时可能编译失败或退化为标量访问——保留非向量化回退配置"
+      - "不改 mask 语义；尾块仍按原边界处理"
+    triton_howto:
+      - "offs = tl.max_contiguous(tl.multiple_of(offs % N, BLOCK_N), BLOCK_N) 或在 tl.arange 直接连续"
+      - "BLOCK 大小取 dtype 元素使 32 线程 * BLOCK 覆盖整 cacheline（如 fp16 BLOCK_N>=64）"
+      - "验证方法：比较生成 PTX/SASS 中 ld.global.v4 / st.global.v4 的出现（cuobjdump/nvdisasm 取证）"
+    references: ["[T] triton tutorials/03-matrix-multiplication（assume/hint 用法）", "[B] GPU-MODE lecture_008", "[T] CUDA C++ Programming Guide"]
+
+  - id: memory.l2_tile_swizzle
+    name: 程序序重排提升 L2 复用（GROUP_SIZE_M 超级分组）
+    category: memory_layout
+    mechanism: 改变 program_id 到输出 tile 的映射顺序，把在相近时间执行的 CTA 分组到输入矩阵的相邻区域，使 B 的共享输入留在 L2 中。
+    mechanism_detail: >
+      逐行 row-major 发射 tile 时，同一列的 B tile 未被复用就被逐出 L2。超级分组按
+      GROUP_SIZE_M 行一列的"条带"发射 CTA，把同一时刻的工作窗口约束在局部区域。
+      Triton 官方 matmul 教程给出量化锚点：9x9 tile 例中 SRAM 需求从 90 块降到 54 块，
+      A100 上 220->245 TFLOPS（教程原文称 "more than 10% on some hardware"）。
+    applicability_signals:
+      tier_a_ncu:
+        - "dram__throughput.avg.pct_of_peak_sustained_elapsed 高且算子为 GEMM 类（输入被多 tile 复用）"
+      tier_b_task:
+        - "operator_class in {matmul, conv_as_gemm, grouped_gemm}；M、N 的 tile 数均 > GROUP_SIZE（否则无分组意义）"
+        - "代码信号：pid -> (pid_m, pid_n) 为朴素行主序分解"
+      tier_c_history: []
+    expected_gain: low-medium（教程锚点 ~10%@A100 大 GEMM；小矩阵收益不定）
+    risks_preconditions:
+      - "纯索引重排，无数值风险；但与 persistent kernel 组合时分组逻辑需重写（教程 09 的 _compute_pid）"
+    triton_howto:
+      - "按 tutorials/03 的 group_id/first_pid_m/pid_m 公式实现，GROUP_SIZE_M=8 为标准起点并纳入 autotune"
+      - "对 M 维小的形状改为对 N 维分组（对称改写）"
+    references: ["[T] triton tutorials/03-matrix-multiplication", "[P] Ansor arXiv:2006.06762（schedule 空间中的类似 sketch）"]
+
+  - id: memory.fuse_elementwise_chain
+    name: 逐元素链融合（消除中间张量往返）
+    category: fusion
+    mechanism: 把按顺序作用于同一（或同形）张量的多个逐元素/归一化算子合进一个 kernel，让中间结果停在寄存器/shared memory，砍掉整层 DRAM 往返。
+    mechanism_detail: >
+      每个独立的逐元素 kernel 至少读写一遍全量数据（N*dt 字节）；k 个算子的链在融合后
+      只剩首尾两次访问，理论流量比约 2/k。同时消除 k-1 次 kernel launch 与对应队列间隙。
+      这是 KernelBench L2/L3 融合题（如 add+layernorm+gelu）的主导方法。融合必须保持
+      逐点语义等价：注意 in-place 别名、广播方向和标量参数。
+    applicability_signals:
+      tier_a_ncu:
+        - "同一逻辑算子的实现含多个 launch（launch 序列关联），各 launch gpu__time_duration 短且 dram__throughput 均高——典型的中间张量往返特征"
+        - "若仅 NSYS 可见 launch 间隙，记 E3 证据来源为 nsys 而非 ncu"
+      tier_b_task:
+        - "TaskProfile.level >= 2 或 problem_name 含融合链特征（如 LayerNorm+activation、bias+clamp）"
+        - "代码信号：forward 中 >=2 次张量 -> 张量的逐元素/归一化调用"
+      tier_c_history:
+        - "correctness 失败历史若源于融合后语义偏差，先收敛单算子再重新融合"
+    expected_gain: high（带宽受限链上接近 2/k 的流量比；融合题常为主要收益来源）
+    risks_preconditions:
+      - "寄存器/shared memory 占用上升可能压低 occupancy（配合 memory.register_pressure_reduction）"
+      - "组合语义风险：广播、dtype 提升、in-place 别名须与 reference 逐项对齐"
+    triton_howto:
+      - "一个 program 处理一个 BLOCK 行；中间值用寄存器变量传递，不 tl.store"
+      - "多输入广播用 None 索引扩展；输出 mask 与各输入 mask 取交集"
+      - "归一化算子入链时改为行内归约（见 reduction.online_streaming）"
+    references: ["[P] KernelBench arXiv:2502.10517（L2 融合类）", "[T] triton tutorials/05-layer-norm", "[P] Mirage arXiv:2405.05751（kernel 级融合合成）"]
+
+  - id: memory.gemm_epilogue_fusion
+    name: GEMM epilogue 融合
+    category: fusion
+    mechanism: 把作用在 GEMM 输出上的逐元素/偏置/激活（bias、relu、gelu、scale）折叠进 tl.dot 累加完成后的 epilogue，避免 C 写回后再读一遍。
+    mechanism_detail: >
+      epilogue 融合省的是 C 矩阵一次写 + 一次读（2*M*N*dt 字节）与独立 kernel 的 launch。
+      对 K 不大、M*N 大的形状占比显著。风险在寄存器与 shared memory 预算：累加器
+      (BLOCK_M x BLOCK_N) 本身已占寄存器，epilogue 变换不应引入第二份大缓冲。
+      需要激活函数与 reference 实现的数值对齐检查（如 gelu 的 tanh vs erf 版本）。
+    applicability_signals:
+      tier_a_ncu:
+        - "GEMM launch 之后紧跟一个短小的逐元素 launch，后者 gpu__time_duration 占比小但流量大"
+      tier_b_task:
+        - "operator_class 含 matmul + pointwise 尾缀；代码信号：linear/爱因斯坦积后接激活"
+      tier_c_history: []
+    expected_gain: medium-high（对中等 K、大 M*N 形状；随 K 增大被 mainloop 摊薄）
+    risks_preconditions:
+      - "激活数值变体必须与 reference 匹配或在容差内（不得放宽容差）"
+      - "BLOCK_N 增大以摊薄 epilogue 时注意寄存器溢出（ spills 会使 mainloop 变慢）"
+    triton_howto:
+      - "acc = tl.dot(a, b, acc)；epilogue 直接对 acc 施加 bias/激活后 tl.store（tutorials/03 模式）"
+      - "输出 store 用与输入相同的分组/对齐 hint"
+    references: ["[P] KernelBench arXiv:2502.10517", "[T] triton tutorials/03-matrix-multiplication", "[R] NVIDIA/cutlass epilogue 概念（模板对照）"]
+
+  - id: memory.eliminate_intermediate_materialization
+    name: 消除中间张量物化（softmax/attention 类流式计算）
+    category: fusion
+    mechanism: 把"先生成大中间矩阵再逐元素处理"的两段式计算改为分块流式，中间分块只存在于寄存器/shared memory。
+    mechanism_detail: >
+      标准例子是 softmax：naive 实现物化 exp(x) 全矩阵（+N*dt 流量）再归一化；fused
+      softmax 在行内一次完成 max/exp/sum/div。注意力把 S=QK^T 的整个 S 矩阵流式化
+      即 FlashAttention 思路（IO-aware，arXiv:2205.14135）。识别特征：reference 中
+      临时张量的形状是输入的乘积级（如 [B,H,L,L]）。
+    applicability_signals:
+      tier_a_ncu:
+        - "dram__throughput 高，且观测流量明显超过'输入+输出'的必要字节数（设计文档 §10.3 的 B 需分算法必要字节与观测字节两栏记录）"
+      tier_b_task:
+        - "operator_class in {softmax, attention, cross_entropy, bmm+softmax}；中间张量形状为二维乘积"
+      tier_c_history: []
+    expected_gain: high（序列长/维度大时接近 O(L) 到 O(1) 中间存储的流量差）
+    risks_preconditions:
+      - "数值稳定性：流式 max/sum 的顺序与 reference 不同，需容差内验证（不得改容差）"
+      - "实现复杂度高，先在单行/单块内证明再扩展"
+    triton_howto:
+      - "tutorials/02-fused-softmax 的行内单 pass 模板；一行一个 program"
+      - "超行情况（L 超过单块可容纳）用分块循环 + online max/sum（reduction.online_streaming）"
+    references: ["[T] triton tutorials/02-fused-softmax", "[P] FlashAttention arXiv:2205.14135", "[B] GPU-MODE lecture_012 Flash Attention"]
+
+  - id: memory.register_pressure_reduction
+    name: 寄存器压力削减（反 spills）
+    category: resource_tuning
+    mechanism: 缩小 per-thread 累加面积（BLOCK 面积/num_warps 比例）、拆分循环或用 shared memory 换寄存器，使每线程寄存器数回到不溢出 (spill) 的区间。
+    mechanism_detail: >
+      累加器 tile 面积 / 线程数 = 每线程寄存器下限；超过 ~255 寄存器/线程后开始 spill
+      到 local memory，产生隐藏的 DRAM 流量与延迟。表现是：BLOCK 增大反而变慢、
+      occupancy 被 launch__occupancy_limit_registers 限制、local memory 流量出现。
+      该方法是所有 tile 类方法的反向安全阀：先保不 spill，再谈大 tile。
+    applicability_signals:
+      tier_a_ncu:
+        - "launch__occupancy_limit_registers 高（寄存器为 occupancy 瓶颈）"
+        - "sm__warps_active.avg.pct_of_peak_sustained_active 低（实际 occupancy 不足）"
+        - "注：local/spill 专门指标不在当前 MetricCatalog，若采到 l1tex local 事务可作为 E3 证据"
+      tier_b_task:
+        - "代码信号：BLOCK_M*BLOCK_N/num_warps 过大（如 128x128/4 = 8192 累加元素/CTA）"
+      tier_c_history:
+        - "autotune 历史中'更大 BLOCK 更慢'的反向信号"
+    expected_gain: medium（消除 spills 后恢复线性扩展；本身不产生超越必要流量的收益）
+    risks_preconditions:
+      - "缩 tile 会增加总 CTA 数，需同时检查 launch 开销方向"
+    triton_howto:
+      - "autotune 空间中把 (BLOCK_M*BLOCK_N)/num_warps 控制在 ~2048-8192 元素/CTA 区间起步"
+      - "增大 num_warps 摊薄累加器；或 BLOCK_K 减小释放 shared memory 给流水线"
+      - "用 launch__registers_per_thread 证据确认下降"
+    references: ["[T] triton tutorials/03/09 的 config 空间（BLOCK 与 num_warps 的配比）", "[B] GPU-MODE lecture_008"]
+
+  # ============ 并行度类（parallelism/occupancy） ============
+
+  - id: parallel.occupancy_tuning
+    name: 占用率与 CTA 形状调优
+    category: parallelism
+    mechanism: 通过调整 BLOCK 尺寸与 num_warps 使每 SM 常驻足够 warp，用并行度隐藏访存/指令延迟。
+    mechanism_detail: >
+      低占用不必然慢（长依赖链算子可能更受益于大寄存器分配），但 elementwise/轻计算
+      算子在 occupancy 低于 ~25% 且无足量 ILP 时几乎必然欠并行。调优顺序：先看占用
+      限制因素（寄存器/shared/块数），再动对应资源杠杆。这是所有题目的第一轮便宜动作，
+      与 launch.autotune（设计文档 §6.3）同族。
+    applicability_signals:
+      tier_a_ncu:
+        - "sm__warps_active.avg.pct_of_peak_sustained_active 低（<30% 量级）且 sm__throughput 与 dram__throughput 都不高"
+        - "launch__block_size 过小（<128）或过大（1024 且寄存器紧张）"
+      tier_b_task:
+        - "代码信号：非 autotune 的固定 BLOCK/num_warps；grid 一维铺满但每 CTA 工作量极小"
+      tier_c_history: []
+    expected_gain: low-medium（欠并行题目上常见 1.2-3x；已饱和题目上无收益）
+    risks_preconditions:
+      - "占用率是诊断信号不是目标（设计文档 §6.3 明示低占用不必然慢）——以正式计时为准"
+    triton_howto:
+      - "@triton.autotune(configs=[...], key=['M','N','K'])，config 覆盖 num_warps {2,4,8} x BLOCK 若干档"
+      - "每个 config 的 BLOCK 面积使 threads*elems/thread 落在 512-4096 之间起步"
+    references: ["[T] triton tutorials/03-matrix-multiplication", "[R] triton runtime/autotuner.py（设计文档 [S12]）", "[B] GPU-MODE lecture_008"]
+
+  - id: parallel.grid_expansion_splitk
+    name: split-K / 输出并行度扩展
+    category: parallelism
+    mechanism: 当输出 tile 数不足以填满 GPU 时，把归约维 K 切成 S 份并行计算部分和，再用第二次归约（确定性两级或原子）合并。
+    mechanism_detail: >
+      小 M、小 N、大 K 的 GEMM 只有少数输出 tile，SM 大量空转。split-K 用 K 维并行度
+      换 SM 占用，代价是额外 workspace、一次额外归约，以及原子版的不确定性。
+      对 promotion 规则优先选择确定性两级归约（部分和写 workspace 再合并），
+      原子版仅在容差覆盖且无确定性问题记录时使用。
+    applicability_signals:
+      tier_a_ncu:
+        - "launch__grid_size < 约 2x SM 数（SM89 基线 ~24 SM，待微基准核实）且 gpu__time_duration 长、sm__throughput 低"
+      tier_b_task:
+        - "operator_class 为 matmul/bmm/reduction，K（归约维）>> M,N 的 tile 数"
+      tier_c_history: []
+    expected_gain: medium-high（欠并行 GEMM 上常见数倍；K 小时无意义）
+    risks_preconditions:
+      - "workspace 分配计入预算与 8GB 显存边界"
+      - "原子合并非确定性——与 promotion 的可复现要求冲突时禁用"
+      - "多 kernel（部分和+合并）的 launch 与流量开销要在 K 足够大时才划算"
+    triton_howto:
+      - "pid 维度加 S 轴：k_off = pid_s * (K/S)；部分和 store 到 workspace[S,...]，第二个 kernel 沿 S 归约"
+      - "S 纳入 autotune 空间（1 表示不切分）"
+    references: ["[P] Ansor arXiv:2006.06762（split-reduction sketch）", "[R] NVIDIA/cutlass splitK 模式", "设计文档 §6.3 gemm.split_k 行"]
+
+  - id: parallel.grid_stride_elementwise
+    name: grid-stride / 扁平化逐元素并行
+    category: parallelism
+    mechanism: 对大而平的逐元素负载，用一维网格 + 每程序多元素循环（grid-stride）取得足够并行度的同时摊薄索引计算与 launch 面积。
+    mechanism_detail: >
+      超大 1D 张量如果一 program 一元素，launch 数组本身和索引开销占比高；如果一 program
+      处理过宽 BLOCK，尾块浪费。grid-stride 循环取中：固定 BLOCK（如 1024），程序数
+      cdiv(N, BLOCK*UNROLL)，内层 UNROLL 次迭代。收益点是让每个 warp 有连续多段
+      独立访存可重叠。
+    applicability_signals:
+      tier_a_ncu:
+        - "launch__grid_size 巨大（>1e5 量级）且 launch__block_size 小；或单 launch duration 极短（us 级）"
+      tier_b_task:
+        - "operator_class in {elementwise, activation, clamp, sigmoid}；N 已知且大"
+      tier_c_history: []
+    expected_gain: low（元素数极大时 1.1-1.3x；主要是为融合打基础）
+    risks_preconditions:
+      - "UNROLL 增加寄存器；注意与 mask 一致性"
+    triton_howto:
+      - "for i in tl.range(pid*BLOCK, N, NUM_PROGS*BLOCK)：内层保持 8/16 元素连续向量访问"
+    references: ["[T] triton tutorials/01-vector-add", "[B] GPU-MODE lecture_008"]
+
+  - id: parallel.batched_grouped_fusion
+    name: batch/group 维并入网格（grouped GEMM）
+    category: parallelism
+    mechanism: 把多个同构小算子（batch 矩阵、多组 GEMM、多头操作）合进一次 launch，用 3D pid 或线性化 tile 索引一次吃下所有组。
+    mechanism_detail: >
+      每组单独 launch 时 GPU 利用率低且 launch 开销倍增；grouped 形式把组维并入网格，
+      每个程序按 (group, tile_m, tile_n) 寻址。挑战是每组指针/形状不同：Triton 用
+      指针数组（tutorials/08-grouped-gemm）或把组信息打包成 host 侧常量。组间形状
+      不均匀时注意负载均衡（按 tile 数排序组）。
+    applicability_signals:
+      tier_a_ncu:
+        - "同一 kernel 符号多次短 launch（launch 序列关联），总时长被 launch 间隙稀释（NSYS 证据）"
+      tier_b_task:
+        - "operator_class 含 batched/grouped/bmm/multi-head 前缀；各组 shape 相同或近似"
+      tier_c_history: []
+    expected_gain: medium-high（组多且单组小时显著；组大时退化为普通并行）
+    risks_preconditions:
+      - "组数动态时 host 侧循环生成指针的成本；对齐与每组独立 mask"
+    triton_howto:
+      - "按 tutorials/08-grouped-gemm：pid 线性映射到 (group, m, n)，组偏移前缀和定位指针"
+    references: ["[T] triton tutorials/08-grouped-gemm", "[P] Mirage arXiv:2405.05751"]
+
+  # ============ 计算与精度类（compute-bound） ============
+
+  - id: compute.tensor_core_dot
+    name: 启用 Tensor Core 矩阵点积（tl.dot）
+    category: compute_precision
+    mechanism: 用 tl.dot 表达矩阵乘/批点积，使编译器发射 mma 指令（SM89 支持 TF32/BF16/FP16/FP8），替代标量 FMA 循环。
+    mechanism_detail: >
+      手写 reduce 循环的 matmul 在 FP32 上只能用 CUDA core（约几十 TFLOPS 量级），
+      tensor core 路径差一个数量级以上。前提：BLOCK_M/N >= 16、K 对齐到 8/16；
+      tl.dot 输入布局要满足 mma 对 shared memory 的要求（Triton 自动处理 ldmatrix）。
+      判别信号（代码级）：matmul 类算子但 kernel 内无 tl.dot 而是显式循环累加。
+    applicability_signals:
+      tier_a_ncu:
+        - "sm__throughput 高但达到的 TFLOPS 远低于同 dtype 峰值（峰值需匹配精度，设计文档 §10.3）"
+      tier_b_task:
+        - "operator_class 含 matmul/conv；代码信号：无 tl.dot 或 dot 的输入来自逐元素乘累加循环"
+      tier_c_history: []
+    expected_gain: high（从 CUDA core 到 tensor core 通常 >5x，被访存上限截断）
+    risks_preconditions:
+      - "tl.dot 的输入 dtype 与累加 dtype（out_dtype/acc 默认 fp32）要与容差契约一致"
+      - "小矩阵（M<16 或 N<16）不适用，需 padding 或回退"
+    triton_howto:
+      - "acc = tl.zeros((BLOCK_M, BLOCK_N), dtype=tl.float32)；内层 acc = tl.dot(a, b, acc)"
+      - "fp32 输入用 tl.dot(a, b, acc, input_precision='tf32')（或 'ieee' 保精确）"
+      - "BLOCK_K 与 dtype 配合：fp16 常用 32/64，参考 tutorials/03 config 表"
+    references: ["[T] triton tutorials/03-matrix-multiplication", "[R] NVIDIA/cutlass（mma 形状参考）", "[B] NVIDIA Hopper Architecture In-Depth（tensor core 背景干）"]
+
+  - id: compute.tf32_bf16_within_contract
+    name: 契约内精度降档（TF32/BF16 计算路径）
+    category: compute_precision
+    mechanism: 在不触碰评测容差的前提下，选择 reference 语义本就允许的快速精度路径（如 fp32 matmul 的 TF32、逐元素的 bf16 中间计算），换取 tensor core 吞吐或减半带宽。
+    mechanism_detail: >
+      边界必须严格：这是"选择实现以满足既有契约"，不是"放宽契约过测"。
+      两条硬规则：(1) 逐案例验证——TF32 的 10-bit 尾数对某些数值敏感算子（累积求和、
+      条件数大的问题）会超出默认容差，必须以 trusted evaluator 的 correctness 结果为准；
+      (2) 轨道感知——upstream_compatible 轨道下 reference 的 dtype 语义即契约，
+      任何降档只作为候选实现参与比较，失败即弃。因此该方法总与
+      numerics.fp32_accumulators 成对考虑（计算降档、累加保持 fp32）。
+    applicability_signals:
+      tier_a_ncu: []
+      tier_b_task:
+        - "operator_class 为大线性代数/卷积且输入为 fp32（TF32 路径）或 fp16/bf16（fp8 实验路径，另见 compute.fp8_experimental）"
+        - "shape 大到 compute-bound（算术强度高）"
+      tier_c_history:
+        - "correctness_pro 报告的误差余量（若 evaluator 提供误差统计）大，才有降档空间"
+    expected_gain: medium-high（compute-bound fp32 GEMM 上 TF32 常见 ~2-4x；容差敏感题不适用）
+    risks_preconditions:
+      - "禁止为了过测而放宽容差/清单/计时范围（项目不变约束）；失败即记录 no_improvement"
+      - "TF32 在 reduction 重的算子上误差放大，需逐题验证"
+    triton_howto:
+      - "tl.dot(..., input_precision='tf32')；环境无该参数时用 allow_tf32 参数（版本 guard）"
+      - "逐元素 bf16 化仅在中间值域可控时：x.to(tl.bfloat16) 处理后再转回"
+    references: ["[P] KernelBench arXiv:2502.10517（fast_p 对精度的联合要求）", "[T] triton tutorials/03（input_precision）", "[R] NVIDIA/cutlass（精度模式）"]
+
+  - id: compute.fp8_experimental
+    name: FP8 计算路径（SM89 硬件能力，实验性）
+    category: compute_precision
+    mechanism: 当任务契约允许（或生产轨道允许替代实现）且数值域可控时，用 FP8 e4m3/e5m2 mma（SM89 原生支持）进一步加倍吞吐与减半流量。
+    mechanism_detail: >
+      SM89 的 FP8 是 Ada 相对 Ampere 的增量能力。但 FP8 动态范围窄，通常需要
+      per-tensor/per-row scaling，这引入额外的归约与除法。在 KernelBench 纯生成轨道下
+      大多数 fp32/fp16 题目不可能通过 FP8 满足容差——该方法主要面向 production_reuse
+      轨道或明确允许低精度的任务。作为方法目录存在，优先级排在实际容差证据之后。
+    applicability_signals:
+      tier_b_task:
+        - "任务的容差/契约显式允许低精度；或 dtype 本身为 fp8"
+        - "scale 因子可离线确定（不引入热路径归约）"
+      tier_c_history:
+        - "任何 fp8 尝试的 correctness 失败必须记录并阻止同题重复尝试（方法记忆）"
+    expected_gain: unknown-to-high（高度依赖契约；量化服务系统有 >2x 吞吐报告，见 Atom）
+    risks_preconditions:
+      - "溢出/下溢检查（e4m3 vs e5m2 选择）；scale 精度"
+      - "Triton 对 fp8e4nv 的支持与版本相关，需 guard"
+    triton_howto:
+      - "输入 cast 为 tl.float8e4nv/e5m2 后 tl.dot；acc 保持 fp32"
+      - "先离线计算 scale 并作为 kernel 标量参数传入"
+    references: ["[P] Atom arXiv:2404.14289（MLSys'24，低比特服务吞吐）", "[T] triton tutorials/10-block-scaled-matmul（block-scaled 低精度模式）"]
+
+  - id: compute.algebraic_strength_reduction
+    name: 代数改写与强度削减（容差内）
+    category: compute_precision
+    mechanism: 用等价或在容差内的更廉价的数学形式替换昂贵运算：除法换乘倒数、exp2 换 exp、多项式近似的激活变体、公共子表达式与循环不变量外提。
+    mechanism_detail: >
+      特殊函数（exp/log/pow/div/sin）在 CUDA core 上开销是 FMA 的数十倍；libdevice
+      提供快速变体。安全的子集是：倒数乘法（精度差 <=2ulp 量级）、exp(x)=exp2(x*log2e)、
+      提取公共因子。激活函数变体（tanh 近似 gelu）只有在 evaluator 容差证据显示余量
+      足够时才允许。所有改写保持单因素：一次只引入一种数学变体以便归因。
+    applicability_signals:
+      tier_a_ncu:
+        - "sm__throughput 高且 XU/ALU 瓶颈（细分管道指标不在当前目录；如需归因扩展采集）"
+      tier_b_task:
+        - "代码信号：热循环内出现 tl.exp/log/pow、除法、重复计算的不变量"
+      tier_c_history:
+        - "容差余量未知时不得启用近似变体（先精确后近似）"
+    expected_gain: low-medium（XU 密集算子上明显；通常与融合叠加）
+    risks_preconditions:
+      - "近似变体必须过 evaluator 独立验证；失败记录为该方法反例"
+    triton_howto:
+      - "inv = 1.0 / c 在 kernel 外算好作为参数；内层用 x * inv"
+      - "tl.math.exp2(x * 1.4426950408889634)；libdevice 快速路径通过 tl.extra.libdevice"
+    references: ["[T] triton tutorials/07-extern-functions（libdevice）", "[B] GPU-MODE lecture_014 A Practitioner's Guide to Triton"]
+
+  # ============ 流水线与延迟隐藏类 ============
+
+  - id: pipeline.num_stages_software_pipelining
+    name: 软件流水（num_stages 异步拷贝深度）
+    category: pipelining
+    mechanism: 增大 Triton 的 num_stages，让编译器用 cp.async（SM80+）把未来迭代的 global->shared 拷贝与当前迭代的计算重叠，隐藏访存延迟。
+    mechanism_detail: >
+      Triton 的流水线化由 num_stages 控制：stage 数决定 shared memory 中在途缓冲份数。
+      GEMM 类负载 stages 3-5 常见（tutorials/03 CUDA config 表），persistent 变体教程
+      在 [2,4] 内扫描（tutorials/09）。stage 过深的代价是 shared memory 容量
+      （BLOCK_M*BLOCK_K + BLOCK_K*BLOCK_N)*stages*dt 必须放进每 SM 上限，
+      并会挤压可常驻 CTA 数。SM89 每块上限约 100KB（待运行核实）。
+    applicability_signals:
+      tier_a_ncu:
+        - "sm__throughput 与 dram__throughput 都处于中间区（40-70%），典型失速特征"
+        - "gpu__compute_memory_throughput 高但不足以解释 duration（瓶颈在依赖链等待）"
+      tier_b_task:
+        - "operator_class 为 matmul/conv/带内层循环的归约；代码信号：无 autotune 或 stages 固定为默认"
+      tier_c_history: []
+    expected_gain: medium（GEMM 上与 tile 尺寸同阶重要；tutorials/09 用 autotune 扫 [2,4]）
+    risks_preconditions:
+      - "shared memory 超限会编译失败或强制降 occupancy——stage 与 BLOCK 联动搜索"
+      - "逐元素算子无流水收益（无内层循环依赖）"
+    triton_howto:
+      - "@triton.autotune 的每个 config 显式给 num_stages/num_warps，不要依赖默认"
+      - "搜索空间示例：BLOCK_K {32,64} x num_stages {3,4,5}， tutorials/03 的 CUDA 表为起点"
+    references: ["[T] triton tutorials/03 与 09 的 config 空间", "[P] AutoTriton arXiv:2507.05687（Triton 调参作为核心维度）", "[T] CUDA C++ Programming Guide async copies"]
+
+  - id: pipeline.persistent_kernel
+    name: persistent kernel（固定网格、程序循环处理多 tile）
+    category: pipelining
+    mechanism: 把网格固定为 min(SM 数, tile 数)，每个程序循环处理多个输出 tile，消除 launch/tail 波次开销并复用程序级状态。
+    mechanism_detail: >
+      tile 数远超 SM 数的整数倍时，最后一批 tile 形成 tail 效应；tile 数略超 SM 数时
+      反复 launch 的固定开销可见。persistent 形式把 tile 循环显式化（tl.range 步长
+      NUM_SMS），还使 L2 友好的自定义 tile 遍历序与跨 tile 的权重复用成为可能。
+      诚实边界：tutorials/09 的实测中 persistent 变体在 8192x8192x512 fp16 上
+      （~4118ms）慢于朴素版（~3912ms）和 cuBLAS（~3883ms）——收益依形状与实现质量，
+      不是普适升级。该教程同时注明其示例在共享内存小的消费卡（文中为 RTX 4090 类）
+      上会失败——8GB 笔记本 4060 的 shared memory 预算更紧，BLOCK*stages 需保守。
+    applicability_signals:
+      tier_a_ncu:
+        - "launch__grid_size >> SM 数且 tail 波次可推断（tile 数 mod SM 数大）；或多个极短 launch 序列"
+      tier_b_task:
+        - "operator_class 为 GEMM/conv 类且形状使 tile 数与 SM 数可比；batch 内多次相似 launch"
+      tier_c_history: []
+    expected_gain: low-medium（形状依赖；小 tile 多波次场景为主）
+    risks_preconditions:
+      - "消费级 SM89 shared memory 上限可能直接拒绝大 tile persistent 方案"
+      - "不保证所有形状获益（设计文档 §6.3 persistent.schedule 行同此结论）"
+    triton_howto:
+      - "NUM_SMS = torch.cuda.get_device_properties(...).multi_processor_count 传入 kernel；grid = min(NUM_SMS, num_tiles)"
+      - "for tile_id in tl.range(start_pid, num_tiles, NUM_SMS)：配合 l2 分组映射（tutorials/09 _compute_pid）"
+    references: ["[T] triton tutorials/09-persistent-matmul", "[P] Mirage arXiv:2405.05751（persistent 抽象）", "[B] NVIDIA Hopper Architecture In-Depth"]
+
+  - id: pipeline.tma_tensor_descriptors
+    name: TMA 张量描述符批量访存
+    category: pipelining
+    mechanism: 用 TMA 硬件单元（SM90+）以描述符一次描述多维 tile 的 global<->shared 批量传输，卸载地址计算与寄存器占用。
+    mechanism_detail: >
+      硬件守卫：TMA 需要 compute capability >= 9.0（tutorials/09 supports_tma 的门）。
+      当前硬件目标 SM89 不支持，此方法在当前目标上必须被 applicability 守卫直接拒绝
+      （这正是注册表 applies_to 硬能力守卫的范例条目）。保留价值：同代码家族
+      （host-side TensorDescriptor / device-side tl.make_tensor_descriptor + set_allocator）
+      迁移到 Hopper/Blackwell 目标时可直接启用；它与 warp specialization、epilogue
+      subtiling（用省下的 shared memory 换 stage 数）组合是 Hopper GEMM 的标准形态。
+    applicability_signals:
+      tier_b_task:
+        - "硬能力信号：device cc >= 9.0 才适用；SM89 上恒拒绝（显式 refusal 理由记录）"
+    expected_gain: not_applicable_on_sm89（Hopper 上为 medium-high；本条作为守卫样例）
+    risks_preconditions:
+      - "需要 global memory 分配描述符（triton.set_allocator）；block_shape 与 BLOCK 联动（autotune pre-hook 模式）"
+    triton_howto:
+      - "TensorDescriptor.from_tensor(t, block_shape)；kernel 内 desc.load([offs])（tutorials/09）"
+      - "B 存为 [N, K] 后 tl.dot(a, b.T) 的布局模式"
+    references: ["[T] triton tutorials/09-persistent-matmul", "[B] PyTorch blog Deep Dive on the Hopper TMA Unit", "[B] Colfax Research Mastering TMA tutorial"]
+
+  - id: pipeline.warp_specialization
+    name: warp 专用化（生产者/消费者分工）
+    category: pipelining
+    mechanism: 在同一 CTA 内让部分 warp 专职访存（拷贝引擎代理）、其余专职 tensor core 计算，通过 mbarrier/流水线缓冲衔接，最大化拷贝与计算重叠。
+    mechanism_detail: >
+      硬件守卫：Triton 的 warp_specialize 在 Hopper（CC>=9.0）开启，tutorials/09 明示
+      Hopper warpspec 不与 flatten 循环共存；当前 SM89 目标不适用（同 tma 条目，
+      作为守卫样例保留）。SM89 上的近似替代是 pipeline.num_stages_software_pipelining
+      （编译器统一的 cp.async 流水），没有 warp 级角色分工。
+    applicability_signals:
+      tier_b_task:
+        - "硬能力信号：device cc >= 9.0；SM89 恒拒绝"
+    expected_gain: not_applicable_on_sm89
+    risks_preconditions:
+      - "barrier/缓冲同步正确性（racecheck 纳入按风险分级的 sanitizer 调用）"
+    triton_howto:
+      - "tl.range(..., warp_specialize=True)（CC>=9）；Gluon 路线见 gluon warp-specialization 教程"
+    references: ["[T] triton tutorials/09-persistent-matmul", "[T] triton gluon tutorials warp-specialization", "[B] PyTorch blog Enabling Advanced GPU Features - Warp Specialization"]
+
+  # ============ launch 与 host 开销类 ============
+
+  - id: launch.multi_kernel_merge
+    name: 多 kernel 序列合并
+    category: launch_overhead
+    mechanism: 把一次 forward 内顺序执行的多个小 kernel 合并为更少的 launch（或单 kernel 多阶段），消除 launch 间隙与队列往返。
+    mechanism_detail: >
+      端到端时间 = kernel 计算时间 + launch 间隙时间。每段几微秒的小 kernel 序列里，
+      间隙占比可过半。合并的正确性边界：阶段间无全局同步依赖（或可用 grid 级屏障语义
+      重写）；不合并跨数据依赖需要 CPU 中介的阶段。证据上区分：NCU 看单 kernel 指标，
+      间隙要看 NSYS 时间线（设计文档 §10.2 明示 NCU 单 kernel 吞吐解释不了端到端）。
+    applicability_signals:
+      tier_a_ncu:
+        - "E3 来源切换为 NSYS：launch 序列间存在明显空隙；NCU 各 launch 自身 SOL 不高"
+      tier_b_task:
+        - "TaskProfile.granularity=subgraph；代码信号：forward 中 >=3 次内核调用且张量尺寸小"
+      tier_c_history:
+        - "timing 反馈显示候选单 kernel 快但端到端无提升——间隙未消"
+    expected_gain: medium（小 kernel 链上显著；大 kernel 单链无收益）
+    risks_preconditions:
+      - "合并后的寄存器/shared 压力；阶段间数据依赖不得引入未定义顺序"
+      - "多 kernel 实现必须识别全部相关 launch，不能拿最后一个代表整个算子（设计文档 §10.2）"
+    triton_howto:
+      - "阶段打包进同一 kernel：用 BLOCK 维度分段处理或 grid 维划分阶段（不同 pid 区间做不同阶段）"
+      - "跨阶段归约依赖时保持两 kernel（确定性优先），只消除中间的 host 往返"
+    references: ["[P] KernelBench arXiv:2502.10517（子图类）", "[T] Nsight Systems User Guide（设计文档 [S19]）"]
+
+  - id: launch.host_overhead_cleanup
+    name: host 侧开销清理
+    category: launch_overhead
+    mechanism: 移除热路径上的 host 开销与隐式同步：.item()/.cpu() 同步点、热路径张量分配、不必要的 .contiguous()/dtype 转换、重复的 Python 层计算。
+    mechanism_detail: >
+      KernelBench 候选常见模式：forward 里新建常量张量（触发 H2D 拷贝与分配）、
+      用 Python float 比较导致 device 同步、每次调用重新 create tensor descriptor。
+      把常数搬到 __init__ 预生成、用标量参数代替设备上标量、缓存布局假设，
+      是不改 GPU 代码的纯收益。该类改写不触碰计时协议（计时仍由 evaluator 独立执行）。
+    applicability_signals:
+      tier_a_ncu: []
+      tier_b_task:
+        - "代码信号（静态可检）：forward 内 torch.tensor/zeros/full 调用、.item()/.cpu()/.nonzero()、重复 shape 计算"
+      tier_c_history:
+        - "单 kernel NCU 时间远小于 timing 批时间——差值在 host/间隙"
+    expected_gain: medium（小算子/短 kernel 上占比高；大 kernel 上无感）
+    risks_preconditions:
+      - "预分配缓冲的复用不得引入跨调用状态污染（in-place/alias 语义与 reference 对齐）"
+    triton_howto:
+      - "常数作为 kernel 标量参数；权重变换移到 __init__；避免 forward 中 dtype 转换链"
+    references: ["[B] GPU-MODE lecture_001 Profiling and Integrating CUDA kernels in PyTorch", "[P] KernelBench arXiv:2502.10517"]
+
+  - id: launch.autotune_key_pruning
+    name: autotune key 与配置裁剪（预算约束的调参空间）
+    category: launch_overhead
+    mechanism: 用 key=[形状参数] 控制 autotune 重评估时机，用 prune_configs_by 提前剪掉不可行配置（shared memory 超限等），把调参 GPU 预算压到必要范围。
+    mechanism_detail: >
+      autotune 的每次 config 试跑都是真实 GPU 时间，计入预算（项目不变约束：调参计入
+      预算）。控制手段：(1) key 只含真正影响最优 config 的形状（如 K、内维 N），减少
+      重评估；(2) early_config_prune 在运行前删除 smem 超限/不适用 dtype 的 config；
+      (3) config 列表按先验排序，允许预算截断（记录未试 config，诚实报告搜索范围）。
+      注意：autotuner 内部计时只服务于 config 选择，不等于正式 timing（两轨分离）。
+    applicability_signals:
+      tier_b_task:
+        - "代码信号：@triton.autotune 无 key 或 key 全参数；config 数 * 试跑时间接近候选预算"
+      tier_c_history:
+        - "候选因预算超时被拒的历史——收紧空间后再来"
+    expected_gain: low（主要是预算与稳定性收益，间接提升可达成最优）
+    risks_preconditions:
+      - "剪枝条件错误会把可行 config 剪掉——剪枝理由记录进证据"
+    triton_howto:
+      - "@triton.autotune(configs=..., key=['N','K'], prune_configs_by={'early_config_prune': fn})"
+      - "fn 内按 BLOCK 面积*stages*dt <= SMEM_LIMIT 过滤（上限从 device props 读取）"
+    references: ["[R] triton runtime/autotuner.py（设计文档 [S12]）", "[T] triton tutorials/09（autotune pre-hook 与 prune 模式）"]
+
+  # ============ 归约类 ============
+
+  - id: reduction.two_pass_deterministic
+    name: 两遍确定性归约
+    category: reduction
+    mechanism: 先行内（block 内）归约得部分和，再由单程序或树形第二遍合并，保证每次运行相同的归约顺序。
+    mechanism_detail: >
+      归约顺序影响浮点结果。原子累加（atomic_add）每次运行顺序不同，导致输出逐位
+      不确定，会在 correctness 比较和证据复算中引入噪声。两遍式的代价是多一次
+      （小的）kernel launch 与部分和数组流量。长归约（行内 K 很大）先在 shared memory
+      树形归约，再跨块合并。归约树形状固定后，误差特性也可复现。
+    applicability_signals:
+      tier_a_ncu:
+        - "归约类算子 dram__throughput 低、sm__throughput 低——顺序实现的串行依赖过长"
+      tier_b_task:
+        - "operator_class in {sum/mean/norm/var, reduction_along_large_axis}"
+        - "代码信号：tl.atomic_add 或跨块累加"
+      tier_c_history:
+        - "correctness 间歇性失败——原子顺序噪声的典型症状"
+    expected_gain: medium（并行化归约本身；兼得可复现性）
+    risks_preconditions:
+      - "第二遍 kernel 的 launch 开销；部分和 dtype 至少与契约精度持平"
+    triton_howto:
+      - "kernel1: 每块算部分和写 workspace[block_id]；kernel2: 单程序或小网格对 workspace 归约"
+      - "块内用 tl.sum（树形），避免线程间手写原子"
+    references: ["[B] GPU-MODE lecture_009 Reductions", "[T] triton tutorials/02-fused-softmax（行归约模式）"]
+
+  - id: reduction.warp_block_staged
+    name: warp/block 两级归约结构
+    category: reduction
+    mechanism: 在块内先做 warp 级归约再做跨 warp 归约（tl.sum/tl.reduce 自动完成），关键在于 BLOCK 形状与数据布局匹配，使每个 warp 连续处理数据段。
+    mechanism_detail: >
+      Triton 的 tl.sum/tl.max 在 2D block 上可指定 axis；正确选择 BLOCK 形状
+      （如 BLOCK_N=数据行内长度、BLOCK_M=行数）让归约内维正好映射 warp 内相邻通道，
+      避免跨通道 shuffle 过多。对多层归约（var = mean(x^2) - mean(x)^2 类）合并为
+      单次遍历多累加器，省一半流量。
+    applicability_signals:
+      tier_b_task:
+        - "operator_class in {layernorm, rmsnorm, softmax, variance 系}"
+      tier_a_ncu:
+        - "归约算子 gpu__compute_memory_throughput 低（未带宽饱和）——布局/并行结构问题"
+      tier_c_history: []
+    expected_gain: low-medium
+    risks_preconditions:
+      - "mean(x^2)-mean(x)^2 形式有灾难性消减风险（方差小、均值大时），改 Welford 或先减均值（配合 numerics 条目）"
+    triton_howto:
+      - "单遍多累加器：s = tl.sum(x, 1), ss = tl.sum(x*x, 1) 同 loop 内完成"
+      - "行内归约 axis=1，保持行内维连续（配合 memory.coalesce）"
+    references: ["[T] triton tutorials/05-layer-norm", "[B] GPU-MODE lecture_009 Reductions"]
+
+  - id: reduction.online_streaming
+    name: 在线/流式归约（running max & sum）
+    category: reduction
+    mechanism: 用 running max 与重标定的 running sum 在单遍内完成 softmax/归一化，无需先全局 max 的预遍历。
+    mechanism_detail: >
+      online softmax：维护 m_new=max(m_old, block_max)，s = s*exp(m_old-m_new) +
+      sum(exp(x-m_new))，最后除 s。与两遍式相比省一次完整数据遍历（大 N 行时流量减半），
+      与 flash attention 的 rescale 同源（arXiv:2205.14135）。数值上恒安全（差上界有控），
+      顺序与 reference 不同需要容差内验证。
+    applicability_signals:
+      tier_a_ncu:
+        - "softmax/norm 类算子观测字节数约为'必要字节'的 2 倍以上（两遍特征）"
+      tier_b_task:
+        - "operator_class in {softmax, log_softmax, layernorm, attention}；归约维超过单块承载"
+      tier_c_history: []
+    expected_gain: medium-high（大归约维时流量近半；attention 类为结构性收益）
+    risks_preconditions:
+      - "rescale 累积误差；exp 次数略多（计算换流量，通常划算）"
+    triton_howto:
+      - "循环块：m_new = tl.maximum(m, tl.max(x)); s = s * tl.exp(m - m_new) + tl.sum(tl.exp(x - m_new)); m = m_new"
+    references: ["[P] FlashAttention arXiv:2205.14135", "[T] triton tutorials/02-fused-softmax", "[T] triton tutorials/06-fused-attention"]
+
+  - id: reduction.split_large_axis
+    name: 大轴切分多块归约（hierarchical reduce）
+    category: reduction
+    mechanism: 归约轴远大于单块可承载时，切分为 p 份并行归约出 p 个部分结果，再第二级合并，使归约获得 p 倍并行度。
+    mechanism_detail: >
+      与 parallel.grid_expansion_splitk 同机制在归约算子上的特化：全张量归约
+      （reduce 到标量/小向量）只有极小的输出并行度，必须从归约轴造并行度。
+      二级合并通常很小，用单程序即可。全局 bar 也常见于分块统计（每行 mean/std），
+      此方法针对的是整轴归约的并行度不足。
+    applicability_signals:
+      tier_a_ncu:
+        - "launch__grid_size 极小（个位数 CTA）且 duration 长；sm__warps_active 低"
+      tier_b_task:
+        - "operator_class 为 global reduction（sum/max/argmin 到标量）；轴长 >> BLOCK 上限"
+      tier_c_history: []
+    expected_gain: medium-high（欠并行时接近并行度比例）
+    risks_preconditions:
+      - "两级的浮点顺序要固定；p 过大时二级成为新瓶颈"
+    triton_howto:
+      - "N_SPLIT 纳入 autotune；部分结果存 workspace，二级 kernel 沿 N_SPLIT 归约"
+    references: ["[B] GPU-MODE lecture_009 Reductions", "[P] Ansor arXiv:2006.06762"]
+
+  # ============ 算法类 ============
+
+  - id: algorithm.flash_tile_streaming
+    name: Flash 式分块流式（attention 族）
+    category: algorithmic
+    mechanism: Q 分块驻留、K/V 外块循环、online rescale 输出，把 attention 的中间 S/P 矩阵从 O(L^2) 物化降为 O(BLOCK) 驻留。
+    mechanism_detail: >
+      attention 是 KernelBench/推理负载中最典型的'算法级改写赢过一切微调'的对象。
+      结构：外层循环 K/V 块，内层 tl.dot(Q, K^T) -> online softmax -> tl.dot(P, V)
+      累加到 O 累加器并 rescale。软化边界（mask、causal 三角）在块粒度跳过
+      （配合 algorithm.masked_early_exit）。数值顺序与 reference 不同，必须独立验证。
+    applicability_signals:
+      tier_a_ncu:
+        - "baseline 观测流量为 O(L^2) 量级（中间矩阵物化特征）"
+      tier_b_task:
+        - "operator_class in {attention, sdpa, matmul_softmax_matmul 复合}"
+      tier_c_history: []
+    expected_gain: high（长序列上数量级；短序列收益有限）
+    risks_preconditions:
+      - "实现复杂度最高的一档：先做 memory.eliminate_intermediate_materialization 的简化版证明语义"
+      - "causal 掩码边界块的处理"
+    triton_howto:
+      - "tutorials/06-fused-attention 模板；qk = tl.dot(q, tl.trans(k))；p = softmax 分子按 running max 归一"
+      - "acc = acc * alpha + tl.dot(p.to(dtype), v)"
+    references: ["[P] FlashAttention arXiv:2205.14135", "[T] triton tutorials/06-fused-attention", "[P] The Anatomy of a Triton Attention Kernel arXiv:2511.11581"]
+
+  - id: algorithm.masked_early_exit
+    name: 掩码/三角结构的整块跳过
+    category: algorithmic
+    mechanism: 对 causal/带状等结构性稀疏，按块粒度判断掩码恒假的 tile 直接跳过计算与加载，而不是逐元素掩码后照算。
+    mechanism_detail: >
+      causal attention 中约一半 tile 完全在掩码外；块级 skip 直接省一半计算与加载。
+      推广到任何结构化掩码（band、块对角）。正确性要点：块级判断必须与逐元素掩码
+      在边界块上等价——对部分覆盖块仍套逐元素 mask。该改写改变计算量但不改输出语义
+      （浮点上逐元素 mask 的乘 0 加法与跳过等价性在 acc 初始为 0 时成立）。
+    applicability_signals:
+      tier_b_task:
+        - "代码信号：mask 矩阵由三角/band 函数生成；attention 带 is_causal"
+      tier_a_ncu: []
+      tier_c_history: []
+    expected_gain: medium-high（causal 下理论约 2x 上限，实际受实现影响）
+    risks_preconditions:
+      - "边界块等价性证明；mask 生成逻辑与 reference 一致"
+    triton_howto:
+      - "块循环内 if q_start >= k_end: 跳过（tl.where 块级条件 + continue 语义）"
+      - "边界块内保留逐元素 mask = offs_q[:, None] >= offs_k[None, :]"
+    references: ["[T] triton tutorials/06-fused-attention", "[P] FlashAttention arXiv:2205.14135"]
+
+  - id: algorithm.gather_scatter_optimization
+    name: 索引类算子（gather/scatter/embedding）优化
+    category: algorithmic
+    mechanism: 对按索引取数的算子，把随机访问聚合为按块连续访问、预检索引界、并把后续逐元素变换融合进 gather，减少重复随机访存。
+    mechanism_detail: >
+      embedding/gather 的性能由随机访问的局部性决定：排序或分桶索引可将随机访问
+      局部化，但排序本身有代价，通常只在索引高度重复或规模大时划算。基础版收益
+      来自：索引一次性加载复用、边界检查用掩码而非分支、gather+transform 融合
+      （避免写回再读）。scatter 额外有写冲突：同索引多写需要原子或 reduction。
+    applicability_signals:
+      tier_a_ncu:
+        - "gpu__compute_memory_throughput 低且数据量小——随机访问延迟主导"
+      tier_b_task:
+        - "operator_class in {embedding, gather, scatter, index_select, one_hot}"
+      tier_c_history:
+        - "sanitizer memcheck 历史——索引类改动后必查"
+    expected_gain: low-medium
+    risks_preconditions:
+      - "越界索引行为必须与 reference 一致（padding_idx/负索引语义）"
+      - "scatter 冲突消解方式改变结果顺序时需容差验证"
+    triton_howto:
+      - "idx = tl.load(index_ptr + offs, mask=...); v = tl.load(weight_ptr + idx[:, None]*D + d[None, :])"
+      - "D 维向量化读取（权重行连续）；变换直接作用后 store，不落中间张量"
+    references: ["[P] KernelBench arXiv:2502.10517（embedding 类题）", "[B] GPU-MODE lecture_008"]
+
+  # ============ 调参基础设施类 ============
+
+  - id: tuning.autotune_space_design
+    name: autotune 参数空间设计（按算子类先验）
+    category: tuning_infra
+    mechanism: 按算子类给出 config 空间的先验设计（BLOCK 档位、num_warps、num_stages 组合），以有限预算覆盖高概率最优区。
+    mechanism_detail: >
+      空间设计决定 autotune 上限：教程给出的成熟起点——GEMM fp16 CUDA：
+      (128,256,64,3,8), (64,256,32,4,4), (128,128,32,4,4), (128,64,32,4,4),
+      (64,128,32,4,4), (128,32,32,4,4), (64,32,32,5,2), (32,64,32,5,2)
+      （BLOCK_M,BLOCK_N,BLOCK_K,stages,warps，GROUP_SIZE_M=8）；fp8 档 BLOCK_K=128；
+      persistent 变体 stages 在 [2,4]。Ansor 的教训是分层空间（tile 结构层 + 参数层）
+      比扁平枚举高效；对 LLM 生成器而言，方法是给 prompt 提供'空间模板 + 预算上限'，
+      而不是让模型自由发挥无数 config。
+    applicability_signals:
+      tier_b_task:
+        - "所有含 @triton.autotune 的候选；operator_class 决定用哪套模板"
+      tier_c_history:
+        - "autotune 后仍慢——空间覆盖不足或关键维度缺失（如缺 stages 轴）"
+    expected_gain: medium（间接：决定一切 tile 类方法的实际达成度）
+    risks_preconditions:
+      - "每个 config 都消耗 GPU 时间：空间大小 * 题目数受预算约束（launch.autotune_key_pruning）"
+    triton_howto:
+      - "按 operator_class 选择模板：gemm16/gemm_fp8/elementwise/reduction 四套起步"
+      - "config 少而准（8-16 个），优于大而全（>32 个）"
+    references: ["[T] triton tutorials/03 与 09 config 表", "[P] Ansor arXiv:2006.06762", "[P] AutoTriton arXiv:2507.05687"]
+
+  - id: tuning.do_bench_internal_protocol
+    name: autotuner 内部计时协议与正式计时分离
+    category: tuning_infra
+    mechanism: autotune 用 triton.testing.do_bench 做内部 config 选择，其协议（warmup/rep/缓存状态）与正式 timing 不同——两轨结果不可互换，候选晋升只认 evaluator 的正式 timing。
+    mechanism_detail: >
+      这是项目信任边界的直接推论：候选不能决定自己的计时成绩。autotuner 内部计时
+      允许存在（它是搜索机制），但其数值不得进入报告、不得用于宣称 speedup、不得与
+      baseline 正式时间比较。生成器在 prompt 中必须显式声明这一边界，防止模型把
+      do_bench 数字写进注释或 docstring 造成'自证性能'的证据污染。
+    applicability_signals:
+      tier_b_task:
+        - "所有候选生成时的通用 prompt 约束（不是按题触发）"
+      tier_c_history:
+        - "候选注释中出现自报 speedup 的历史——prompt 加固信号"
+    expected_gain: low（正确性/可信性收益）
+    risks_preconditions: []
+    triton_howto:
+      - "prompt 片段：'Do not measure or report performance yourself; do not call triton.testing.do_bench in forward'"
+    references: ["[R] triton testing.py（设计文档 [S12]）", "设计文档 §9.3 计时契约"]
+
+  - id: tuning.shape_bucket_cache
+    name: 形状分桶的调参结果复用
+    category: tuning_infra
+    mechanism: 把 autotune 结论按形状桶（对齐档位/规模档）缓存复用到同族 workload，减少重复调参的 GPU 预算。
+    mechanism_detail: >
+      同一算子在相邻形状上最优 config 高度相关（按对齐性与规模分桶后）。
+      复用是'先验初始化'而非'结论继承'：新 workload 上仍以少量 config 的验证开始，
+      与设计文档 §6.4 的方法记忆一致——记忆条目带 workload 范围与验证条件，
+      不把一次成功写成普适规则。
+    applicability_signals:
+      tier_b_task:
+        - "同一 TaskProfile/算子族的第二个及以后的 workload"
+      tier_c_history:
+        - "先前同族调参记录（带形状桶标签）"
+    expected_gain: medium（预算节省；收益是预算效率而非单题速度）
+    risks_preconditions:
+      - "桶边界过粗导致局部最优——记录桶内次优 config 作回退"
+    triton_howto:
+      - "key 用桶标签（如 (ceil_div(N,128), K>=512)）而非原始形状，提高命中率"
+    references: ["[P] Ansor arXiv:2006.06762（成本模型复用）", "[P] Transfer-Tuning arXiv:2201.05587"]
+
+  # ============ 数值与正确性类 ============
+
+  - id: numerics.stable_softmax_logsumexp
+    name: 数值稳定 softmax / log-sum-exp
+    category: numerics
+    mechanism: exp 前减行最大值（或用 log-sum-exp 形式），防止 exp 上溢，使大数值输入下结果仍有限且正确。
+    mechanism_detail: >
+      这是 softmax/norm 类算子的正确性底线：LLM 首轮候选最常见错误之一是
+      未减 max 的 exp 直接溢出 inf/NaN。生成器把它作为该算子类的 prompt 必选项
+      而非可选优化。与 reduction.online_streaming 组合时 running max 即承担此职责。
+    applicability_signals:
+      tier_b_task:
+        - "operator_class in {softmax, cross_entropy, log_softmax}：硬前提，非可选"
+      tier_c_history:
+        - "correctness 失败模式含 inf/NaN——先检查此条"
+    expected_gain: low（正确性前提；对性能中性或略负）
+    risks_preconditions: []
+    triton_howto:
+      - "m = tl.max(x, axis=1, keep_dims=True)... e = tl.exp(x - m)；log 版：lse = m + tl.log(tl.sum(e))"
+    references: ["[T] triton tutorials/02-fused-softmax（模板即此形式）", "[P] FlashAttention arXiv:2205.14135"]
+
+  - id: numerics.fp32_accumulators
+    name: fp32 累加器与精度边界
+    category: numerics
+    mechanism: 半精度输入的乘加/归约用 fp32 累加（tl.dot 默认 acc fp32；tl.sum 指定 fp32），保住误差预算。
+    mechanism_detail: >
+      fp16 直接累加长向量时舍入误差随长度线性放大，是 correctness 随机失败来源。
+      Triton 的 tl.dot 默认 fp32 累加（勿显式降）；tl.sum 可用 dtype 参数控制。
+      该方法与 compute.tf32_bf16_within_contract 的方向相反但相容：计算可以降档，
+      累加保持 fp32 是常见的最优折中。
+    applicability_signals:
+      tier_b_task:
+        - "输入 dtype 为 fp16/bf16 且归约维大（K>512 量级）：硬前提"
+      tier_c_history:
+        - "correctness 失败且误差幅度随 K 增大——累加精度不足特征"
+    expected_gain: low（正确性前提）
+    risks_preconditions: []
+    triton_howto:
+      - "acc = tl.dot(a, b)（默认 fp32）；最终 store 时再 cast 回输出 dtype"
+      - "tl.sum(x, axis, dtype=tl.float32)"
+    references: ["[T] triton tutorials/03/06", "[P] KernelBench arXiv:2502.10517（容差与精度的关系）"]
+
+  - id: numerics.boundary_masking
+    name: 边界掩码与尾部处理
+    category: numerics
+    mechanism: 所有越界访问用显式 mask 保护（load 用 other=0/安全值，store 用 mask），分块维不整除时语义与逐元素实现一致。
+    mechanism_detail: >
+      这是正确性底线之二：BLOCK 化后 cdiv 尾块的 mask 遗漏导致越界读或错误写入。
+      load 的 other 值要选中性元素（归约用 0，max 用 -inf），否则尾块污染统计量。
+      生成器把'每个 tl.load/tl.store 都必须有 mask 推导'作为模板不变量，
+      并要求 mask 表达式与形状推导一一对应。
+    applicability_signals:
+      tier_b_task:
+        - "所有分块 kernel 的硬前提；形状非整除 BLOCK 的题目必查"
+      tier_c_history:
+        - "compute-sanitizer memcheck 报错、间歇性 correctness 失败（边界元素错）"
+    expected_gain: low（正确性前提）
+    risks_preconditions: []
+    triton_howto:
+      - "mask = offs < N（1D）；2D 各维独立 mask 后 [:, None] & [None, :] 组合"
+      - "tl.load(ptr + offs, mask=mask, other=0.0)；max 归约用 other=float('-inf')"
+    references: ["[T] triton tutorials/01-05（所有教程的 mask 模式）", "[T] Compute Sanitizer 官方文档（设计文档 [S18]）"]
+
+  # ============ 硬件/系统级（SM89 特化与组合治理） ============
+
+  - id: hardware.sm89_adaptive_tile
+    name: SM89 消费级资源的 tile 自适应
+    category: hardware_target
+    mechanism: 按 SM89 的实际资源上限（每 SM shared memory 预算、24 SM 量级、GDDR6 带宽）收缩 tile 与 stage 组合空间，避免大 GPU 先验直接迁移导致的编译失败或性能悬崖。
+    mechanism_detail: >
+      教程与论文的最优 config 大多来自 A100/H100；SM89 消费卡的 shared memory
+      上限更紧（tutorials/09 明示其示例在共享内存小的消费卡上会失败），SM 数少
+      使 wave/tail 敏感，带宽低使 compute-bound 阈值前移。方法：把 device props
+      （smem/SM、SM 数）读入生成器的参数空间过滤器，config 空间按 (BLOCK_M*BLOCK_K +
+      BLOCK_K*BLOCK_N)*stages*dt <= smem_budget 预筛。具体上限数值以运行时查询为准，
+      不写死假设（待微基准核实）。
+    applicability_signals:
+      tier_b_task:
+        - "所有 tile 类方法在当前硬件目标上的统一前置过滤"
+      tier_c_history:
+        - "候选编译失败（shared memory out of resource）——空间过滤缺失信号"
+    expected_gain: medium（避免废候选消耗预算；间接收益）
+    risks_preconditions: []
+    triton_howto:
+      - "triton.runtime.driver.active.utils.get_device_properties 或 torch.cuda.get_device_properties 读 smem/SM 数（application 层）"
+      - "early_config_prune 中按 smem 预算过滤（同 launch.autotune_key_pruning）"
+    references: ["[T] triton tutorials/09（消费卡 smem 失败注记）", "[B] GPU-MODE lecture_004 Compute and Memory Architecture"]
+
+  - id: meta.one_factor_per_round
+    name: 单因素变换纪律与消融配对
+    category: search_discipline
+    mechanism: 每轮候选只引入一个主要机制变化；复合变换必须附带可分解的消融序列（原、仅A、仅B、AB），使收益可归因。
+    mechanism_detail: >
+      直接产物是 prompt 模板的结构约束：生成器给出的每个方法计划只授权一个机制
+      （+必要的正确性护栏改写），并把上一轮已确认的机制组合显式写入父候选描述。
+      这是设计文档 §6.4（每轮只改变一个主要因素）与 §10.4（消融）的方法目录化。
+      代价是轮数增加，收益是每个 speedup 都有 E4 级归因路径，失败也能定位原因。
+    applicability_signals:
+      tier_c_history:
+        - "多机制候选同时成功/失败无法归因的历史记录"
+    expected_gain: low（搜索效率与证据质量的平衡项）
+    risks_preconditions:
+      - "预算紧张时允许放弃消融，但收益声明降级为'复合有效、机制未拆分'"
+    triton_howto:
+      - "prompt 片段：'Apply ONLY the following change relative to the parent source: ...'"
+    references: ["设计文档 §6.4/§10.4", "[P] KernelBench arXiv:2502.10517（迭代反馈价值的证据）"]
+
+  - id: meta.failure_feedback_loop
+    name: 结构化失败反馈回路
+    category: search_discipline
+    mechanism: 把每个候选的生成/评测/正确性/计时失败原因结构化（阶段、指标、错误类别），注入下一轮生成的 prompt，并持久化以在 resume 后保持同一搜索路径。
+    mechanism_detail: >
+      KernelBench 论文的核心发现之一是执行与 profiling 反馈显著提升迭代结果；
+      KEVIN/CUDA-L1 的 RL 奖励本质也是这个信号的极端化。项目内的对接点：
+      optimization.py 的 _feedback_note 各阶段（generation/evaluate/correctness_pro/
+      timing/confirm）产生的字符串目前是非结构化的，REVIEW.md R5 指出 resume 后
+      反馈丢失。方法目录层面：失败类别（parse/compile/correctness/timeout/no_gain）
+      与方法 id 关联，形成'该方法在此题失败'的记忆条目，阻止同方法同题重复尝试。
+    applicability_signals:
+      tier_c_history:
+        - "所有历史候选记录（该方法把历史本身升级为方法选择信号）"
+    expected_gain: medium（减少重复失败；对成功率影响大于单题速度）
+    risks_preconditions:
+      - "反馈注入改变 request 身份——必须持久化并与 resume 路径一致（R5 要求）"
+    triton_howto:
+      - "prompt 片段模板：'Previous attempt failed at {stage}: {reason}. Do not repeat: {method_id}'"
+    references: ["[P] KernelBench arXiv:2502.10517", "[P] KEVIN arXiv:2507.11948", "[P] CUDA-L1 arXiv:2507.14111", "REVIEW.md R5"]
