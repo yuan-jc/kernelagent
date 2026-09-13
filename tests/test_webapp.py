@@ -192,3 +192,44 @@ def test_second_start_while_gpu_busy_is_conflicted(tmp_path, monkeypatch):
         app.start_run({"mode": "demo-correct", "problem": "kernelbench:l1:40"})
     app._threads[first["run_id"]].join(timeout=5)
     assert app.active_run_id() is None
+
+
+# --- Model selection: listing a key's usable models via /models ----------
+
+
+def test_list_models_parses_provider_payload(monkeypatch):
+
+    from kernelagent.adapters.models.openai_compat import list_models
+
+    class FakeResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def read(self):
+            return json.dumps(
+                {
+                    "data": [
+                        {"id": "glm-4.5", "owned_by": "org"},
+                        {"id": "glm-4.5-air", "owned_by": "org"},
+                        {"id": 7, "owned_by": "invalid entries are skipped"},
+                    ]
+                }
+            ).encode("utf-8")
+
+    monkeypatch.setattr("urllib.request.urlopen", lambda request, timeout: FakeResponse())
+    models = list_models("http://x/v1", "sk-test")
+    assert [m["id"] for m in models] == ["glm-4.5", "glm-4.5-air"]
+    assert models[0]["owned_by"] == "org"
+
+
+def test_list_models_requires_credentials(monkeypatch):
+    from kernelagent.adapters.models.errors import PermanentModelError
+    from kernelagent.adapters.models.openai_compat import list_models
+
+    with pytest.raises(PermanentModelError):
+        list_models("http://x/v1", "")
+    with pytest.raises(PermanentModelError):
+        list_models("", "sk-test")

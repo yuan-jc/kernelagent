@@ -16,12 +16,16 @@ the server never invents status."""
 from __future__ import annotations
 
 import json
+import os
 import threading
 import time
 import traceback
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
+from kernelagent.adapters.models.errors import PermanentModelError, TransientModelError
+from kernelagent.adapters.models.openai_compat import list_models
+from kernelagent.config import API_KEY_ENV
 from kernelagent.optimization import (
     OptimizationConfig,
     OptimizationConfigError,
@@ -304,7 +308,7 @@ def make_handler(app: WebApp) -> type[BaseHTTPRequestHandler]:
 
         def do_POST(self) -> None:  # noqa: N802 - http.server API
             path = self.path.split("?", 1)[0]
-            if path != "/api/runs":
+            if path not in ("/api/runs", "/api/models"):
                 self._send_json({"error": "not found"}, 404)
                 return
             try:
@@ -312,6 +316,9 @@ def make_handler(app: WebApp) -> type[BaseHTTPRequestHandler]:
                 payload = json.loads(self.rfile.read(length).decode("utf-8") or "{}")
             except json.JSONDecodeError as exc:
                 self._send_json({"error": f"invalid JSON body: {exc}"}, 400)
+                return
+            if path == "/api/models":
+                self._send_models(payload)
                 return
             try:
                 self._send_json(app.start_run(payload))
@@ -321,6 +328,21 @@ def make_handler(app: WebApp) -> type[BaseHTTPRequestHandler]:
                 self._send_json({"error": str(exc)}, 400)
             except (TypeError, ValueError) as exc:
                 self._send_json({"error": f"invalid request: {exc}"}, 400)
+
+        def _send_models(self, payload: dict) -> None:
+            """List the models a key can use. The key lives in memory for
+            this one upstream call - it is never written anywhere."""
+            base_url = str(payload.get("base_url") or "")
+            api_key = str(payload.get("api_key") or "") or os.environ.get(API_KEY_ENV, "")
+            try:
+                models = list_models(base_url, api_key)
+            except PermanentModelError as exc:
+                self._send_json({"error": str(exc), "models": []}, 400)
+                return
+            except TransientModelError as exc:
+                self._send_json({"error": f"provider unreachable: {exc}", "models": []}, 502)
+                return
+            self._send_json({"models": models})
 
         def _send_static(self) -> None:
             index = STATIC_DIR / "index.html"

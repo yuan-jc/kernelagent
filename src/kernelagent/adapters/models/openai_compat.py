@@ -102,3 +102,36 @@ class OpenAICompatModelClient:
                 f"response model {response.model_id!r} does not match request {request.model_id!r}"
             )
         return response
+
+
+def list_models(base_url: str, api_key: str, timeout_seconds: float = 30.0) -> list[dict]:
+    """List the models a key can use via the OpenAI-compatible
+    ``GET {base_url}/models`` endpoint. Same credential rules as
+    :class:`OpenAICompatModelClient`: the key exists only on the control
+    plane for this one call and is never logged or persisted."""
+    if not isinstance(base_url, str) or not base_url.strip():
+        raise PermanentModelError("provider base_url is not configured")
+    if not isinstance(api_key, str) or not api_key.strip():
+        raise PermanentModelError("provider api_key is not configured")
+    url = f"{base_url.strip().rstrip('/')}/models"
+    request_obj = urllib.request.Request(
+        url, headers={"Authorization": f"Bearer {api_key}"}, method="GET"
+    )
+    try:
+        with urllib.request.urlopen(request_obj, timeout=timeout_seconds) as handle:
+            payload = json.loads(handle.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        if exc.code in TRANSIENT_STATUS:
+            raise TransientModelError(f"provider HTTP {exc.code}") from exc
+        raise PermanentModelError(f"provider HTTP {exc.code}") from exc
+    except (urllib.error.URLError, TimeoutError, OSError) as exc:
+        raise TransientModelError(f"provider transport failed: {exc}") from exc
+    data = payload.get("data") if isinstance(payload, dict) else None
+    models: list[dict] = []
+    for entry in data if isinstance(data, list) else []:
+        if isinstance(entry, dict) and isinstance(entry.get("id"), str):
+            owned_by = entry.get("owned_by")
+            models.append(
+                {"id": entry["id"], "owned_by": owned_by if isinstance(owned_by, str) else None}
+            )
+    return models

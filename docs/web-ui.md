@@ -15,8 +15,11 @@ cd /home/y/kernelagent
 
 ## 功能
 
-1. **API 填写**：模式选"真实模型生成"时填 Provider Base URL 与 API Key。
-   Key 只在本机内存中存在一个 run 的时长，不写 job.json/report/journal/日志（有测试钉住）。
+1. **API 填写与模型选择**：模式选"真实模型生成"时填 Provider Base URL 与 API Key，
+   点"用此 Key 拉取可用模型列表"——后端调 OpenAI 兼容的 `GET {base_url}/models`
+   （`POST /api/models`），把该 Key 可用的模型填进"模型 ID"下拉（也始终可手填，如
+   GLM 官方端点 `https://open.bigmodel.cn/api/paas/v4` + `glm-4.5` / `glm-4.5-air`）。
+   Key 只在本机内存中存在（列表请求与 run 各一次），不写 job.json/report/journal/日志（有测试钉住）。
    未填 Key 时回退读控制端环境变量 `MODEL_PROVIDER_API_KEY`，两者都没有则该 run 以配置错误终止。
 2. **Bench 选择**：KernelBench 按 Level → Problem 两级下拉（从冻结快照枚举，problem 值即
    `kernelbench:l<level>:<id>` 规约）。TritonBench / FlashInfer-Bench 适配器未接入 `optimize`，如实置灰。

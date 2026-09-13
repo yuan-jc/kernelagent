@@ -35,6 +35,10 @@
            background: var(--accent); color: #06121f; font-weight: 700; font-size: 14px;
            cursor: pointer; }
   button:disabled { background: var(--chip); color: var(--muted); cursor: not-allowed; }
+  button.mini { width: auto; margin: 6px 0 0; padding: 4px 10px; font-size: 12px;
+                font-weight: 500; background: var(--chip); color: var(--accent);
+                border: 1px solid var(--line); }
+  button.mini:disabled { color: var(--muted); }
   .hint { font-size: 11px; color: var(--muted); margin-top: 6px; }
   .statechip { display: inline-block; padding: 2px 10px; border-radius: 10px;
                font-size: 12px; background: var(--chip); }
@@ -102,13 +106,16 @@
         <div><label>Problem</label><select id="problem"></select></div>
       </div>
       <div class="row2">
-        <div><label>模型 ID</label><input id="model" value="glm-4.5"></div>
+        <div><label>模型 ID（可手填，或点下方按钮拉取）</label>
+           <input id="model" value="glm-4.5" list="model-list">
+           <datalist id="model-list"></datalist></div>
         <div><label>候选数上限</label><input id="maxc" type="number" value="5" min="1" max="20"></div>
       </div>
       <label>Provider Base URL</label>
       <input id="baseurl" placeholder="https://.../v1 （OpenAI 兼容）">
       <label>API Key（仅本机内存，不落盘/不进日志）</label>
       <input id="apikey" type="password" placeholder="sk-...">
+      <button type="button" class="mini" id="fetch-models">用此 Key 拉取可用模型列表</button>
       <div class="row2">
         <div><label>修复轮数上限</label><input id="maxr" type="number" value="2" min="0" max="10"></div>
         <div><label>GPU 预算（秒）</label><input id="gpub" type="number" value="1800" min="60"></div>
@@ -298,6 +305,32 @@ async function pollOnce() {
 function modeText(m) {
   return {live:"真实模型", "demo-correct":"演示·正确候选", "demo-wrong":"演示·错误候选"}[m] || m || "";
 }
+
+$("fetch-models").onclick = async () => {
+  const msg = $("formmsg");
+  msg.textContent = "正在拉取模型列表…";
+  const btn = $("fetch-models"); btn.disabled = true;
+  try {
+    const r = await fetch("/api/models", {method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({base_url: $("baseurl").value, api_key: $("apikey").value})});
+    const body = await r.json();
+    const dl = $("model-list"); dl.innerHTML = "";
+    (body.models || []).forEach(m => {
+      const o = document.createElement("option");
+      o.value = m.id; dl.appendChild(o);
+    });
+    if (dl.children.length) {
+      msg.textContent = `已拉取 ${dl.children.length} 个模型：点击“模型 ID”框从下拉中选择`;
+    } else {
+      msg.textContent = body.error || "provider 未返回模型列表，请手填模型 ID";
+    }
+  } catch (err) {
+    msg.textContent = `拉取失败: ${err}`;
+  } finally {
+    btn.disabled = false;
+  }
+};
 
 $("start").onclick = async () => {
   $("formmsg").textContent = "";
