@@ -35,3 +35,16 @@ jobs:
           name: cpu-${{ matrix.os }}-${{ matrix.python }}
           path: artifacts/ci
           if-no-files-found: error
+      - name: dump pytest diagnostics to ci-diag branch
+        if: >-
+          failure() && runner.os == 'Windows' && github.ref == 'refs/heads/main'
+        permissions:
+          contents: write
+        shell: pwsh
+        run: |
+          uv run --locked python -m pytest tests/ -q --tb=short -p no:cacheprovider 2>&1 | Out-File -Encoding utf8 pytest-win-diag.log
+          git config user.name "ci-diag"
+          git config user.email "ci-diag@users.noreply.github.com"
+          git add pytest-win-diag.log
+          git commit -m "ci diag: windows pytest log" --no-verify
+          git push origin "HEAD:ci-diag"
