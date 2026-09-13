@@ -147,6 +147,13 @@ def _optimize_arguments(parser: argparse.ArgumentParser, *, resume_default: bool
     parser.add_argument("--snapshot-root", type=Path, default=None)
     parser.add_argument("--gpu-device", default=None, help="CDI device, e.g. nvidia.com/gpu=GPU-…")
     parser.add_argument("--resume", action="store_true", default=resume_default)
+    parser.add_argument(
+        "--no-profile-baseline",
+        dest="profile_baseline",
+        action="store_false",
+        default=True,
+        help="Skip the baseline NCU profiling step (classification stays static_only)",
+    )
 
 
 def _resume_config_from_manifest(args: argparse.Namespace):
@@ -201,6 +208,7 @@ def _resume_config_from_manifest(args: argparse.Namespace):
         resume=True,
         snapshot_root=snapshot_root,
         gpu_device=args.gpu_device if args.gpu_device is not None else manifest.gpu_device,
+        profile_baseline=getattr(args, "profile_baseline", True),
     )
 
 
@@ -252,6 +260,7 @@ def _run_optimize(args: argparse.Namespace) -> int:
                 resume=args.resume,
                 snapshot_root=args.snapshot_root,
                 gpu_device=args.gpu_device,
+                profile_baseline=getattr(args, "profile_baseline", True),
             )
         result = optimize(config)
     except OptimizationConfigError as exc:
@@ -262,6 +271,107 @@ def _run_optimize(args: argparse.Namespace) -> int:
         f"report={result.report_path}"
     )
     return parse_exit_code(result)
+
+
+def _run_profile(args: argparse.Namespace) -> int:
+    """`kernelagent profile`: collect (or reuse) baseline NCU evidence for a
+    run directory and write it back - independent of the webapp."""
+    from kernelagent.adapters.profiling.pipeline import (
+        ProfileCapture,
+        build_baseline_profiler,
+    )
+    from kernelagent.optimization import (
+        OptimizationConfigError,
+        RunLockHeldError,
+        _sha256_text,
+        acquire_run_lock,
+        load_run_manifest,
+        parse_problem_spec,
+        resolve_problem,
+        run_baseline_profile_for_run,
+    )
+
+    output = Path(args.output)
+    try:
+        manifest = load_run_manifest(output / "run_manifest.json")
+        spec = parse_problem_spec(manifest.problem)
+        snapshot_root = Path(manifest.snapshot_root)
+        problem_path, problem_source = resolve_problem(spec, snapshot_root)
+    except OptimizationConfigError as exc:
+        print(f"config error: {exc}")
+        return 3
+    problem_sha256 = _sha256_text(problem_source)
+    if problem_sha256 != manifest.problem_sha256:
+        print(
+            "config error: pinned problem changed since the run manifest "
+            f"(manifest={manifest.problem_sha256[:12]}… current={problem_sha256[:12]}…); "
+            "refusing to attach profile evidence to a different problem identity"
+        )
+        return 3
+    metrics = (
+        tuple(m.strip() for m in args.metrics.split(",") if m.strip()) if args.metrics else None
+    )
+    capture_kwargs = {
+        "launch_count": args.launch_count,
+        "launch_skip": args.launch_skip,
+        "timeout_seconds": args.timeout_seconds,
+        "ncu_bin": args.ncu_bin,
+    }
+    try:
+        if metrics is not None:
+            capture = ProfileCapture(set_name=None, metrics=metrics, **capture_kwargs)
+        elif args.set_name:
+            capture = ProfileCapture(set_name=args.set_name, metrics=None, **capture_kwargs)
+        else:
+            # Neither --set nor --metrics: the module default (explicit
+            # Tier-A metric list, deterministic against MetricCatalog).
+            capture = ProfileCapture(**capture_kwargs)
+    except ValueError as exc:
+        print(f"config error: {exc}")
+        return 3
+    gpu_device = args.gpu_device or manifest.gpu_device
+    if not gpu_device:
+        print("config error: no GPU device in the run manifest and no --gpu-device given")
+        return 3
+    try:
+        lock = acquire_run_lock(output)
+    except RunLockHeldError as exc:
+        print(f"config error: {exc}")
+        return 3
+    try:
+        profiler = build_baseline_profiler(
+            profile_dir=output / "profile",
+            workspace_root=output / "workspace",
+            snapshot_root=snapshot_root,
+            level=spec.level,
+            problem_name=problem_path.name,
+            problem_source=problem_source,
+            gpu_device=gpu_device,
+            capture=capture,
+            problem_sha256=problem_sha256,
+        )
+        outcome = run_baseline_profile_for_run(
+            output, profiler=profiler, problem_sha256=problem_sha256
+        )
+    finally:
+        lock.release()
+    if outcome is None:
+        print(json.dumps({"status": "skipped", "reason": "see journal profile_not_run"}))
+        return 1
+    payload = {
+        "status": outcome.get("status"),
+        "reason": outcome.get("reason"),
+        "detail": outcome.get("detail"),
+        "summary": outcome.get("summary"),
+        "gpu_wall_seconds": outcome.get("gpu_wall_seconds"),
+        "report": f"profile/{outcome.get('report_path')}" if outcome.get("report_path") else None,
+        "evidence": f"profile/{outcome.get('evidence_path')}"
+        if outcome.get("evidence_path")
+        else None,
+        "stderr_tail": str(outcome.get("stderr_tail") or "")[-600:] or None,
+    }
+    print(json.dumps(payload, indent=2, sort_keys=True))
+    return 0 if outcome.get("status") == "collected" else 1
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -310,6 +420,49 @@ def main(argv: list[str] | None = None) -> int:
     _optimize_arguments(resume, resume_default=True)
     status = commands.add_parser("status", help="Show a run's durable state and budget")
     status.add_argument("--output", type=Path, required=True, help="Run output directory")
+    profile = commands.add_parser(
+        "profile",
+        help="Collect baseline NCU evidence for a run directory (ADR-0003 diagnostic lease)",
+    )
+    profile.add_argument("--output", type=Path, required=True, help="Run output directory")
+    profile.add_argument(
+        "--kind",
+        choices=["baseline"],
+        default="baseline",
+        help="What to profile; only the baseline reference is allowed (candidates are "
+        "never profiled)",
+    )
+    profile.add_argument(
+        "--set",
+        dest="set_name",
+        default=None,
+        help="NCU section set (e.g. basic); default: the explicit Tier-A metric list "
+        "mirroring MetricCatalog",
+    )
+    profile.add_argument(
+        "--metrics",
+        default=None,
+        help="Comma-separated explicit NCU metric list (overrides --set)",
+    )
+    profile.add_argument(
+        "--launch-count",
+        type=int,
+        default=12,
+        help="Cap on profiled kernel launches (default: 12)",
+    )
+    profile.add_argument(
+        "--launch-skip", type=int, default=0, help="Kernel launches to skip first (default: 0)"
+    )
+    profile.add_argument(
+        "--timeout-seconds",
+        type=float,
+        default=300.0,
+        help="Hard wall-clock timeout for the profiling container (default: 300)",
+    )
+    profile.add_argument("--gpu-device", default=None, help="CDI device (default: manifest)")
+    profile.add_argument(
+        "--ncu-bin", default=None, help="Host ncu binary for --import (default: auto-detect)"
+    )
     args = parser.parse_args(argv)
     if args.command == "bench":
         summary, exit_code = run_verify(args.root, args.manifest, args.dev_manifest)
@@ -319,6 +472,8 @@ def main(argv: list[str] | None = None) -> int:
         return _probe_command(args)
     if args.command in ("optimize", "resume", "status"):
         return _run_optimize(args)
+    if args.command == "profile":
+        return _run_profile(args)
     if args.timeout <= 0:
         parser.error("--timeout must be greater than zero")
     report = run_checks(args.tests, args.output, args.timeout)

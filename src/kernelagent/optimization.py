@@ -36,6 +36,7 @@ import os
 import re
 import subprocess
 import time
+import uuid
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -46,6 +47,11 @@ from kernelagent.adapters.models.generation import (
     GenerationFailure,
     GenerationSuccess,
     inspect_candidate_policy,
+)
+from kernelagent.adapters.profiling.pipeline import (
+    PROFILE_DIR_NAME,
+    build_baseline_profiler,
+    load_collected_evidence,
 )
 from kernelagent.domain.errors import DomainError
 from kernelagent.domain.run_manifest import (
@@ -87,11 +93,24 @@ OPTIMIZATION_PROTOCOL = "optimize-v1"
 DEFAULT_SNAPSHOT_ROOT = Path("research/sources/ScalingIntelligence__KernelBench")
 CHAMPION_TRUNC = 800
 
+# Journal action id of the baseline NCU profiling step (see
+# _run_baseline_profile). Profiling is a separate, source-tagged evidence
+# path (T15, ADR-0003): it never produces formal timing results and never
+# decides promotion - it only feeds the method planner's classification.
+PROFILE_ACTION_ID = "profile-baseline"
+
 # Sentinel for optimize(planner=...): unset means "plan with the default
 # frozen-catalog planner"; an explicit None disables planning entirely and
 # reproduces the legacy behavior exactly (no method_plan journal events, no
 # prompt injection).
 _PLANNER_UNSET = object()
+
+# Sentinel for optimize(profiler=...): unset means "use the real baseline
+# NCU profiler when the run uses the real timing port and profiling is not
+# disabled"; an explicit None disables profiling (offline/test runs with
+# injected timing fakes never profile). An explicit callable is used as-is
+# and must return the pipeline's outcome dict.
+_PROFILER_UNSET = object()
 
 EXIT_SUCCESS = 0
 EXIT_NO_IMPROVEMENT = 1
@@ -220,6 +239,14 @@ class OptimizationConfig:
     resume: bool = False
     snapshot_root: Path | None = None
     gpu_device: str | None = None
+    # Baseline NCU profiling (default on): after the baseline timing, the
+    # reference implementation is profiled once under the ADR-0003
+    # diagnostic lease so the method planner classifies from measured
+    # evidence instead of static priors. Any NCU/GPU failure degrades to an
+    # explicit ``profile_not_run`` journal event; the loop never breaks.
+    # Profiling is NOT part of the run identity: enabling/disabling it does
+    # not change the frozen evaluation/timing protocol.
+    profile_baseline: bool = True
 
     def __post_init__(self) -> None:
         # Review R6 / RV04: resources and paid calls must never be created
@@ -468,6 +495,176 @@ def _feedback_note(stage: str, detail: str) -> str:
     )
 
 
+def _run_baseline_profile(
+    *,
+    profiler: object,
+    journal: Journal,
+    budget: Budget | None,
+    records_dir: Path,
+    profile_dir: Path,
+    problem_sha256: str,
+) -> dict:
+    """Baseline NCU profiling between baseline timing and the generation
+    loop. Returns an outcome dict: ``status`` is ``collected`` (with the
+    ``evidence_view`` payload for the method planner) or ``not_run`` with
+    an explicit ``reason``.
+
+    Honesty rules (B3 wiring):
+
+    - every skip/failure is a durable ``profile_not_run`` journal event with
+      an explicit reason; profiling must never break the main loop;
+    - an already-collected evidence file is reused verbatim on resume
+      (idempotent, no re-run, no duplicate billing);
+    - measured GPU wall time is billed to the same durable budget via a
+      ``budget_settled`` event under a fresh attempt id (profiling counts
+      into gpu_budget; it is never free or hidden) and reported in the
+      record's ``profile`` field;
+    - the evidence stays ``source="ncu_profile"``: it never enters formal
+      timing and never decides promotion.
+    """
+    record_path = records_dir / "baseline-eager.json"
+    record: dict = {}
+    if record_path.is_file():
+        try:
+            loaded = json.loads(record_path.read_text(encoding="utf-8"))
+            record = loaded if isinstance(loaded, dict) else {}
+        except (OSError, json.JSONDecodeError):
+            record = {}
+    if record.get("status") != "measured":
+        journal.append(
+            "profile_not_run",
+            action_id=PROFILE_ACTION_ID,
+            reason="baseline_not_measured",
+            detail="baseline timing record missing or not measured; there is no "
+            "baseline to profile",
+            ts=time.time(),
+        )
+        return {"status": "not_run", "reason": "baseline_not_measured", "evidence_view": None}
+    existing = record.get("profile")
+    if isinstance(existing, dict) and existing.get("status") == "collected":
+        view = load_collected_evidence(profile_dir)
+        if view is not None:
+            # Resume: evidence already collected; reuse verbatim, no re-run.
+            return {
+                "status": "collected",
+                "reused": True,
+                "reason": None,
+                "evidence_view": view,
+                "report_path": Path(str(existing.get("report") or "")).name,
+                "evidence_path": Path(str(existing.get("evidence") or "")).name,
+                "summary": existing.get("summary"),
+            }
+    if budget is not None and budget.exhausted:
+        journal.append(
+            "profile_not_run",
+            action_id=PROFILE_ACTION_ID,
+            reason="budget_exhausted",
+            detail="gpu budget already exhausted; profiling skipped",
+            ts=time.time(),
+        )
+        return {"status": "not_run", "reason": "budget_exhausted", "evidence_view": None}
+    journal.append(
+        "profile_started",
+        action_id=PROFILE_ACTION_ID,
+        problem_sha256=problem_sha256,
+        ts=time.time(),
+    )
+    try:
+        outcome = profiler()
+    except Exception as exc:  # noqa: BLE001 - profiling must never break the loop
+        outcome = {
+            "status": "not_run",
+            "reason": "profiler_error",
+            "detail": f"{type(exc).__name__}: {exc}",
+            "capture": {},
+        }
+    capture = outcome.get("capture") or {}
+    if outcome.get("status") == "collected":
+        wall = float(outcome.get("gpu_wall_seconds") or 0.0)
+        attempt_id = uuid.uuid4().hex
+        journal.append(
+            "budget_settled",
+            action_id=PROFILE_ACTION_ID,
+            attempt_id=attempt_id,
+            gpu_seconds=wall,
+            tokens=0,
+        )
+        if budget is not None:
+            budget.apply_settlement(PROFILE_ACTION_ID, attempt_id, wall, 0)
+        journal.append(
+            "profile_collected",
+            action_id=PROFILE_ACTION_ID,
+            problem_sha256=problem_sha256,
+            capture=capture,
+            driver_sha256=outcome.get("driver_sha256"),
+            report=f"{PROFILE_DIR_NAME}/{outcome.get('report_path')}",
+            report_sha256=outcome.get("report_sha256"),
+            evidence=f"{PROFILE_DIR_NAME}/{outcome.get('evidence_path')}",
+            summary=outcome.get("summary"),
+            gpu_wall_seconds=wall,
+            billed_gpu_seconds=wall,
+            source=outcome.get("source"),
+            ts=time.time(),
+        )
+        record["profile"] = {
+            "status": "collected",
+            "source": outcome.get("source"),
+            "problem_sha256": problem_sha256,
+            "capture": capture,
+            "driver_sha256": outcome.get("driver_sha256"),
+            "report": f"{PROFILE_DIR_NAME}/{outcome.get('report_path')}",
+            "report_sha256": outcome.get("report_sha256"),
+            "evidence": f"{PROFILE_DIR_NAME}/{outcome.get('evidence_path')}",
+            "summary": outcome.get("summary"),
+            "gpu_wall_seconds": wall,
+            "billed_against_gpu_budget": True,
+        }
+        _atomic_write_text(record_path, json.dumps(record, indent=2, sort_keys=True))
+        return outcome
+    journal.append(
+        "profile_not_run",
+        action_id=PROFILE_ACTION_ID,
+        reason=outcome.get("reason"),
+        detail=str(outcome.get("detail"))[:CHAMPION_TRUNC],
+        capture=capture,
+        ts=time.time(),
+    )
+    record["profile"] = {
+        "status": "not_run",
+        "reason": outcome.get("reason"),
+        "detail": str(outcome.get("detail"))[:CHAMPION_TRUNC],
+        "capture": capture,
+    }
+    _atomic_write_text(record_path, json.dumps(record, indent=2, sort_keys=True))
+    return outcome
+
+
+def run_baseline_profile_for_run(
+    output: Path,
+    *,
+    profiler: object,
+    problem_sha256: str,
+) -> dict:
+    """`kernelagent profile` entry: collect (or reuse) the baseline NCU
+    evidence of an existing run directory and write it back (evidence file,
+    record ``profile`` field, journal events). Independent of the webapp;
+    the caller must hold the run's single-writer lock.
+
+    Uses the same idempotence and honesty rules as the in-loop path; the
+    measured GPU wall time is journaled as a ``budget_settled`` event for
+    the run's ledger even though this out-of-band call has no live Budget
+    object in memory."""
+    output = Path(output)
+    return _run_baseline_profile(
+        profiler=profiler,
+        journal=Journal(output / "journal.jsonl"),
+        budget=None,
+        records_dir=output / "records",
+        profile_dir=output / PROFILE_DIR_NAME,
+        problem_sha256=problem_sha256,
+    )
+
+
 class GenerationPort:
     """Calls the CandidateGenerator and reports the per-call token delta
     for budget settlement - cumulative ledger totals must never be
@@ -511,6 +708,7 @@ def optimize(
     timing=None,
     confirm=None,
     planner: MethodPlanner | None = _PLANNER_UNSET,
+    profiler: object = _PROFILER_UNSET,
 ) -> OptimizationResult:
     """Run the alpha optimization loop for one pinned problem.
 
@@ -518,17 +716,31 @@ def optimize(
     fakes. Every candidate is an orchestrator action, so resume semantics
     and billing come from the durable journal, not from memory.
 
-    Method planning (generator-design §0/§4): before each candidate's
+    Method planning (generator-design §4): before each candidate's
     generate call the loop asks the planner for a MethodPlan from the
-    problem's static features, task profile and structured attempt history;
-    the top actionable item's single-factor prompt fragment is appended to
+    problem's static features, task profile, structured attempt history
+    and - when available - the baseline NCU evidence view; the top
+    actionable item's single-factor prompt fragment is appended to
     the seed note and a ``method_plan`` journal event records the
     classification and selected method. Planning never decides outcomes -
-    correctness, timing and promotion stay with the evaluator/promotion
-    ports. Pass ``planner=None`` to disable planning (legacy behavior,
+    correctness, timing and promotion stay with the trusted ports. Pass
+    ``planner=None`` to disable planning (legacy behavior,
     byte-identical requests); the default planner plans from the frozen
     method catalog even with no profile evidence (baseline plan, honest
     ``uncertain`` classification).
+
+    Baseline profiling (B3): when ``config.profile_baseline`` is on (the
+    default) and the run uses the real timing port, the reference
+    implementation is profiled once with NCU under the ADR-0003 diagnostic
+    lease after the baseline timing and before the first candidate. The
+    resulting evidence view is passed to the planner, upgrading the
+    classification coverage from ``static_only`` to ``ncu_full`` /
+    ``ncu_partial``. Missing ncu, counter-permission blockers, timeouts
+    and every other collection failure degrade to an explicit
+    ``profile_not_run`` journal event with the loop continuing. Tests
+    injecting a timing fake never profile; pass ``profiler=None`` to
+    disable explicitly, or a callable to inject a fake profiler (it must
+    return the pipeline's outcome dict).
 
     Run identity (RV01): a fresh run persists a validated RunManifest to
     ``<output>/run_manifest.json`` before any billable action. Resume loads
@@ -591,6 +803,7 @@ def optimize(
             timing=timing,
             confirm=confirm,
             planner=planner,
+            profiler=profiler,
         )
     finally:
         run_lock.release()
@@ -609,6 +822,7 @@ def _optimize_under_lock(
     timing,
     confirm,
     planner: MethodPlanner | None,
+    profiler: object = _PROFILER_UNSET,
 ) -> OptimizationResult:
     """Run the optimization loop body while holding the run directory's
     single-writer lock. Called only from :func:`optimize`, which has
@@ -616,6 +830,10 @@ def _optimize_under_lock(
     resume, and acquired the lock - every durable write below (journal,
     manifest, records, champion, report) happens under that lock."""
     from kernelagent.config import build_stage_ports, default_generator
+
+    # Profiling default: only real runs (real timing port, feature not
+    # disabled) profile; offline tests with injected timing fakes never do.
+    timing_was_none = timing is None
 
     snapshot_root = config.snapshot_root
     if snapshot_root is None and stored_manifest is not None:
@@ -673,6 +891,23 @@ def _optimize_under_lock(
                 facts=facts,
                 incumbent_batches_ms=incumbent,
                 candidate_batches_ms=candidate,
+            )
+
+    if profiler is _PROFILER_UNSET:
+        profiler = None
+        if config.profile_baseline and timing_was_none:
+            # Real run (real timing port): build the real baseline NCU
+            # profiler over the pinned problem + staged workspace. Any
+            # environment failure inside it degrades to profile_not_run.
+            profiler = build_baseline_profiler(
+                profile_dir=output / PROFILE_DIR_NAME,
+                workspace_root=output / "workspace",
+                snapshot_root=snapshot_root,
+                level=spec.level,
+                problem_name=problem_path.name,
+                problem_source=problem_source,
+                gpu_device=gpu_device,
+                problem_sha256=problem_sha256,
             )
 
     output.mkdir(parents=True, exist_ok=True)
@@ -815,7 +1050,9 @@ def _optimize_under_lock(
                         task=task_profile,
                         code_features=code_features,
                         attempts=tuple(attempt_history),
-                        ncu_view=None,  # baseline NCU evidence is not wired into the loop yet
+                        # Baseline NCU evidence when profiling collected it
+                        # (None = not profiled: coverage stays static_only).
+                        ncu_view=ncu_view,
                         hardware=HardwareFacts.sm89_reference(),
                     )
                 )
@@ -1088,9 +1325,24 @@ def _optimize_under_lock(
         )
 
     baseline = orchestrator.run([_baseline_action()], resume=config.resume)
+    # Baseline NCU evidence (B3): profile the reference once, between the
+    # baseline timing and the first candidate, so the planner classifies
+    # from measured Tier-A signals instead of static priors only. Any
+    # failure degrades to a durable profile_not_run event - never a break.
+    ncu_view = None
     if baseline["state"] == "budget_exhausted":
         state = "budget_exhausted"
         stop = True
+    elif profiler is not None:
+        profile_outcome = _run_baseline_profile(
+            profiler=profiler,
+            journal=orchestrator.journal,
+            budget=orchestrator.budget,
+            records_dir=records_dir,
+            profile_dir=output / PROFILE_DIR_NAME,
+            problem_sha256=problem_sha256,
+        )
+        ncu_view = profile_outcome.get("evidence_view")
 
     attempts = 0
     repairs = 0
@@ -1130,6 +1382,27 @@ def _optimize_under_lock(
     # A champion-less "completed" is an illegal terminal state (review R6):
     # never write such a report.
     validate_terminal(state, champion_sha)
+    profile_section: dict | None = None
+    if profiler is not None:
+        baseline_record = _load_record("baseline-eager") or {}
+        profile_field = baseline_record.get("profile")
+        if not isinstance(profile_field, dict):
+            profile_field = {"status": "not_run", "reason": "not_attempted"}
+        profile_section = {
+            "status": profile_field.get("status"),
+            "reason": profile_field.get("reason"),
+            "report": profile_field.get("report"),
+            "evidence": profile_field.get("evidence"),
+            "summary": profile_field.get("summary"),
+            "gpu_wall_seconds": profile_field.get("gpu_wall_seconds"),
+            "billed_against_gpu_budget": bool(profile_field.get("billed_against_gpu_budget")),
+            "note": (
+                "profiling is source=ncu_profile evidence for the method planner; it "
+                "never enters formal timing and never decides promotion. Its measured "
+                "GPU wall time is billed to the same durable gpu budget via the "
+                "journal's budget_settled event for action 'profile-baseline'."
+            ),
+        }
     report_payload = {
         "protocol": OPTIMIZATION_PROTOCOL,
         "config": {
@@ -1164,6 +1437,7 @@ def _optimize_under_lock(
             "reserved_gpu_seconds": durable.reserved_gpu_seconds,
             "reserved_tokens": durable.reserved_tokens,
         },
+        "profile": profile_section,
         "journal_entries": len(orchestrator.journal.entries),
         "candidate_trust": "cooperative",
         "adversarially_secure": False,
