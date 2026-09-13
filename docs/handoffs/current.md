@@ -1,11 +1,47 @@
 # 当前状态与下一步
 
-> 2026-09-13 后续审查：当前开发优先级见 [REVIEW.md](../../REVIEW.md) 的 RV01–RV09。先完成 Windows 可验证修复与 CI，再执行 Ubuntu/GPU 和 U3；下方 Alpha 结果保留为历史快照，不代表这些新发现已修复。
+> 2026-09-13 后续审查：修复跟踪优先级见 [REVIEW.md](../../REVIEW.md) 的 RV01–RV09（2026-09-14 通宵轮已落地 RV01/RV02 核心，见下）。先完成 Windows 可验证修复与 CI，再执行 Ubuntu/GPU 和 U3；下方 Alpha 结果保留为历史快照，不代表这些新发现已修复。
 
 首用环境：**Ubuntu + NVIDIA GPU**。环境安装见 [Ubuntu 指南](../UBUNTU.md)，状态清单见 [task board](../task-board.json)，有效检查索引见 [current.json](../evidence/current.json)。
 本页只保留一份当前快照；历史移交见 Git 历史（及提交 `1b4a306` 前的旧记录）。
 
-## 当前快照（2026-09-13，v1 Alpha 收口）
+## 当前快照（2026-09-14 通宵轮：主循环整合 + 前端 + 生成器 + benchmark 扩展）
+
+**主线**：用户指定的通宵目标轮完成（领导者分派 9 个子 agent，逐包审查提交）。全量测试 **681+ passed / 3 skipped**
+（收尾时以 git log 为准），ruff 全绿。提交链（按序）：
+
+| 提交 | 内容 |
+|---|---|
+| `3870b38` | 调研三件套：前端设计规范（UCAgent 调研+7页IA+API契约）、优化方法目录（38 方法+生成器设计）、benchmark 选型（MKB+rk+user-bench） |
+| `197904e` | RV01 核心：版本化 RunManifest + resume 身份守卫（GPU/镜像/协议/problem/model 变更拒绝）+ 配置前置校验（非法 exit 3 零调用）+ PipelineStage/RunState 枚举 + stage_started 事件 |
+| `7daf334` / `6a50851` | React+Vite+Tailwind 前端重写：7 页完整实现（暗色主题、阶段时间线、候选泳道、Launch 表单、journal 查看器、Profile 页）；jsdom 冒烟 35/35 真实后端 + 38/38 mock |
+| `19d2faa` / `ec20c44` | 修复：runs 摘要 champion null 崩溃；webapp job.json 簿记撞 RV01 输出目录守卫（集成实测发现） |
+| `d7a79eb` | webapp API v2：SPA 静态托管+回退、report/journal 游标增量/records（三层脱敏）/workspace 只读端点；穿越攻击反例（含 symlink 逃逸） |
+| `849d061` | **优化方法生成器**：瓶颈分类（MISSING 诚实降级）→硬能力守卫（SM90 方法在 SM89 拒绝）→单因素 prompt 注入→method_plan 事件+method_id 归因；resume 重建反馈（**修复 R5**）；planner=None 可回归旧行为 |
+| `1e75ecb` | benchmark 三件套：MultiKernelBench（305 文件钉死快照+20 题冻结子集）、GPU-MODE reference-kernels（12 题，上游 eval.py 判定）、自建 user-bench（torch-free loader+examples_v1）；协议身份独立注册+漂移拒绝 |
+| `d53753d` | RV02：attempt 身份、结算+完成原子单写、撕裂尾恢复/中部损坏拒绝、单写者锁；5 写入边界故障注入 + 连续双恢复（**修复 R2**，duplicate settlement 反例覆盖） |
+
+**Live 验证（DeepSeek，控制台 UI 发起，GPU 实测）**：4 次真实运行（`artifacts/webui/20260914-{025856,030053,030346,030641,030902}`）：
+生成→方法规划→Triton 编译→上游正确性判定→诚实终态全链路真实工作（candidate-001 换用了与 candidate-000 不同的方法——失败反馈+方法降级生效）；候选被上游判 correct=False 是合法拒绝。
+关键发现：① provider 将 `deepseek-chat` 别名到 `deepseek-flash`，模型身份校验会正确拒绝（须用 provider 实际模型名）；② deepseek-flash 是混合推理模型，必须 `disable_thinking`（UI 勾选框）否则 8192 max_tokens 全被推理吃掉；③ R3 的固定 300 秒/动作配额确认仍在（600 秒总预算被 baseline+1 候选耗尽，预算拒绝行为诚实正确）——RV04 待做。
+DeepSeek 消耗合计约 **¥0.04**（余额 19.71）。控制台启动：`set -a; source .env; set +a; .venv/bin/python -m kernelagent.webapp` → http://127.0.0.1:8501。
+
+**已知小问题（前端，待修）**：运行刚结束的轮询间隙 Run 详情可能瞬态显示"未知/预算 NOT_RUN"（刷新即正确）；baseline 泳道行状态徽章在终态误显"运行中"；Dashboard"最佳加速比"瓦片因摘要无 CI 数据恒为 NOT_RUN。
+
+**任务板**：新增 T26（前端控制台）、T27（webapp API v2）、T28（benchmark 三件套）、T29（方法生成器）、T30（profiler 链路），
+状态见 task-board；RV01/RV02 记录 REVIEW.md 交付格式节。R5 已修（849d061），R6 已修（197904e 前置校验），
+R1 核心/频率已修、R2 已修（均 CPU 层，Ubuntu 复验待 RV07）。
+
+## 遗留与下一步
+
+1. RV03–RV06（REVIEW.md）：反馈与请求持久化核对、分阶段实际用量预算（R3）、独立确认与证据链（R4）、CI 边界测试修复（R7，未动）。
+2. T30 profiler 链路收尾（本轮 IN_PROGRESS）：NCU 证据接入方法生成器。
+3. RV07 干净 Ubuntu 验收 → RV08 LIVE_MODEL 完整预算跑 → RV09/T23 信任域分离。
+4. T11/T17/T20/T22/T24/T25 按原计划；T20 预置在案（`docs/handoffs/recovery-runbook.md`）。
+5. 一条可选 sudo 配置（T15 深度 profiling 前）：非 root ncu 计数器权限
+   （`/etc/modprobe.d/nvidia-profiling.conf` + 重启）。
+
+## 当前快照（2026-09-13，v1 Alpha 收口，历史）
 
 **主线**：按 `CODEX_REVIEW_AND_LAUNCH_PLAN.md`（launch plan）完成 Task 1–6：
 修复全部已复现的可信性缺陷（P0-1 评测篡改、P0-2 恢复预算超支、P1-2 计时证据崩溃、P2-1 guard 误判、P2-2 lint），

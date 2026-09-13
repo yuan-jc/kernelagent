@@ -252,3 +252,53 @@ uv run --locked python examples/alpha_run.py --mode live --model glm-4.5 --base-
 ```
 
 下一次先领取 RV06 或 RV01；只做已领取包。Windows 收尾后留下 Ubuntu 待验列表，不把 mock 的成功写成目标机成功。完成审查修复前，不扩大题库、backend 或搜索方法数量。
+
+---
+
+## GLM 交付记录
+
+```text
+包编号：RV01
+状态：CPU_PASS_TARGET_NOT_RUN
+基线与修复提交：基线 6edcdeb（审查基线）；修复 197904e（RunManifest/身份守卫/前置校验/状态枚举），另 d53753d 复用其守卫
+行为变化与对应 R 编号：R1——首次运行前持久化版本化 RunManifest（problem/协议/镜像/设备/模型身份，密钥仅环境变量名）；
+  resume 默认加载 manifest，身份字段变更逐项报错拒绝；预算/候选数覆盖写 manifest_revised 事件；只传 --output/--base-url 恢复原配置；
+  非 resume 使用已存在输出目录在模型/GPU 调用前 exit 3（R6 前置校验：0/负候选、NaN/Inf 预算、completed 无 champion 拒绝）。
+  取舍：snapshot_root 与 agent 代码版本记录在 manifest 但不作身份门槛（评测代码身份由 eval/timing driver 内容哈希承担）。
+正例、反例及实际命令：反例=换 GPU/backend/model/problem/镜像/计时协议 resume 各一（全部拒绝）；job.json+残留文件拒绝；
+  正例=同身份 resume 不重复执行不计费、job.json-only 目录允许（webapp 簿记）。命令：.venv/bin/python -m pytest tests/test_optimization_loop.py tests/test_cli.py tests/test_run_manifest.py -q
+测试数量、失败与跳过原因：全量 681 passed / 3 skipped（Windows Job Object 专用），0 failed；新增 10（manifest）+loop/cli 若干
+平台、环境身份：Ubuntu 24.04（6.14.0-37-generic），Python 3.11.16，RTX 4060 Laptop（GPU-ea248ec5-1f33-d90f-c598-1c94dfdc6998）
+证据 URL/路径及完整 SHA-256：tests/test_run_manifest.py、src/kernelagent/domain/run_manifest.py（提交 197904e）；
+  live run 报告 artifacts/webui/20260914-030902/report.json sha256 eb7813ba7aa4e29e…（manifest 参与运行），
+  artifacts/webui/20260914-030346/report.json sha256 ec5a7934381e3469…（身份校验拒绝 deepseek-chat≠deepseek-flash 别名，实测生效）
+未验证范围、遗留问题、活动作业：Ubuntu 真实换卡/换镜像复验 NOT_RUN（单 GPU 机，留 RV07）；manifest 迁移路径仅版本拒绝未做自动迁移
+下一包与依赖：RV02（已同轮完成，见下条）
+```
+
+```text
+包编号：RV02
+状态：CPU_PASS_TARGET_NOT_RUN
+基线与修复提交：基线 849d061；修复 d53753d
+行为变化与对应 R 编号：R2——attempt 身份贯穿全部预算/生命周期事件；结算唯一性按 attempt；
+  结算+完成单次 write+fsync 原子块提交（进程内不再产生"已结算未完成"窗口）；恢复期 _reconcile_attempts 对历史残留窗口
+  写 attempt_uncertain（保留成本、不虚报完成、重执行如实再计费一次）；撕裂尾按明示规则丢弃并写 journal_recovered，
+  中部损坏拒绝启动；run.lock（flock/msvcrt）阻止并发 resume。诚实声明：每 attempt 计费 exactly-once、执行 at-least-once，
+  文件持久化不承诺跨进程外部副作用 exactly-once（orchestrator.py docstring）。
+正例、反例及实际命令：注入矩阵=reservation/start/result/settlement/finish 五边界×连续两次恢复（断言执行次数/attempt 数/结算数/可重放）；
+  duplicate settlement 反例（结算后崩溃→重执行→再 replay 不抛错）；并发 resume 拒绝且 journal 字节不变；
+  撕裂尾/中部损坏/坏哈希三态。命令：.venv/bin/python -m pytest tests/test_orchestrator.py tests/test_recovery_consistency.py -q
+测试数量、失败与跳过原因：新增 20 项全绿；全量 681 passed / 3 skipped；一次 test_container_worker Docker 瞬时失败经隔离重跑消失（与本包无关）
+平台、环境身份：同 RV01 条目
+证据 URL/路径及完整 SHA-256：tests/test_recovery_consistency.py、src/kernelagent/orchestrator.py（提交 d53753d）
+未验证范围、遗留问题、活动作业：Ubuntu 受控 SIGKILL 复验 NOT_RUN（RV07）；Windows msvcrt 分支待 CI；混合版本日志旧行为保守持有
+下一包与依赖：RV03（部分被 849d061 覆盖：resume 从 records 重建失败反馈+请求轮转；请求全文持久化与双路径请求哈希对比仍未做）
+```
+
+```text
+附带修复（非 RV 包，随本轮目标完成）：R5 反馈丢失（849d061，resume 重建 attempts+反馈轮转）、R6 虚假成功
+（197904e，前置校验+completed 必须 champion）。R3 仅确认未修（live 实测固定配额耗尽，RV04）；R4/R7 未动。
+2026-09-14 目标轮其余交付（用户主线，非 RV 包）：React 前端（7daf334/6a50851）、webapp API v2（d7a79eb）、
+优化方法生成器（849d061）、benchmark 三件套（1e75ecb）、profiler 链路（T30，进行中）。
+全量测试 681 passed / 3 skipped；live 证据见 docs/handoffs/current.md 通宵轮节。
+```

@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "updated_at": "2026-09-13",
+  "updated_at": "2026-09-14",
   "design_baseline": "docs/NVIDIA算子优化Agent设计文档.md",
   "plan": "docs/开发任务与验收计划.md",
   "status_values": [
@@ -21,7 +21,8 @@
     "T12 and T16 ACCEPTED 2026-09-13: LIVE_MODEL ran against DeepSeek deepseek-flash (user key, control-plane env only; thinking disabled). T16 U3 terminal was an honest no_improvement - both live-generated candidates compiled but failed correctness.",
     "Alpha threat model is cooperative candidates (candidate_trust=cooperative, adversarially_secure=false, ADR-0004); trusted-MVP trust-domain split lands with T23 (plan Task 7).",
     "T17/T20/T22 paused by launch plan; T20 preset artifacts + recovery runbook in docs/handoffs/recovery-runbook.md.",
-    "No target GPU or live model acceptance is implied by CPU tests or CI. Preserve parent package gates."
+    "No target GPU or live model acceptance is implied by CPU tests or CI. Preserve parent package gates.",
+    "Night round 2026-09-14 (user-goal main line): frontend rewrite (T26), webapp API v2 (T27), benchmark x3 (T28), optimization method generator (T29), RV01/RV02 cores landed on CPU (REVIEW.md records); R5 fixed in 849d061, R6 fixed in 197904e. 4 real DeepSeek live runs validated generation->method-plan->GPU eval->honest terminal chain (about 0.04 CNY). T30 profiler pipeline in progress. RV07 Ubuntu re-verification still required before any GPU-package acceptance upgrade."
   ],
   "tasks": [
     {
@@ -617,6 +618,112 @@
       },
       "evidence": [],
       "work_package_record": null,
+      "blocker": null
+    },
+    {
+      "id": "T26",
+      "title": "Web 控制台 React 重写（7 页：总览/Runs/Run详情/Launch/Benchmarks/Profile/设置）",
+      "dependencies": [
+        "T16"
+      ],
+      "status": "ACCEPTED",
+      "checks": {
+        "CPU": "PASS",
+        "GPU": "N/A",
+        "LIVE_MODEL": "N/A",
+        "REVIEW": "PASS"
+      },
+      "evidence": [
+        "frontend/README.md",
+        "research/frontend/frontend-design-spec.md"
+      ],
+      "work_package_record": "docs/handoffs/current.md",
+      "blocker": null
+    },
+    {
+      "id": "T27",
+      "title": "webapp API v2（SPA 托管、report/journal 游标/records 脱敏/workspace 只读、穿越反例）",
+      "dependencies": [
+        "T10"
+      ],
+      "status": "ACCEPTED",
+      "checks": {
+        "CPU": "PASS",
+        "GPU": "N/A",
+        "LIVE_MODEL": "N/A",
+        "REVIEW": "PASS"
+      },
+      "evidence": [
+        "tests/test_webapp_api.py",
+        "research/frontend/api-impl-notes.md"
+      ],
+      "work_package_record": "docs/handoffs/current.md",
+      "blocker": null
+    },
+    {
+      "id": "T28",
+      "title": "benchmark 扩展：MultiKernelBench + GPU-MODE reference-kernels + 自建 user-bench",
+      "dependencies": [
+        "T02",
+        "T21"
+      ],
+      "status": "READY_FOR_ACCEPTANCE",
+      "checks": {
+        "CPU": "PASS",
+        "GPU": "PASS",
+        "LIVE_MODEL": "N/A",
+        "REVIEW": "PASS"
+      },
+      "evidence": [
+        "configs/multikernelbench/dev-manifest.json",
+        "configs/reference-kernels/dev-manifest.json",
+        "configs/userbench/suites/examples_v1/manifest.json",
+        "tests/test_multikernelbench_adapter.py",
+        "tests/test_reference_kernels_adapter.py",
+        "tests/test_userbench_loader.py"
+      ],
+      "work_package_record": "docs/handoffs/current.md",
+      "blocker": "GPU 仅冒烟级验收（每库 1-2 题，RTX 4060 实测 passed/incorrect 诚实记录）；完整 dev 子集扫跑与 Ubuntu 干净环境复验待 RV07"
+    },
+    {
+      "id": "T29",
+      "title": "优化方法生成器（瓶颈分类→方法守卫与排序→单因素 prompt 注入→method_plan 归因）",
+      "dependencies": [
+        "T15",
+        "T16"
+      ],
+      "status": "ACCEPTED",
+      "checks": {
+        "CPU": "PASS",
+        "GPU": "N/A",
+        "LIVE_MODEL": "PASS",
+        "REVIEW": "PASS"
+      },
+      "evidence": [
+        "src/kernelagent/generators/data/methods.json",
+        "tests/test_method_generators.py",
+        "research/optimization-methods/methods.yaml",
+        "artifacts/webui/20260914-030902/report.json"
+      ],
+      "work_package_record": "docs/handoffs/current.md",
+      "blocker": null
+    },
+    {
+      "id": "T30",
+      "title": "profiler 链路：NCU 证据产生并接入方法生成器",
+      "dependencies": [
+        "T15",
+        "T29"
+      ],
+      "status": "IN_PROGRESS",
+      "checks": {
+        "CPU": "NOT_RUN",
+        "GPU": "NOT_RUN",
+        "LIVE_MODEL": "N/A",
+        "REVIEW": "NOT_RUN"
+      },
+      "evidence": [],
+      "work_package_record": "docs/handoffs/current.md",
       "blocker": null
     }
   ]
