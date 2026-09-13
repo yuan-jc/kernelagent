@@ -29,6 +29,7 @@ by the caller (the T10 smoke wires the real T05/T07/T09 adapters)."""
 
 import hashlib
 import json
+import math
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -36,6 +37,100 @@ STATE_RUNNING = "running"
 STATE_DONE = "completed"
 STATE_CANCELLED = "cancelled"
 STATE_BUDGET_EXHAUSTED = "budget_exhausted"
+
+
+@dataclass(frozen=True, slots=True)
+class DurableBudgetState:
+    """Budget totals replayed from the journal: the durable truth that any
+    new process must restore before doing work (launch-plan P0-2)."""
+
+    reserved_gpu_seconds: float
+    reserved_tokens: int
+    settled_gpu_seconds: float
+    settled_tokens: int
+
+
+def _replay_budget(
+    entries: tuple[dict, ...],
+) -> tuple[DurableBudgetState, dict[str, list[float]], dict[str, list[int]]]:
+    """Replay budget events into (state, open_gpu_stacks, open_token_stacks).
+
+    Open reservations are per-action LIFO stacks: a settlement consumes the
+    action's most recent reservation (the attempt that is finishing), while
+    reservations from interrupted attempts stay held - a crashed attempt
+    keeps occupying its estimate. Rules: amounts must be non-negative
+    finite numbers; a double settlement or a release without an open
+    reservation is a hard error. A settlement for an action with no open
+    reservation counts as a legacy billed cost (the journal is the spending
+    truth) unless that action already settled - which is rejected as a
+    double settlement."""
+    reserved_gpu = 0.0
+    reserved_tokens = 0
+    settled_gpu = 0.0
+    settled_tokens = 0
+    open_gpu: dict[str, list[float]] = {}
+    open_tokens: dict[str, list[int]] = {}
+    settled_actions: set[str] = set()
+
+    def _amount(entry: dict, field: str, *, integral: bool = False) -> float | int:
+        value = entry.get(field)
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or value < 0:
+            raise ValueError(f"journal entry {entry.get('kind')} has negative/invalid {field}")
+        if integral:
+            if not isinstance(value, int):
+                raise ValueError(f"journal entry {entry.get('kind')} has non-integer {field}")
+            return value
+        if not math.isfinite(value):
+            raise ValueError(f"journal entry {entry.get('kind')} has non-finite {field}")
+        return value
+
+    def _consume(action_id: str) -> None:
+        nonlocal reserved_gpu, reserved_tokens
+        gpu_stack = open_gpu.get(action_id)
+        token_stack = open_tokens.get(action_id)
+        if gpu_stack:
+            reserved_gpu -= gpu_stack.pop()
+        if token_stack:
+            reserved_tokens -= token_stack.pop()
+
+    for entry in entries:
+        kind = entry.get("kind")
+        action_id = entry.get("action_id")
+        if kind == "budget_reserved":
+            gpu = _amount(entry, "gpu_seconds")
+            tokens = _amount(entry, "tokens", integral=True)
+            open_gpu.setdefault(action_id, []).append(gpu)
+            open_tokens.setdefault(action_id, []).append(tokens)
+            reserved_gpu += gpu
+            reserved_tokens += tokens
+        elif kind == "budget_settled":
+            gpu = _amount(entry, "gpu_seconds")
+            tokens = _amount(entry, "tokens", integral=True)
+            if action_id in settled_actions:
+                raise ValueError(f"duplicate settlement for action {action_id!r}")
+            settled_actions.add(action_id)
+            settled_gpu += gpu
+            settled_tokens += tokens
+            _consume(action_id)
+        elif kind == "budget_released":
+            if not open_gpu.get(action_id) and not open_tokens.get(action_id):
+                raise ValueError(f"release without an open reservation for {action_id!r}")
+            _consume(action_id)
+    return (
+        DurableBudgetState(
+            reserved_gpu_seconds=reserved_gpu,
+            reserved_tokens=reserved_tokens,
+            settled_gpu_seconds=settled_gpu,
+            settled_tokens=settled_tokens,
+        ),
+        open_gpu,
+        open_tokens,
+    )
+
+
+def reconstruct_budget(entries: tuple[dict, ...]) -> DurableBudgetState:
+    """Durable budget totals from journal entries (see :func:`_replay_budget`)."""
+    return _replay_budget(entries)[0]
 
 
 def _hash_entry(entry: dict) -> str:
@@ -84,7 +179,14 @@ class Journal:
 
 @dataclass
 class Budget:
-    """GPU-seconds / token budget: reserve before starting, settle after."""
+    """GPU-seconds / token budget: reserve before starting, settle after.
+
+    The spending gate is ``settled + reserved + requested``: settled costs
+    are durable and count forever; a reservation is released only when the
+    action settles (its estimate becomes its settled floor). Repeated
+    crash-resume cycles re-reserve on top of the held estimates, so a
+    crashing action converges to budget_exhausted instead of looping for
+    free (launch-plan P0-2)."""
 
     gpu_seconds_limit: float
     tokens_limit: int
@@ -93,17 +195,22 @@ class Budget:
     settled_gpu_seconds: float = 0.0
     settled_tokens: int = 0
     events: list = field(default_factory=list, repr=False)
+    _open_gpu: dict = field(default_factory=dict, repr=False)
+    _open_tokens: dict = field(default_factory=dict, repr=False)
 
     def try_reserve(
         self, journal: Journal, action_id: str, gpu_seconds: float, tokens: int
     ) -> dict | None:
         if (
-            self.reserved_gpu_seconds + gpu_seconds > self.gpu_seconds_limit
-            or self.reserved_tokens + tokens > self.tokens_limit
+            self.settled_gpu_seconds + self.reserved_gpu_seconds + gpu_seconds
+            > self.gpu_seconds_limit
+            or self.settled_tokens + self.reserved_tokens + tokens > self.tokens_limit
         ):
             return None
         self.reserved_gpu_seconds += gpu_seconds
         self.reserved_tokens += tokens
+        self._open_gpu.setdefault(action_id, []).append(gpu_seconds)
+        self._open_tokens.setdefault(action_id, []).append(tokens)
         entry = journal.append(
             "budget_reserved",
             action_id=action_id,
@@ -116,6 +223,12 @@ class Budget:
     def settle(self, journal: Journal, action_id: str, gpu_seconds: float, tokens: int) -> dict:
         self.settled_gpu_seconds += gpu_seconds
         self.settled_tokens += tokens
+        # Settlement consumes only this attempt's reservation (LIFO); a
+        # crashed attempt's reservation stays held, matching replay.
+        if self._open_gpu.get(action_id):
+            self.reserved_gpu_seconds -= self._open_gpu[action_id].pop()
+        if self._open_tokens.get(action_id):
+            self.reserved_tokens -= self._open_tokens[action_id].pop()
         entry = journal.append(
             "budget_settled",
             action_id=action_id,
@@ -125,11 +238,21 @@ class Budget:
         self.events.append(entry)
         return entry
 
+    def restore(self, state: DurableBudgetState, open_gpu: dict, open_tokens: dict) -> None:
+        """Adopt durable totals replayed from the journal before any work
+        runs in this process."""
+        self.reserved_gpu_seconds = state.reserved_gpu_seconds
+        self.reserved_tokens = state.reserved_tokens
+        self.settled_gpu_seconds = state.settled_gpu_seconds
+        self.settled_tokens = state.settled_tokens
+        self._open_gpu = dict(open_gpu)
+        self._open_tokens = dict(open_tokens)
+
     @property
     def exhausted(self) -> bool:
         return (
-            self.reserved_gpu_seconds >= self.gpu_seconds_limit
-            or self.reserved_tokens >= self.tokens_limit
+            self.settled_gpu_seconds + self.reserved_gpu_seconds >= self.gpu_seconds_limit
+            or self.settled_tokens + self.reserved_tokens >= self.tokens_limit
         )
 
 
@@ -216,6 +339,11 @@ class Orchestrator:
         if not resume and self.journal.entries:
             raise ValueError("journal already exists; call run(resume=True) to recover")
         if resume:
+            # Durable budget first: no action in this process may start
+            # before settled+reserved totals are restored from the journal
+            # (launch-plan P0-2).
+            state, open_gpu, open_tokens = _replay_budget(self.journal.entries)
+            self.budget.restore(state, open_gpu, open_tokens)
             self._interrupted_actions(actions)
         done = self._trusted_finished(actions)
         cancel_requested = bool(getattr(cancel, "is_set", lambda: False)()) if cancel else False
