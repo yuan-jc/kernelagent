@@ -11,18 +11,24 @@
 完成固定正确/错误候选与中断恢复三组 Alpha 验收。U3（真实 GLM 从零生成）诚实标记 NOT_RUN，等待用户提供
 `MODEL_PROVIDER_API_KEY`。
 
+**LIVE_MODEL 已打通（2026-09-13 晚）**：用户提供 DeepSeek key 后，T12 G5（`generation_loop_smoke --live`，
+accepted=true，1598 tokens）与 T16 U3（`alpha_run --mode live`，2 个真实生成候选经 GPU 评测，诚实终态
+no_improvement，1952 tokens）双双 PASS；provider=`deepseek-flash`（`thinking:{type:disabled}`）。
+修复过程中落地的通用能力：provider URL 归一化、HTTP 错误带 provider 原因、`extra_body`（关闭思考）、
+生成 max_tokens 8192、别名/推理耗尽的明确报错。**T12、T16 转 ACCEPTED。**
+
 **能力边界（诚实声明）**：
 
 - Alpha 威胁模型为"合作型候选"：候选在 pinned evaluator 同进程 exec 执行，AST policy 门
   （`inspect_candidate_policy`，ADR-0004）只是 misuse 防线而非安全边界；每份评测/优化报告显式携带
   `candidate_trust=cooperative`、`adversarially_secure=false`；champion 需人工审查。
   可信 MVP 的信任域分离（候选容器只见输入、verdict 由不加载候选的 verifier 产生）按 launch plan Task 7 落在 T23。
-- LIVE_MODEL 未验收：T12 停在 READY_FOR_ACCEPTANCE，T16 U3 停在 NOT_RUN；
-  两者都需要用户配置 `MODEL_PROVIDER_API_KEY` 后以 `--mode live` 实测，不得用回放冒充。
+- LIVE_MODEL 验收基于 DeepSeek（provider 中立设计，OpenAI 兼容即可）；champion 未产生（模型生成的
+  kernel 未过正确性）是记录在案的合法终态，不构成对优化效果的声明。
 
-**任务板**：T00–T10、T12a、T13–T15、T18、T19、T21 ACCEPTED；T12 READY_FOR_ACCEPTANCE（仅差 LIVE_MODEL）；
-**T16 IN_PROGRESS**（K1–K5、U1、U2、U2b PASS，见 [T16.md](../work-packages/T16.md)）；T11/T17/T20/T22–T25 TODO。
-T20 已预置（镜像未建，CUTLASS tarball 已下载校验，恢复手册 `docs/handoffs/recovery-runbook.md`）。
+**任务板**：T00–T10、T12–T15、T12a、T16、T18、T19、T21 **全部 ACCEPTED**（2026-09-13）；
+T11/T17/T20/T22–T25 TODO。T20 已预置（镜像未建，CUTLASS tarball 已下载校验，
+恢复手册 `docs/handoffs/recovery-runbook.md`）。
 
 ## 本轮提交链（launch plan Task 1–6，逐项红-绿）
 
@@ -48,8 +54,8 @@ T20 已预置（镜像未建，CUTLASS tarball 已下载校验，恢复手册 `d
 
 ## 遗留与下一步
 
-1. **用户动作**：配置 `MODEL_PROVIDER_API_KEY`（+ `--base-url`）后运行 U3 live——T12 与 T16 才能走完 LIVE_MODEL 验收。
-2. launch plan Task 7（可信 MVP 信任域分离）→ T23 对抗回归；Task 8 已部分完成（本页单一快照化、任务板同步）。
+1. launch plan Task 7（可信 MVP 信任域分离）→ T23 对抗回归——当前主线。
+2. 扩展包恢复：T17/T20/T22（T20 预置在案）→ 之后 T24/T25 研究包；T11（外部 KernelAgent 接入）。
 3. 暂停中的扩展包：T17/T20/T22（按 launch plan §7 指令暂停；T20 预置见恢复手册）→ 之后 T24/T25 研究包。
 4. 一条可选 sudo 配置（T15 深度 profiling 前）：非 root ncu 计数器权限
    （`/etc/modprobe.d/nvidia-profiling.conf` + 重启）。

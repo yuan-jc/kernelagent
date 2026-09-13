@@ -18,7 +18,7 @@
   ],
   "notes": [
     "Launch-plan round complete (2026-09-13): Tasks 1-6 of CODEX_REVIEW_AND_LAUNCH_PLAN done - evaluator tamper gate + ADR-0004, durable budget reconstruction, strict timing evidence, per-input dispatch guards, kernelagent optimize/resume/status loop, private alpha accepted on real GPU (U1/U2/resume PASS).",
-    "T16 IN_PROGRESS: only U3 (LIVE_MODEL real GLM generation) remains, blocked on user-provided MODEL_PROVIDER_API_KEY; recorded replay must never be reported as live.",
+    "T12 and T16 ACCEPTED 2026-09-13: LIVE_MODEL ran against DeepSeek deepseek-flash (user key, control-plane env only; thinking disabled). T16 U3 terminal was an honest no_improvement - both live-generated candidates compiled but failed correctness.",
     "Alpha threat model is cooperative candidates (candidate_trust=cooperative, adversarially_secure=false, ADR-0004); trusted-MVP trust-domain split lands with T23 (plan Task 7).",
     "T17/T20/T22 paused by launch plan; T20 preset artifacts + recovery runbook in docs/handoffs/recovery-runbook.md.",
     "No target GPU or live model acceptance is implied by CPU tests or CI. Preserve parent package gates."
@@ -297,19 +297,20 @@
         "T04",
         "T10"
       ],
-      "status": "READY_FOR_ACCEPTANCE",
+      "status": "ACCEPTED",
       "checks": {
         "CPU": "PASS",
         "GPU": "PASS",
-        "LIVE_MODEL": "NOT_RUN",
+        "LIVE_MODEL": "PASS",
         "REVIEW": "PASS"
       },
       "evidence": [
         "docs/work-packages/T12.md",
-        "artifacts/t12/generation-loop-report.json"
+        "artifacts/t12/generation-loop-report.json",
+        "artifacts/t12-live/generation-loop-report.json"
       ],
       "work_package_record": "docs/work-packages/T12.md",
-      "blocker": "G5 LIVE_MODEL requires user-configured provider credentials (MODEL_PROVIDER_API_KEY); everything else PASS."
+      "blocker": null
     },
     {
       "id": "T12a",
@@ -350,7 +351,7 @@
         "artifacts/t13/methods-report.json"
       ],
       "work_package_record": "docs/work-packages/T13.md",
-      "blocker": "Functional acceptance complete; parent G2 gate requires T12 LIVE_MODEL (user credentials)."
+      "blocker": null
     },
     {
       "id": "T14",
@@ -372,7 +373,7 @@
         "artifacts/t14/autotune-report.json"
       ],
       "work_package_record": "docs/work-packages/T14.md",
-      "blocker": "Functional acceptance complete; parent G2 gate requires T12 LIVE_MODEL (user credentials)."
+      "blocker": null
     },
     {
       "id": "T15",
@@ -408,11 +409,11 @@
         "T14",
         "T15"
       ],
-      "status": "IN_PROGRESS",
+      "status": "ACCEPTED",
       "checks": {
         "CPU": "PASS",
         "GPU": "PASS",
-        "LIVE_MODEL": "NOT_RUN",
+        "LIVE_MODEL": "PASS",
         "REVIEW": "PASS"
       },
       "evidence": [
@@ -421,7 +422,7 @@
         "docs/alpha-runbook.md"
       ],
       "work_package_record": "docs/work-packages/T16.md",
-      "blocker": "U3 LIVE_MODEL requires user-configured MODEL_PROVIDER_API_KEY; U1/U2/resume accepted on target GPU."
+      "blocker": null
     },
     {
       "id": "T17",

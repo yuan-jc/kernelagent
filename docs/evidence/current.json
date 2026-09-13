@@ -712,5 +712,26 @@
     "pending": {
       "U3_LIVE_MODEL": "requires user-configured MODEL_PROVIDER_API_KEY; recorded replay must never be reported as live"
     }
+  },
+  "target_ubuntu_live_model": {
+    "date": "2026-09-13",
+    "kind": "live_model_acceptance",
+    "provider": "DeepSeek https://api.deepseek.com (user key, control-plane env only, never persisted)",
+    "model": "deepseek-flash (thinking disabled via extra_body; alias trap and reasoning-budget trap documented in commits 6f036b5/c18612e)",
+    "reports": {
+      "t12_g5_generation_loop": {
+        "path": "artifacts/t12-live/generation-loop-report.json",
+        "sha256": "0dd4cde8c50c01d0927372daa6f4610b51dc59b435428b2dcec413c06f05acd5",
+        "live_model": "ran",
+        "accepted": true,
+        "ledger_tokens": 1598
+      },
+      "t16_u3_optimize_loop": {
+        "path": "artifacts/alpha/layernorm-live-ds003-live/report.json",
+        "sha256": "83ee42d94ec748d6c4a7fba5e317e96c5364c3ac72639f09e8cd50af04c489e5",
+        "state": "no_improvement",
+        "note": "2 live-generated candidates (distinct sha256, compiled=True, correct=False); honest terminal; 1952 tokens"
+      }
+    }
   }
 }

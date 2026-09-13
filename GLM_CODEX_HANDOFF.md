@@ -223,31 +223,26 @@ curl -I --proxy http://127.0.0.1:7890 --max-time 15 https://github.com
 
 GLM 完成或遇到阻塞时，请覆盖更新下面这一节，不要追加聊天记录。
 
-### GLM 回执（launch plan Task 1–6 轮，2026-09-13）
+### GLM 回执（Web 控制台 + LIVE_MODEL 轮，2026-09-13）
 
-- 更新时间：2026-09-13
-- 当前分支与提交：`main` @ `69ef32c`。提交链（逐项红-绿、独立提交）：
-  `5e9e51f`（Task 1 篡改反例 + AST 门 + ADR-0004）、`3d636df`（Task 2 durable 预算重建）、
-  `3d2db2f`（Task 3 计时证据严格校验）、`db33c6d`（Task 4 dispatch guard + lint）、
-  `754d8f8`（Task 5 optimize/resume/status 闭环）、`69ef32c`（Task 6 Alpha 验收 + pro driver triton 修复）。
-- 行为变化：新增 `kernelagent optimize/resume/status` 产品入口与 `examples/alpha_run.py`；
-  `inspect_candidate_policy`/`reconstruct_budget`/`validate_batch_samples` 新接口；
-  T06 pro driver 对 triton 族 backend 改用 tempfile 加载器（真实 GPU 首跑暴露的集成缺口）。
-  每份评测/优化报告携带 `candidate_trust=cooperative`、`adversarially_secure=false`（ADR-0004）。
-- 执行命令及退出码：统一验收命令（计划 §6）每提交均跑——`ruff check src tests examples configs` exit 0；
-  pytest 最终 **468 passed / 3 skipped / 0 failed**；`PYTHONPATH=src python -m kernelagent --help` 含 optimize/resume/status。
-- GPU 验证（RTX 4060 Laptop，ADR-0002 镜像 `cb7a9f4c…`）：
-  - U1 正确候选：state=completed，champion `fd0eac1c…`，晋升 CI [1.654, 1.706]（report sha256 `b1fec230…`）
-  - U2 错误候选：evaluate 阶段 `correct=False` 拒绝，state=no_improvement（sha256 `313e3494…`）
-  - SIGKILL→resume：`action_interrupted` 标记、恰 2 次结算、无重复计费（sha256 `c6d6bbca…`）
-  - 首次 U1 失败证据保留在 `artifacts/alpha/layernorm-001/002`（pro baseline 失败 → 驱动修复的根因）
-- 未通过或未执行项：**U3 LIVE_MODEL NOT_RUN**——等待用户提供 `MODEL_PROVIDER_API_KEY`（T12 同一阻塞）；
-  T05–T07 在对抗候选下不可称可信（合作型候选限定，信任域分离归 Task 7/T23）。
-- 证据路径：`docs/work-packages/T16.md`（K/U 矩阵）、`docs/alpha-runbook.md`、`docs/evidence/current.json` 的 `target_ubuntu_t16_alpha`。
-- 当前活动进程：无；`docker ps -a --filter label=kernelagent.worker=1` 无残留。
-- 阻塞与所需用户决定：请用户提供 provider 凭据并运行 `examples/alpha_run.py --mode live`（命令见 runbook）。
-- 建议 Codex 审查重点：① ADR-0004 的 AST 门实现与"非安全边界"表述是否一致；
-  ② `_replay_budget` 的 LIFO 预留语义（中断尝试保留预留、重复崩溃收敛 budget_exhausted）；
-  ③ T16 卡片验收矩阵与报告 hash 是否与 `docs/evidence/current.json` 一致。
+- 更新时间：2026-09-13（晚）
+- 当前分支与提交：`main` @ `c18612e`（未推送部分见 git log origin/main..HEAD）。本轮新增：
+  `d6eed56` Web 控制台、`3411fe8` 模型列表选择、`6f036b5` provider 报错自解释、`c18612e` 推理模型兼容。
+- 行为变化：新增 `python -m kernelagent.webapp` 本机控制台（API 填写/bench 选择/阶段流水/加速比 CI/预算/历史，
+  单 GPU 串行 409，key 仅内存）；`POST /api/models` 拉取 key 可用模型；provider URL 归一化与错误自解释；
+  `extra_body`/`--disable-thinking` 贯穿 client→smoke→alpha_run→webapp；生成 max_tokens 8192。
+- 诊断结论（DeepSeek）：用户"优化秒失败"根因有两层——① 别名应答（请求 deepseek-chat，应答 deepseek-flash）
+  被防偷换身份校验拒绝；② 推理过程耗尽 max_tokens，content 为空；修复后真实生成成功。
+  另：服务进程 shell 带 HTTP(S)_PROXY，经代理访问 deepseek 可达（401），非根因但建议配置 no_proxy。
+- LIVE_MODEL 验收（用户提供 key，仅控制端环境变量，未进任何持久层）：
+  - T12 G5：`artifacts/t12-live/generation-loop-report.json`（sha256 `0dd4cde8…`）live_model.status=ran，
+    accepted=true，ledger 1598 tokens → **T12 ACCEPTED**。
+  - T16 U3：`artifacts/alpha/layernorm-live-ds003-live/report.json`（sha256 `83ee42d9…`）2 个真实生成候选
+    （不同 sha256、compiled=True、correct=False）→ 诚实终态 no_improvement，1952 tokens → **T16 ACCEPTED**。
+- 全量门禁：pytest 479 passed / 3 skipped；ruff src tests examples configs 干净。key 泄漏扫描：0 处。
+- 任务板：T12/T16 ACCEPTED，T13/T14 的 G2 阻塞清空；剩余 TODO：T11/T17/T20/T22–T25。
+- 给 Codex 审查重点：① `extra_body` 是否接受为"传输层旋钮、不进请求身份"的边界；
+  ② U3 以 no_improvement 终态判 PASS 的口径（AGENTS.md：无改进是合法结果）是否认可；
+  ③ webapp 的安全边界（仅本机绑定、key 不落盘测试）是否需要补 ADR。
 
 回执完成后，同时按 `AGENTS.md` 更新正式的 `docs/task-board.json`、`docs/handoffs/current.md` 和 `docs/evidence/current.json`；只有实际检查证据支持时才改变状态。
