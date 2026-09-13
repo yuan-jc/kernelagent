@@ -473,8 +473,11 @@ def test_workspace_symlink_escape_rejected(api, tmp_path):
     workspace = run_dir / "workspace"
     outside = tmp_path / "outside.txt"
     outside.write_text(SECRET, encoding="utf-8")
-    (workspace / "innocent.log").symlink_to(outside)
-    (workspace / "dirlink").symlink_to(tmp_path)
+    try:
+        (workspace / "innocent.log").symlink_to(outside)
+        (workspace / "dirlink").symlink_to(tmp_path)
+    except OSError:  # no symlink privilege (e.g. Windows runner) - fixture only
+        pytest.skip("symlink creation unavailable on this platform")
     status, body = api.get_json(f"/api/runs/{RUN_ID}/workspace/file?path=innocent.log")
     assert status == 400
     assert "escapes" in body["error"]

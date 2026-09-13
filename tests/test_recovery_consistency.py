@@ -327,9 +327,17 @@ def test_concurrent_resume_is_refused_and_touches_nothing(tmp_path: Path):
     journal_bytes = (output / "journal.jsonl").read_bytes()
 
     holder_script = (
-        "import fcntl, sys, time\n"
+        "import sys, time\n"
         "handle = open(sys.argv[1], 'a+')\n"
-        "fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)\n"
+        "try:\n"
+        "    import fcntl\n"
+        "\n"
+        "    fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)\n"
+        "except ImportError:  # Windows: lock one byte at the current position\n"
+        "    import msvcrt, os\n"
+        "\n"
+        "    os.lseek(handle.fileno(), 0, 0)\n"
+        "    msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)\n"
         "print('locked', flush=True)\n"
         "time.sleep(30)\n"
     )

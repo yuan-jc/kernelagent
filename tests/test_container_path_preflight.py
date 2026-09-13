@@ -15,6 +15,8 @@ pass."""
 
 from pathlib import Path
 
+import pytest
+
 from kernelagent.worker import (
     ContainerSpec,
     WorkerRequest,
@@ -78,7 +80,10 @@ def test_symlinked_file_outside_workspace_rejected(tmp_path):
     workspace = tmp_path / "workspace"
     link = workspace / "reference.txt"
     link.parent.mkdir(parents=True, exist_ok=True)
-    link.symlink_to(tmp_path / "secret.txt")
+    try:
+        link.symlink_to(tmp_path / "secret.txt")
+    except OSError:  # no symlink privilege (e.g. Windows runner) - fixture only
+        pytest.skip("symlink creation unavailable on this platform")
     outcome = outcome_for(tmp_path, (("/task", link),))
     assert outcome.status == "infra_error"
     assert "resolves outside workspace" in outcome.stderr_tail
@@ -88,7 +93,10 @@ def test_symlinked_directory_outside_workspace_rejected(tmp_path):
     workspace = tmp_path / "workspace"
     link = workspace / "inputs"
     link.parent.mkdir(parents=True, exist_ok=True)
-    link.symlink_to(tmp_path)  # resolves to the tmp root, outside workspace
+    try:
+        link.symlink_to(tmp_path)  # resolves to the tmp root, outside workspace
+    except OSError:  # no symlink privilege (e.g. Windows runner) - fixture only
+        pytest.skip("symlink creation unavailable on this platform")
     outcome = outcome_for(tmp_path, (("/task", link),))
     assert outcome.status == "infra_error"
     assert "resolves outside workspace" in outcome.stderr_tail
