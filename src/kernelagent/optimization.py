@@ -560,11 +560,18 @@ def optimize(
                 f"no run to resume at {output} (journal.jsonl missing); start without --resume"
             )
         stored_manifest = load_run_manifest(manifest_path)
-    elif output.exists() and any(output.iterdir()):
-        raise OptimizationConfigError(
-            f"output directory {output} already exists and is not empty; refusing to mix "
-            "experiments - use the resume command to continue this run or pick a new --output"
-        )
+    elif output.exists():
+        # The web console writes its launcher bookkeeping (job.json, no key)
+        # into the run directory before starting the optimize thread; that is
+        # not prior experiment state. Any other pre-existing content means a
+        # previous experiment may live here: refuse rather than mix.
+        bookkeeping = {"job.json"}
+        unexpected = {p.name for p in output.iterdir()} - bookkeeping
+        if unexpected:
+            raise OptimizationConfigError(
+                f"output directory {output} already exists and is not empty; refusing to mix "
+                "experiments - use the resume command to continue this run or pick a new --output"
+            )
 
     # RV02 single-writer lock: at most one process may work on a run
     # directory. The lock is taken after the pure configuration checks and

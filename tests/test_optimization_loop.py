@@ -471,6 +471,32 @@ def test_fresh_run_rejects_existing_output_directory(tmp_path):
     assert responder.calls == 0
 
 
+def test_fresh_run_allows_launcher_bookkeeping_only(tmp_path):
+    """The web console pre-writes job.json (no key) into the run directory
+    before starting; that bookkeeping is not prior experiment state (RV01)."""
+    output = tmp_path / "run"
+    output.mkdir()
+    (output / "job.json").write_text("{}", encoding="utf-8")
+    responder = ScriptedResponder([])
+    config = _config(tmp_path, _stage_problem(tmp_path), output=output)
+    _run(config, responder)  # guard did not fire: the loop runs its candidates
+    assert responder.calls >= 1
+
+
+def test_fresh_run_rejects_bookkeeping_plus_stale_state(tmp_path):
+    """job.json next to any other leftover still refuses: the directory may
+    hold a previous experiment."""
+    output = tmp_path / "run"
+    output.mkdir()
+    (output / "job.json").write_text("{}", encoding="utf-8")
+    (output / "stale.txt").write_text("leftover", encoding="utf-8")
+    responder = ScriptedResponder([])
+    config = _config(tmp_path, _stage_problem(tmp_path), output=output)
+    with pytest.raises(OptimizationConfigError, match="already exists"):
+        _run(config, responder)
+    assert responder.calls == 0
+
+
 def test_resume_without_manifest_is_refused(tmp_path):
     """A journal without its manifest cannot prove identity: refuse instead
     of defaulting to 'matches' (legacy runs must start a new experiment)."""
