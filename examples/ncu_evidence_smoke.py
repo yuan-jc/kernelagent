@@ -111,9 +111,7 @@ def main() -> int:
 
     saxpy = associate_launches(launches, "saxpy")
     scale = associate_launches(launches, "scale")
-    duration_ok = all(
-        launch.value("gpu__time_duration.sum") is not MISSING for launch in launches
-    )
+    duration_ok = all(launch.value("gpu__time_duration.sum") is not MISSING for launch in launches)
     identity_ok = all(launch.compute_capability == "8.9" for launch in launches)
     accepted = (
         len(launches) == 3
@@ -147,8 +145,7 @@ def main() -> int:
         json.dumps(payload, indent=2, sort_keys=True, default=str), encoding="utf-8", newline="\n"
     )
     print(
-        f"launches={len(launches)} saxpy={len(saxpy)} scale={len(scale)} "
-        f"duration_ok={duration_ok}"
+        f"launches={len(launches)} saxpy={len(saxpy)} scale={len(scale)} duration_ok={duration_ok}"
     )
     print(f"report={report_json} accepted={accepted}")
     print(f"report_sha256={hashlib.sha256(report_json.read_bytes()).hexdigest()}")

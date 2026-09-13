@@ -26,12 +26,12 @@ def test_aggregate_refuses_uncovered_workloads():
         weighted_aggregate({"small": 1.0, "large": 10.0}, {"small": 1.0})
 
 
-def test_check_guards_enforces_element_cap():
-    spec = WorkloadSpec(workload_id="huge", weight=1.0, max_shape=(1 << 20,))
+def test_check_guards_enforce_per_dim_caps():
+    spec = WorkloadSpec(workload_id="huge", weight=1.0, max_shape=(2048, 2048))
     ok, _ = check_guards(spec, [(1024, 1024)])
     assert ok
-    violated, reason = check_guards(spec, [(2048, 2048)])
-    assert not violated and "exceeds" in reason
+    violated, reason = check_guards(spec, [(4096, 512)])
+    assert not violated and "input 0" in reason and "exceeds" in reason
 
 
 def _outcome(wid, correct=True, degraded=False, guard=False, fallback=False):
@@ -81,3 +81,28 @@ def test_all_good_is_usable():
 def test_spec_guard_weight_validation():
     spec = WorkloadSpec(workload_id="w", weight=0.5)
     assert spec.required is True
+
+
+# --- Launch-plan Task 4 (P2-1): guards are per-input, per-dimension. The
+# old implementation multiplied every input's element count together, so
+# two legal (16,16) inputs were rejected under max_shape=(16,16). ---
+
+
+def test_two_legal_inputs_within_max_shape_pass():
+    spec = WorkloadSpec(workload_id="w", weight=1.0, max_shape=(16, 16))
+    ok, reason = check_guards(spec, [(16, 16), (16, 16)])
+    assert ok, f"legal inputs must pass: {reason}"
+
+
+def test_single_input_overflow_rejects_with_index():
+    spec = WorkloadSpec(workload_id="w", weight=1.0, max_shape=(16, 16))
+    ok, reason = check_guards(spec, [(16, 16), (17, 16)])
+    assert not ok
+    assert "input 1" in reason, "the rejection must name the offending input"
+
+
+def test_rank_mismatch_rejects_with_index():
+    spec = WorkloadSpec(workload_id="w", weight=1.0, max_shape=(16, 16))
+    ok, reason = check_guards(spec, [(8, 8, 8)])
+    assert not ok
+    assert "input 0" in reason

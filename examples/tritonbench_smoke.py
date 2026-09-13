@@ -108,9 +108,7 @@ def main() -> int:
     registered = payload["registered_before_run"] is True
     table_has_backend = payload["upstream_table_contains_ka_backend"] is True
     entries = payload["entries"]
-    same_protocol_ok = len(entries) == 3 and all(
-        len(e["batch_samples_ms"]) == 5 for e in entries
-    )
+    same_protocol_ok = len(entries) == 3 and all(len(e["batch_samples_ms"]) == 5 for e in entries)
     accepted = (
         outcome.status == "completed"
         and clone_ok

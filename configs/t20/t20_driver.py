@@ -12,11 +12,10 @@ Part C (CUTLASS template path): the pinned cutlass_gemm.cu template is
 compiled with nvcc (CUDA 12.4 toolkit in the image) and executed; it
 self-verifies and prints cutlass-ok.
 Writes /out/t20_result.json with all three parts."""
-import json
 
+import json
 import os
 import subprocess
-import sys
 
 TASK_ROOT = "/task"
 
@@ -103,7 +102,10 @@ def main() -> int:
     try:
         payload["cuda_tuning"] = part_a_kernel_tuner(case["device"])
     except Exception as exc:  # noqa: BLE001 - record the failure mode
-        payload["cuda_tuning"] = {"part": "cuda_tuning", "error": f"{type(exc).__name__}: {exc}"[:400]}
+        payload["cuda_tuning"] = {
+            "part": "cuda_tuning",
+            "error": f"{type(exc).__name__}: {exc}"[:400],
+        }
     payload["cutlass"] = part_c_cutlass(toolkit)
     with open("/out/t20_result.json", "w") as handle:
         json.dump(payload, handle, indent=2, default=str)

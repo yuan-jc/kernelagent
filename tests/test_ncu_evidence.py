@@ -4,7 +4,6 @@ Pure CPU. The real report generation runs in the ADR-0003 diagnostic
 container via examples/ncu_evidence_smoke.py; these tests pin the
 interpretation semantics on representative raw CSV."""
 
-
 from kernelagent.adapters.profiling import (
     MISSING,
     LaunchMetrics,
@@ -48,8 +47,9 @@ def test_missing_metric_is_missing_never_zero():
     assert launches[0].value("dram__throughput.avg.pct_of_peak_sustained_elapsed") is MISSING
     catalog = MetricCatalog.default()
     view = evidence_view(launches, catalog)
-    assert "dram__throughput.avg.pct_of_peak_sustained_elapsed" in (
-        view["catalog_metrics_missing_in_all_launches"]
+    assert (
+        "dram__throughput.avg.pct_of_peak_sustained_elapsed"
+        in (view["catalog_metrics_missing_in_all_launches"])
     )
     assert view["note"].startswith("missing metrics are absent")
 
@@ -79,8 +79,7 @@ def test_blocker_signatures_map_to_explicit_states():
         == "gpu_counter_permission_denied"
     )
     assert (
-        detect_profiling_blocker("==WARNING== No kernels were profiled.")
-        == "no_kernels_profiled"
+        detect_profiling_blocker("==WARNING== No kernels were profiled.") == "no_kernels_profiled"
     )
     assert detect_profiling_blocker("all good") is None
 

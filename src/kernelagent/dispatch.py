@@ -18,7 +18,6 @@ timings. The dispatcher:
 
 import hashlib
 import json
-import math
 from dataclasses import dataclass
 
 
@@ -27,7 +26,7 @@ class WorkloadSpec:
     workload_id: str
     weight: float
     required: bool = True
-    max_shape: tuple[int, ...] | None = None  # element-count guard per tensor
+    max_shape: tuple[int, ...] | None = None  # per-dim cap applied per input tensor
 
 
 @dataclass(frozen=True, slots=True)
@@ -40,16 +39,22 @@ class WorkloadOutcome:
 
 
 def check_guards(workload: WorkloadSpec, tensor_shapes: list[tuple[int, ...]]) -> tuple[bool, str]:
-    """Guard check: every tensor's element count must not exceed the
-    workload's max_shape bound elementwise on matching dims."""
+    """Guard check: every input tensor is verified per dimension against
+    the workload's max_shape bound - ranks must match and no single dim may
+    exceed its cap. Inputs are never multiplied together: two legal
+    (16,16) tensors pass under max_shape=(16,16), and a violation names
+    the offending input index."""
     if workload.max_shape is None:
         return True, ""
-    total_cap = math.prod(workload.max_shape)
-    actual = 1
-    for shape in tensor_shapes:
-        actual *= math.prod(shape)
-    if actual > total_cap:
-        return False, f"element count {actual} exceeds guard cap {total_cap}"
+    for index, shape in enumerate(tensor_shapes):
+        if len(shape) != len(workload.max_shape):
+            return False, (
+                f"input {index} has {len(shape)} dimension(s); "
+                f"guard expects {len(workload.max_shape)}"
+            )
+        for dim, (actual, cap) in enumerate(zip(shape, workload.max_shape)):
+            if actual > cap:
+                return False, (f"input {index} dim {dim} size {actual} exceeds guard cap {cap}")
     return True, ""
 
 
