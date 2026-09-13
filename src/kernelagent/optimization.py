@@ -56,6 +56,19 @@ from kernelagent.domain.run_manifest import (
 )
 from kernelagent.domain.serialization import dumps as domain_dumps
 from kernelagent.domain.serialization import loads as domain_loads
+from kernelagent.generators.catalog import load_default as load_method_catalog
+from kernelagent.generators.features import (
+    extract_code_features,
+    task_profile_from_problem,
+)
+from kernelagent.generators.input import (
+    AttemptRecord,
+    GeneratorInput,
+    HardwareFacts,
+    attempt_from_record,
+)
+from kernelagent.generators.plan import MethodPlan, MethodPlanner
+from kernelagent.generators.prompt_fragments import compose_seed_note
 from kernelagent.orchestrator import (
     Action,
     Budget,
@@ -72,6 +85,12 @@ from kernelagent.promotion import (
 OPTIMIZATION_PROTOCOL = "optimize-v1"
 DEFAULT_SNAPSHOT_ROOT = Path("research/sources/ScalingIntelligence__KernelBench")
 CHAMPION_TRUNC = 800
+
+# Sentinel for optimize(planner=...): unset means "plan with the default
+# frozen-catalog planner"; an explicit None disables planning entirely and
+# reproduces the legacy behavior exactly (no method_plan journal events, no
+# prompt injection).
+_PLANNER_UNSET = object()
 
 EXIT_SUCCESS = 0
 EXIT_NO_IMPROVEMENT = 1
@@ -396,12 +415,25 @@ def optimize(
     correctness_pro=None,
     timing=None,
     confirm=None,
+    planner: MethodPlanner | None = _PLANNER_UNSET,
 ) -> OptimizationResult:
     """Run the alpha optimization loop for one pinned problem.
 
     The stage ports default to the real adapters; tests inject offline
     fakes. Every candidate is an orchestrator action, so resume semantics
     and billing come from the durable journal, not from memory.
+
+    Method planning (generator-design §0/§4): before each candidate's
+    generate call the loop asks the planner for a MethodPlan from the
+    problem's static features, task profile and structured attempt history;
+    the top actionable item's single-factor prompt fragment is appended to
+    the seed note and a ``method_plan`` journal event records the
+    classification and selected method. Planning never decides outcomes -
+    correctness, timing and promotion stay with the evaluator/promotion
+    ports. Pass ``planner=None`` to disable planning (legacy behavior,
+    byte-identical requests); the default planner plans from the frozen
+    method catalog even with no profile evidence (baseline plan, honest
+    ``uncertain`` classification).
 
     Run identity (RV01): a fresh run persists a validated RunManifest to
     ``<output>/run_manifest.json`` before any billable action. Resume loads
@@ -414,6 +446,9 @@ def optimize(
     existing non-empty output directory is a configuration error raised
     before any model or GPU call."""
     from kernelagent.config import build_stage_ports, default_generator
+
+    if planner is _PLANNER_UNSET:
+        planner = MethodPlanner(load_method_catalog())
 
     output = Path(config.output)
     journal_path = output / "journal.jsonl"
@@ -495,6 +530,36 @@ def optimize(
     records_dir.mkdir(exist_ok=True)
     champion_dir = output / "champion"
 
+    # Method-planning inputs (generator-design §1): static code features and
+    # the name-inferred task profile come from the pinned problem; structured
+    # attempt history is rebuilt from persisted candidate records so a
+    # resumed run plans on the same evidence path as an uninterrupted one.
+    # The last persisted failure also restores the seed-note feedback text
+    # (REVIEW.md R5), keeping the resumed request content on the same path
+    # as an uninterrupted run.
+    task_profile = task_profile_from_problem(problem_path.name, spec.level, spec.problem_id)
+    code_features = extract_code_features(problem_source)
+    attempt_history: list[AttemptRecord] = []
+    last_failure: tuple[str, str] | None = None
+    for record_path in sorted(records_dir.glob("candidate-*.json")):
+        if record_path.name.endswith(".progress.json"):
+            continue
+        try:
+            record = json.loads(record_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        restored = attempt_from_record(record) if isinstance(record, dict) else None
+        if restored is not None:
+            attempt_history.append(restored)
+            detail = record.get("detail")
+            if (
+                restored.outcome == "failed"
+                and restored.failure_class != "infra"
+                and isinstance(detail, str)
+                and detail
+            ):
+                last_failure = (restored.stage, detail[:CHAMPION_TRUNC])
+
     budget = Budget(
         gpu_seconds_limit=config.gpu_budget_seconds,
         tokens_limit=config.token_budget,
@@ -522,6 +587,8 @@ def optimize(
     champion_sha: str | None = None
     champion_path: Path | None = None
     feedback = ""
+    if last_failure is not None:
+        feedback = _feedback_note(*last_failure)
     stop = False
 
     def _persist_record(name: str, record: dict) -> None:
@@ -586,16 +653,54 @@ def optimize(
 
         def run() -> dict:
             nonlocal feedback
+            # Method planning (generator-design §4): replan from the current
+            # attempt history before every generation so demotion and the
+            # single-factor rotation happen without hidden state. The plan
+            # proposes only; outcomes below stay with the trusted ports.
+            selected_method_id: str | None = None
+            if planner is not None:
+                plan: MethodPlan = planner.plan(
+                    GeneratorInput(
+                        task=task_profile,
+                        code_features=code_features,
+                        attempts=tuple(attempt_history),
+                        ncu_view=None,  # baseline NCU evidence is not wired into the loop yet
+                        hardware=HardwareFacts.sm89_reference(),
+                    )
+                )
+                item = plan.first_actionable(tuple(attempt_history))
+                selected_method_id = item.method_id if item is not None else None
+                orchestrator.journal.append(
+                    "method_plan",
+                    action_id=name,
+                    selected_method=selected_method_id,
+                    ts=time.time(),
+                    **plan.journal_fields(),
+                )
+                seed_note = compose_seed_note(
+                    feedback, item.prompt_fragment if item is not None else None
+                )
+            else:
+                seed_note = feedback
             _mark_stage(name, PipelineStage.GENERATE.value)
-            gen = generate(problem_source, config.model_id, feedback)
+            gen = generate(problem_source, config.model_id, seed_note)
             if not gen["ok"]:
                 record = {
                     "candidate": name,
                     "stage": "generation",
                     "status": "failed",
                     "detail": gen["reason"][:CHAMPION_TRUNC],
+                    "method_id": selected_method_id,
                 }
                 _persist_record(name, record)
+                attempt_history.append(
+                    AttemptRecord(
+                        method_id=selected_method_id,
+                        stage="generation",
+                        failure_class="parse",
+                        note=gen["reason"][:CHAMPION_TRUNC],
+                    )
+                )
                 feedback = _feedback_note("generation", gen["reason"])
                 return {"result_ref": f"{name}:generation-failed", "tokens": gen["tokens"]}
 
@@ -609,8 +714,17 @@ def optimize(
                     "status": "rejected",
                     "detail": list(policy.violations)[:8],
                     "candidate_sha256": gen["candidate_sha256"],
+                    "method_id": selected_method_id,
                 }
                 _persist_record(name, record)
+                attempt_history.append(
+                    AttemptRecord(
+                        method_id=selected_method_id,
+                        stage="policy",
+                        failure_class="policy",
+                        note="Policy violations: " + "; ".join(policy.violations),
+                    )
+                )
                 feedback = _feedback_note(
                     "policy", "Policy violations: " + "; ".join(policy.violations)
                 )
@@ -644,8 +758,17 @@ def optimize(
                     "status": "failed",
                     "detail": reason[:CHAMPION_TRUNC],
                     "candidate_sha256": gen["candidate_sha256"],
+                    "method_id": selected_method_id,
                 }
                 _persist_record(name, record)
+                attempt_history.append(
+                    AttemptRecord(
+                        method_id=selected_method_id,
+                        stage="evaluate",
+                        failure_class="correctness",
+                        note=reason[:CHAMPION_TRUNC],
+                    )
+                )
                 feedback = _feedback_note("evaluate", reason)
                 return {"result_ref": f"{name}:eval-failed", "tokens": gen["tokens"]}
 
@@ -662,8 +785,17 @@ def optimize(
                     "status": "failed",
                     "detail": str(pro_note)[:CHAMPION_TRUNC],
                     "candidate_sha256": gen["candidate_sha256"],
+                    "method_id": selected_method_id,
                 }
                 _persist_record(name, record)
+                attempt_history.append(
+                    AttemptRecord(
+                        method_id=selected_method_id,
+                        stage="correctness_pro",
+                        failure_class="correctness",
+                        note=str(pro_note)[:CHAMPION_TRUNC],
+                    )
+                )
                 feedback = _feedback_note("correctness_pro", str(pro_note))
                 return {"result_ref": f"{name}:pro-failed", "tokens": gen["tokens"]}
 
@@ -679,8 +811,17 @@ def optimize(
                     "status": "rejected",
                     "detail": reason,
                     "candidate_sha256": gen["candidate_sha256"],
+                    "method_id": selected_method_id,
                 }
                 _persist_record(name, record)
+                attempt_history.append(
+                    AttemptRecord(
+                        method_id=selected_method_id,
+                        stage="timing",
+                        failure_class="timing",
+                        note=reason,
+                    )
+                )
                 feedback = _feedback_note("timing", reason)
                 return {"result_ref": f"{name}:timing-invalid", "tokens": gen["tokens"]}
             if timing_result.get("async_leak"):
@@ -690,8 +831,17 @@ def optimize(
                     "status": "rejected",
                     "detail": "async leak integrity check failed",
                     "candidate_sha256": gen["candidate_sha256"],
+                    "method_id": selected_method_id,
                 }
                 _persist_record(name, record)
+                attempt_history.append(
+                    AttemptRecord(
+                        method_id=selected_method_id,
+                        stage="timing",
+                        failure_class="timing",
+                        note="Async leak: work continued past the timed region.",
+                    )
+                )
                 feedback = _feedback_note(
                     "timing", "Async leak: work continued past the timed region."
                 )
@@ -739,8 +889,18 @@ def optimize(
                     "champion_path": str(champion_file),
                     "ratio_ci_95": list(decision.ratio_ci_95 or ()),
                     "candidate_batches_ms": batches,
+                    "method_id": selected_method_id,
                 }
                 _persist_record(name, record)
+                attempt_history.append(
+                    AttemptRecord(
+                        method_id=selected_method_id,
+                        stage="confirm",
+                        failure_class="none",
+                        outcome="promoted",
+                        note=decision.reason,
+                    )
+                )
                 feedback = ""
                 return {
                     "result_ref": f"{name}:promoted",
@@ -754,8 +914,17 @@ def optimize(
                 "detail": decision.reason,
                 "candidate_sha256": gen["candidate_sha256"],
                 "candidate_batches_ms": batches,
+                "method_id": selected_method_id,
             }
             _persist_record(name, record)
+            attempt_history.append(
+                AttemptRecord(
+                    method_id=selected_method_id,
+                    stage="confirm",
+                    failure_class="no_gain",
+                    note=decision.reason,
+                )
+            )
             feedback = _feedback_note("confirm", decision.reason)
             return {"result_ref": f"{name}:retained", "tokens": gen["tokens"]}
 
