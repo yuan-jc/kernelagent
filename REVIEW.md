@@ -340,3 +340,22 @@ uv run --locked python examples/alpha_run.py --mode live --model glm-4.5 --base-
   （候选预留 2100/3000），示例预算需上调；--max-repair-rounds CLI 文案澄清留 ADR（当前语义=容忍失败候选数）
 下一包与依赖：RV05（未做）、RV06（进行中）
 ```
+
+```text
+包编号：RV06
+状态：CPU_PASS（本机四要素等价验证；GitHub 四矩阵待 run 34783428574 及后续确认）
+基线与修复提交：基线 0e07b5d；修复 9da1918
+行为变化与对应 R 编号：R7——挂载源越界校验前移到 execute_container 顶部（纯路径/文件系统逻辑，零 Docker 依赖），
+  镜像缺失的 infra_error 不再掩盖边界拒绝；新增 10 项无条件测试（绝对路径/父目录穿越/文件与目录 symlink/非目录源/
+  回归守卫：用不存在的 docker 二进制驱动真实入口，若校验被移回 Docker 操作之后测试会显式失败）。
+  根因分析：CI runner 无预缓存镜像→image inspect 先失败掩盖路径错误；Windows 3.11 "通过"系模块级 docker 门控
+  全 skip 变绿（0 项实际运行）——该解释已写入报告，集成覆盖缺口留 RV07。
+正例、反例及实际命令：修复前用假 digest+越界挂载复现 CI 失败路径（REPRO 输出在案），修复后同一 repro 输出
+  "resolves outside workspace"。命令：.venv/bin/python -m pytest tests/test_container_path_preflight.py tests/test_container_worker.py -q
+测试数量、失败与跳过原因：新增 10 项无条件运行；全量 735 passed / 3 skipped（既有 skip 语义未扩大，未 skip 任何安全断言）
+平台、环境身份：Ubuntu 24.04，Python 3.11.16（含真实 Docker 容器用例 29 passed）
+证据 URL/路径及完整 SHA-256：tests/test_container_path_preflight.py、src/kernelagent/worker/container.py（提交 9da1918）；
+  workflow 触发 run id 34783428574（github.com/yuan-jc/kernelagent/actions）
+未验证范围、遗留问题、活动作业：四矩阵最终结论以 GitHub Actions 页面为准（推送已触发）；Windows symlink 权限异常时会显式 ERROR 而非假绿
+下一包与依赖：RV05（独立确认与证据链，未做）；RV07（干净 Ubuntu 验收）
+```
