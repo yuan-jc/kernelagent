@@ -6,7 +6,9 @@ read-only inputs, no network, secret-free environment, timeout/cancel
 reclamation (including in-container setsid descendants), cgroup resource
 limits, and infrastructure-failure semantics. Docker-unavailable and
 image-unavailable environments skip with a recorded reason; a skip is a
-gap in coverage, never a pass."""
+gap in coverage, never a pass. The mount-source workspace boundary is
+additionally covered daemon-free in ``test_container_path_preflight.py``
+so it is exercised on every matrix regardless of Docker state."""
 
 import json
 import os
@@ -211,6 +213,20 @@ def test_mount_source_outside_workspace_rejected(tmp_path):
     outcome = execute_container(request, spec)
     assert outcome.status == "infra_error"
     assert "resolves outside workspace" in outcome.stderr_tail
+
+
+def test_outside_mount_rejected_even_without_pinned_image(tmp_path):
+    """R7 regression (workflow 34731172474): on a runner without the pinned
+    image, the image-inspect infra error used to mask the boundary
+    violation. The path check is pure validation and must fire before any
+    Docker resource operation, image inspect included."""
+    request = make_request(["/bin/sh", "-c", "true"], tmp_path)
+    outside = Path("/etc")
+    spec = make_spec(image_digest="sha256:" + "0" * 64, read_only_mounts=(("/task", outside),))
+    outcome = execute_container(request, spec)
+    assert outcome.status == "infra_error"
+    assert "resolves outside workspace" in outcome.stderr_tail
+    assert "refusing to auto-pull" not in outcome.stderr_tail
 
 
 # -- C4 hostile identity and paths --------------------------------------------

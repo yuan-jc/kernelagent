@@ -28,7 +28,10 @@ success: the parent verifies results itself from the output directory.
 
 Every infrastructure step (image presence, start, kill, removal) is
 checked and a failure produces a structured ``infra_error`` outcome -
-never a silent ``completed``. Images must already exist locally under the
+never a silent ``completed``. Pure request validation (mount sources
+resolving inside the workspace) runs first, before any Docker resource
+operation, so a dangerous request is refused even where the daemon or
+the pinned image is absent. Images must already exist locally under the
 exact digest; the executor refuses to auto-pull. A side-car
 ``container-record.json`` in the private work directory captures the
 inspect state, image, mounts, and reclamation result for evidence.
@@ -237,11 +240,30 @@ def build_container_env(env_extra: tuple[tuple[str, str], ...]) -> tuple[tuple[s
     return tuple(env.items())
 
 
+def _resolved_mount_sources(
+    workspace_root: Path, read_only_mounts: tuple[tuple[str, Path], ...]
+) -> list[tuple[str, Path]]:
+    """Resolve every trusted-input mount source and require it to stay
+    inside the workspace root, refusing nonexistent sources.
+
+    Pure path/filesystem validation with no Docker dependency: dangerous
+    requests must be rejected before any container resource (daemon call,
+    image inspect, or start) is touched, so an environment without the
+    pinned image still surfaces the boundary violation."""
+    resolved: list[tuple[str, Path]] = []
+    for destination, source in read_only_mounts:
+        source_resolved = ensure_within(workspace_root, source)
+        if not source_resolved.is_dir():
+            raise RuntimeError(f"mount source {str(source_resolved)!r} does not exist")
+        resolved.append((destination, source_resolved))
+    return resolved
+
+
 def _run_args(
     request: WorkerRequest,
     spec: ContainerSpec,
     name: str,
-    workspace_root: Path,
+    resolved_mounts: list[tuple[str, Path]],
     output_host: Path,
 ) -> list[str]:
     args = [
@@ -275,10 +297,7 @@ def _run_args(
         "--workdir",
         TASK_WORKDIR,
     ]
-    for destination, source in spec.read_only_mounts:
-        source_resolved = ensure_within(workspace_root, source)
-        if not source_resolved.is_dir():
-            raise RuntimeError(f"mount source {str(source_resolved)!r} does not exist")
+    for destination, source_resolved in resolved_mounts:
         args += ["--mount", f"type=bind,src={source_resolved},dst={destination},readonly"]
     for env_name, env_value in build_container_env(request.env_extra):
         args += ["--env", f"{env_name}={env_value}"]
@@ -375,6 +394,10 @@ def execute_container(
         "request_id": request.request_id,
     }
     try:
+        # Preflight before any Docker resource operation: the mount-source
+        # boundary is pure path validation, so a hostile request is refused
+        # even where the daemon or the pinned image is absent.
+        resolved_mounts = _resolved_mount_sources(request.workspace_root, spec.read_only_mounts)
         if shutil.which(docker_command[0]) is None and not Path(docker_command[0]).exists():
             _raise_infra(f"docker command {docker_command[0]!r} not found")
         digest_ref = spec.reference
@@ -397,7 +420,7 @@ def execute_container(
         output_dir = workdir / "out"
         output_dir.mkdir(exist_ok=True)
         os.chmod(output_dir, 0o777)  # container uid 20000 writes; parent owns the directory
-        args = _run_args(request, spec, container_name, request.workspace_root, output_dir)
+        args = _run_args(request, spec, container_name, resolved_mounts, output_dir)
         try:
             with stdout_path.open("wb") as out, stderr_path.open("wb") as err:
                 process = subprocess.Popen(
