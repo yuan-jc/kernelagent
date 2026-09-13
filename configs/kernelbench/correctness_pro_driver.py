@@ -21,15 +21,28 @@ TASK_ROOT = "/task"
 
 
 def _sanitizer_snippet(problem_path: str, backend: str) -> str:
+    # Triton-family backends need their source in a real file (@triton.jit
+    # cannot take code from an exec string), so the snippet must use the
+    # same tempfile loader as the in-process check.
+    if backend.lower() in ("triton", "tilelang", "cute"):
+        load_line = (
+            "new = load_custom_model_with_tempfile(candidate_src)[0](*get_init_inputs()).cuda()\n"
+        )
+    else:
+        load_line = (
+            "new = load_custom_model(candidate_src, {}, '/tmp/torch_ext')"
+            "(*get_init_inputs()).cuda()\n"
+        )
     return (
         "import json, sys, torch\n"
         f"sys.path.insert(0, {TASK_ROOT + '/src'!r})\n"
-        "from kernelbench.eval import load_original_model_and_inputs, load_custom_model\n"
+        "from kernelbench.eval import load_original_model_and_inputs, load_custom_model,"
+        " load_custom_model_with_tempfile\n"
         f"problem_src = open({problem_path!r}).read()\n"
         f"candidate_src = open('{TASK_ROOT}/candidate.py').read()\n"
         "Model, get_init_inputs, get_inputs = load_original_model_and_inputs(problem_src, {})\n"
         "ref = Model(*get_init_inputs()).cuda()\n"
-        "new = load_custom_model(candidate_src, {}, '/tmp/torch_ext')(*get_init_inputs()).cuda()\n"
+        f"{load_line}"
         "x = [t.cuda() for t in get_inputs()]\n"
         "out = new(*x)\n"
         "torch.cuda.synchronize()\n"
@@ -47,6 +60,7 @@ def main() -> int:
     import torch
     from kernelbench.eval import (  # noqa: F401 - sanity: pinned loader present
         load_custom_model,
+        load_custom_model_with_tempfile,
         load_original_model_and_inputs,
     )
 
@@ -68,7 +82,13 @@ def main() -> int:
     Model, get_init_inputs, get_inputs = load_original_model_and_inputs(problem_src, {})
     device = torch.device(f"cuda:{case['device']}")
     reference = Model(*get_init_inputs()).to(device)
-    target = load_custom_model(candidate_src, {}, "/tmp/torch_ext")(*get_init_inputs()).to(device)
+    if case.get("backend", "cuda").lower() in ("triton", "tilelang", "cute"):
+        target, _tempfile_obj = load_custom_model_with_tempfile(candidate_src)
+        target = target(*get_init_inputs()).to(device)
+    else:
+        target = load_custom_model(candidate_src, {}, "/tmp/torch_ext")(*get_init_inputs()).to(
+            device
+        )
 
     set_seed(case["seed"])
     inputs_a = [t.to(device) for t in get_inputs()]

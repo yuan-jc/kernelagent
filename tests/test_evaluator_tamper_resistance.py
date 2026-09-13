@@ -201,9 +201,10 @@ def test_eval_report_records_candidate_trust_fields(tmp_path, monkeypatch):
     assert seen["request_id"].startswith("eval-")
     assert result.detail["candidate_trust"] == "cooperative"
     assert result.detail["adversarially_secure"] is False
-    assert tuple(result.detail["policy_violations"]) == inspect_candidate_policy(
-        ALLCLOSE_PATCH
-    ).violations
+    assert (
+        tuple(result.detail["policy_violations"])
+        == inspect_candidate_policy(ALLCLOSE_PATCH).violations
+    )
 
 
 def test_clean_candidate_report_still_marks_alpha_threat_model(tmp_path, monkeypatch):

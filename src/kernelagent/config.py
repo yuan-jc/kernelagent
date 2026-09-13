@@ -106,6 +106,7 @@ def build_stage_ports(
             snapshot_root=snapshot_root,
             workspace_root=workspace,
             gpu_devices=(gpu_device,),
+            backend=config.backend,
         )
         return overall_verdict(pro)
 

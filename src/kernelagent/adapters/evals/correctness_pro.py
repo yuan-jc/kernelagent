@@ -71,6 +71,7 @@ def run_pro_case(
     snapshot_root: Path,
     workspace_root: Path,
     gpu_devices: tuple[str, ...],
+    backend: str = "cuda",
     sanitizer_binary: str | None = None,
     timeout_seconds: float = 900.0,
     docker_command: tuple[str, ...] = ("docker",),
@@ -88,6 +89,7 @@ def run_pro_case(
         "device": 0,
         "seed": 42,
         "sanitizer_timeout": 240,
+        "backend": backend,
     }
     if sanitizer_binary is not None:
         case_config["sanitizer_binary"] = sanitizer_binary

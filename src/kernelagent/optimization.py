@@ -360,6 +360,19 @@ def optimize(
                 return {"result_ref": f"{name}:policy-rejected", "tokens": gen["tokens"]}
 
             evaluation = evaluate(source, name)
+            if evaluation.get("adapter_pass") is None:
+                # The evaluator itself failed to produce a verdict: this is
+                # infrastructure, not a candidate failure - record it and
+                # keep the incumbent (a missing verdict is never a pass).
+                record = {
+                    "candidate": name,
+                    "stage": "evaluate",
+                    "status": "infra_error",
+                    "detail": str(evaluation.get("stderr_tail", ""))[:CHAMPION_TRUNC],
+                    "candidate_sha256": gen["candidate_sha256"],
+                }
+                _persist_record(name, record)
+                return {"result_ref": f"{name}:eval-infra", "tokens": gen["tokens"]}
             if evaluation.get("adapter_pass") is not True:
                 reason = (
                     f"upstream evaluator verdict: compiled={evaluation.get('compiled')} "
@@ -507,6 +520,9 @@ def optimize(
                 break
             record = _load_record(f"candidate-{index:03d}")
             if record is None:
+                state = "infra_error"
+                break
+            if record.get("status") == "infra_error":
                 state = "infra_error"
                 break
             if record.get("status") == "promoted":
