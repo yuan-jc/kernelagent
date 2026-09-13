@@ -23,6 +23,17 @@ from kernelagent.domain.result import (
     TaskResult,
     TaskTerminalState,
 )
+from kernelagent.domain.run_manifest import (
+    IDENTITY_FIELDS,
+    MANIFEST_FILENAME,
+    MANIFEST_SCHEMA_VERSION,
+    PIPELINE_STAGE_ORDER,
+    REVISIBLE_FIELDS,
+    RUN_TERMINAL_STATES,
+    PipelineStage,
+    RunManifest,
+    RunState,
+)
 from kernelagent.domain.serialization import (
     SCHEMA_VERSION,
     content_sha256,
@@ -55,6 +66,15 @@ __all__ = [
     "EvaluationStatus",
     "TaskResult",
     "TaskTerminalState",
+    "IDENTITY_FIELDS",
+    "MANIFEST_FILENAME",
+    "MANIFEST_SCHEMA_VERSION",
+    "PIPELINE_STAGE_ORDER",
+    "REVISIBLE_FIELDS",
+    "RUN_TERMINAL_STATES",
+    "PipelineStage",
+    "RunManifest",
+    "RunState",
     "SCHEMA_VERSION",
     "content_sha256",
     "dumps",

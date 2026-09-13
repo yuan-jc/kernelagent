@@ -13,6 +13,11 @@ transition in an append-only JSONL journal:
   counts as completed;
 - ``budget_reserved`` / ``budget_settled`` - every action pays: reserve
   before start, settle actuals after;
+- ``stage_started`` - written by the optimization loop when a candidate
+  enters a pipeline stage (see kernelagent.domain.run_manifest.PipelineStage),
+  so an external reader can rebuild each candidate's stage timeline;
+- ``manifest_revised`` - written when a resume explicitly overrides a
+  revisable RunManifest field (budgets, candidate allowance);
 - ``experiment_done`` - terminal, written only when every action finished.
 
 A hash chain over journal entries (each entry records the sha256 of the

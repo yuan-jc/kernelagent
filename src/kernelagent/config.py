@@ -25,13 +25,17 @@ from kernelagent.adapters.models.costing import CostLedger
 from kernelagent.adapters.models.generation import CandidateGenerator
 from kernelagent.adapters.models.openai_compat import OpenAICompatModelClient
 from kernelagent.optimization import (
+    API_KEY_ENV,
     OptimizationConfig,
     OptimizationConfigError,
     ProblemSpec,
 )
 from kernelagent.promotion import CandidateFacts, confirm_promotion
 
-API_KEY_ENV = "MODEL_PROVIDER_API_KEY"
+# API_KEY_ENV is re-exported from kernelagent.optimization: the credential
+# env var name lives with the optimization entry point so the run manifest
+# and the runtime agree on it (the value itself is only ever read from the
+# environment, never stored).
 
 
 def default_generator(base_url: str, extra_body: dict | None = None) -> CandidateGenerator:

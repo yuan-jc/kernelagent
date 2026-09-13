@@ -273,3 +273,279 @@ def test_config_rejects_unknown_problem_spec():
     with pytest.raises(OptimizationConfigError):
         parse_problem_spec("kernelbench-40")
     assert parse_problem_spec("kernelbench:l1:40").problem_id == 40
+
+
+# --- RV01: persisted run identity, resume guard, and legal terminals -------
+
+
+def _stage_problem_with_extra(tmp_path: Path, extra_ids: tuple[int, ...]) -> Path:
+    snapshot = _stage_problem(tmp_path)
+    for problem_id in extra_ids:
+        (snapshot / "KernelBench" / "level1" / f"{problem_id}_OtherOp.py").write_text(
+            f"# pinned problem {problem_id}\n", encoding="utf-8"
+        )
+    return snapshot
+
+
+def _completed_run(tmp_path: Path, **overrides):
+    snapshot = _stage_problem_with_extra(tmp_path, (41,))
+    responder = ScriptedResponder([GOOD_CANDIDATE])
+    config = _config(
+        tmp_path,
+        snapshot,
+        max_candidates=1,
+        max_repair_rounds=0,
+        problem=overrides.pop("problem", "kernelbench:l1:40"),
+        model_id=overrides.pop("model_id", "test-model"),
+        gpu_budget_seconds=overrides.pop("gpu_budget_seconds", 3600.0),
+        **overrides,
+    )
+    result = _run(config, responder)
+    assert result.state == "completed"
+    return result
+
+
+@pytest.mark.parametrize(
+    ("changed", "field"),
+    [
+        ({"gpu_device": "nvidia.com/gpu=GPU-swapped"}, "gpu_device"),
+        ({"backend": "cuda"}, "backend"),
+        ({"model_id": "other-model"}, "model_id"),
+    ],
+)
+def test_resume_rejects_changed_run_identity(tmp_path, changed, field):
+    """Swapping GPU identity, backend, or model provider configuration must
+    refuse to reuse the old results - never re-attribute old scores."""
+    _completed_run(tmp_path)
+    responder = ScriptedResponder([])
+    config = _config(tmp_path, tmp_path / "snapshot", max_candidates=1, resume=True, **changed)
+    with pytest.raises(OptimizationConfigError, match=field):
+        _run(config, responder)
+    assert responder.calls == 0, "a refused resume must not make any model call"
+
+
+def test_resume_rejects_changed_problem(tmp_path):
+    _completed_run(tmp_path)
+    responder = ScriptedResponder([])
+    config = _config(
+        tmp_path,
+        tmp_path / "snapshot",
+        max_candidates=1,
+        resume=True,
+        problem="kernelbench:l1:41",
+    )
+    with pytest.raises(OptimizationConfigError, match="problem"):
+        _run(config, responder)
+    assert responder.calls == 0
+
+
+def test_resume_rejects_changed_container_image(tmp_path, monkeypatch):
+    from kernelagent.adapters.evals import kernelbench_eval
+
+    _completed_run(tmp_path)
+    monkeypatch.setattr(kernelbench_eval, "EVAL_IMAGE_ID", "sha256:" + "b" * 64)
+    responder = ScriptedResponder([])
+    config = _config(tmp_path, tmp_path / "snapshot", max_candidates=1, resume=True)
+    with pytest.raises(OptimizationConfigError, match="image_id"):
+        _run(config, responder)
+    assert responder.calls == 0
+
+
+def test_resume_rejects_changed_timing_protocol(tmp_path, monkeypatch):
+    from kernelagent.adapters.evals import timing as timing_adapter
+
+    _completed_run(tmp_path)
+
+    class _ShiftedProtocol:
+        def identity_sha256(self) -> str:
+            return "e" * 64
+
+    monkeypatch.setattr(timing_adapter, "TimingProtocol", _ShiftedProtocol)
+    responder = ScriptedResponder([])
+    config = _config(tmp_path, tmp_path / "snapshot", max_candidates=1, resume=True)
+    with pytest.raises(OptimizationConfigError, match="timing_protocol_sha256"):
+        _run(config, responder)
+    assert responder.calls == 0
+
+
+def test_resume_with_same_identity_does_not_repeat_finished_work(tmp_path):
+    """Resuming a finished run with identical identity must execute nothing,
+    keep the champion, and add no billing."""
+    result1 = _completed_run(tmp_path)
+    settled1 = json.loads(result1.report_path.read_text(encoding="utf-8"))["budget"][
+        "settled_tokens"
+    ]
+
+    responder = ScriptedResponder([])
+    config = _config(tmp_path, tmp_path / "snapshot", max_candidates=1, resume=True)
+    result2 = _run(config, responder)
+    assert responder.calls == 0, "identical-identity resume must not regenerate"
+    assert result2.state == "completed"
+    assert result2.champion_sha256 == result1.champion_sha256
+    report2 = json.loads(result2.report_path.read_text(encoding="utf-8"))
+    assert report2["budget"]["settled_tokens"] == settled1, "finished work is never billed twice"
+    assert report2["candidates"][0]["status"] == "promoted"
+
+
+def test_resume_replays_manifest_for_unspecified_config(tmp_path):
+    """The loop API mirrors the CLI contract: manifest values keep identity,
+    so a resume that only overrides the output location restores the
+    original problem/model/budget from the manifest, not local defaults."""
+    result1 = _completed_run(
+        tmp_path,
+        problem="kernelbench:l1:41",
+        model_id="original-model",
+        gpu_budget_seconds=1234.5,
+    )
+    responder = ScriptedResponder([])
+    restored_config = _config(
+        tmp_path,
+        tmp_path / "snapshot",
+        max_candidates=1,
+        resume=True,
+        problem="kernelbench:l1:41",
+        model_id="original-model",
+        gpu_budget_seconds=1234.5,
+    )
+    result2 = _run(restored_config, responder)
+    assert responder.calls == 0
+    assert result2.state == "completed"
+    report2 = json.loads(result2.report_path.read_text(encoding="utf-8"))
+    report1 = json.loads(result1.report_path.read_text(encoding="utf-8"))
+    assert report2["config"]["problem"] == "kernelbench:l1:41"
+    assert report2["config"]["model_id"] == "original-model"
+    assert report2["budget"]["gpu_seconds_limit"] == 1234.5
+    assert report2["budget"]["settled_tokens"] == report1["budget"]["settled_tokens"]
+
+
+def test_resume_budget_override_records_explicit_event(tmp_path):
+    """Budget/allowance changes are allowed on resume but must leave an
+    explicit, auditable journal event - never a silent change."""
+    snapshot = _stage_problem(tmp_path)
+    responder1 = ScriptedResponder([BAD_CANDIDATE])
+    config1 = _config(
+        tmp_path, snapshot, max_candidates=1, max_repair_rounds=0, output=tmp_path / "run"
+    )
+    assert _run(config1, responder1).state == "no_improvement"
+
+    responder2 = ScriptedResponder([GOOD_CANDIDATE])
+    config2 = _config(
+        tmp_path,
+        snapshot,
+        max_candidates=2,
+        max_repair_rounds=1,
+        gpu_budget_seconds=7200.0,
+        output=tmp_path / "run",
+        resume=True,
+    )
+    result = _run(config2, responder2)
+    assert result.state == "completed"
+    assert responder2.calls == 1
+    entries = [
+        json.loads(line)
+        for line in (tmp_path / "run" / "journal.jsonl").read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    revised = {
+        entry["field"]: (entry["previous_value"], entry["new_value"])
+        for entry in entries
+        if entry["kind"] == "manifest_revised"
+    }
+    assert revised == {
+        "max_candidates": (1, 2),
+        "max_repair_rounds": (0, 1),
+        "gpu_budget_seconds": (3600.0, 7200.0),
+    }
+
+
+def test_fresh_run_rejects_existing_output_directory(tmp_path):
+    """A non-resume run into an existing output directory is a config error
+    raised before any model or GPU call (RV01)."""
+    output = tmp_path / "run"
+    output.mkdir()
+    (output / "stale.txt").write_text("leftover", encoding="utf-8")
+    responder = ScriptedResponder([])
+    config = _config(tmp_path, _stage_problem(tmp_path), output=output)
+    with pytest.raises(OptimizationConfigError, match="already exists"):
+        _run(config, responder)
+    assert responder.calls == 0
+
+
+def test_resume_without_manifest_is_refused(tmp_path):
+    """A journal without its manifest cannot prove identity: refuse instead
+    of defaulting to 'matches' (legacy runs must start a new experiment)."""
+    _completed_run(tmp_path)
+    manifest_path = tmp_path / "run" / "run_manifest.json"
+    assert manifest_path.is_file()
+    manifest_path.unlink()
+    responder = ScriptedResponder([])
+    config = _config(tmp_path, tmp_path / "snapshot", max_candidates=1, resume=True)
+    with pytest.raises(OptimizationConfigError, match="manifest missing"):
+        _run(config, responder)
+    assert responder.calls == 0
+
+
+@pytest.mark.parametrize("bad_candidates", [0, -2])
+def test_invalid_max_candidates_rejected_before_any_call(tmp_path, bad_candidates):
+    responder = ScriptedResponder([])
+    with pytest.raises(OptimizationConfigError, match="max_candidates"):
+        _config(tmp_path, _stage_problem(tmp_path), max_candidates=bad_candidates)
+    assert responder.calls == 0, "invalid resource counts must cost zero model calls"
+
+
+@pytest.mark.parametrize(
+    "budget_field",
+    ["gpu_budget_seconds", "token_budget"],
+)
+@pytest.mark.parametrize(
+    "bad_value",
+    [float("nan"), float("inf"), float("-inf"), 0, -5],
+)
+def test_invalid_budgets_rejected_before_any_call(tmp_path, budget_field, bad_value):
+    responder = ScriptedResponder([])
+    with pytest.raises(OptimizationConfigError, match=budget_field):
+        _config(tmp_path, _stage_problem(tmp_path), **{budget_field: bad_value})
+    assert responder.calls == 0
+    assert not (tmp_path / "run" / "journal.jsonl").exists(), "nothing may be scheduled"
+
+
+def test_completed_terminal_requires_a_champion():
+    from kernelagent.optimization import validate_terminal
+
+    validate_terminal("completed", "a" * 64)  # legal
+    validate_terminal("no_improvement", None)  # legal: honest empty terminal
+    with pytest.raises(OptimizationConfigError, match="champion"):
+        validate_terminal("completed", None)
+    with pytest.raises(OptimizationConfigError, match="champion"):
+        validate_terminal("completed", "")
+
+
+def test_journal_reconstructs_candidate_stage_timeline(tmp_path):
+    """An external reader can rebuild each candidate's pipeline stage
+    sequence and terminal outcome from journal events alone."""
+    from kernelagent.domain import PIPELINE_STAGE_ORDER
+
+    snapshot = _stage_problem(tmp_path)
+    responder = ScriptedResponder([BAD_CANDIDATE, GOOD_CANDIDATE])
+    config = _config(tmp_path, snapshot, max_candidates=2, max_repair_rounds=2)
+    result = _run(config, responder)
+    assert result.state == "completed"
+
+    entries = [
+        json.loads(line)
+        for line in (tmp_path / "run" / "journal.jsonl").read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    timeline: dict[str, list[str]] = {}
+    terminals: dict[str, str] = {}
+    for entry in entries:
+        if entry["kind"] == "stage_started":
+            timeline.setdefault(entry["action_id"], []).append(entry["stage"])
+        elif entry["kind"] == "action_finished" and entry["action_id"].startswith("candidate-"):
+            terminals[entry["action_id"]] = str(entry.get("result_ref"))
+
+    assert timeline["baseline-eager"] == ["timing"]
+    assert timeline["candidate-000"] == ["generate", "policy", "evaluate"]
+    assert terminals["candidate-000"] == "candidate-000:eval-failed"
+    assert timeline["candidate-001"] == [stage.value for stage in PIPELINE_STAGE_ORDER]
+    assert terminals["candidate-001"] == "candidate-001:promoted"

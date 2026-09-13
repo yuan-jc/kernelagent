@@ -15,6 +15,15 @@ durable journal is the only billing truth; malformed timing evidence is a
 typed error, never a crash; no-improvement, budget exhaustion, and infra
 errors are recorded terminal states - never fake success.
 
+Run identity (RV01 / review R1): every run persists a versioned, validated
+RunManifest (see kernelagent.domain.run_manifest) before its first
+billable action. Resume verifies the stored identity - GPU device, image,
+evaluation/timing protocol, problem, backend, model provider - and refuses
+to reuse previous results on any mismatch; revisible budget/allowance
+fields may change only with explicit ``manifest_revised`` journal events.
+Journal ``stage_started`` events plus the finished/terminal records let an
+external reader reconstruct each candidate's pipeline stage sequence.
+
 The stage ports are injectable so the loop is testable offline; the CLI
 wires the real T05/T06/T07/T09 adapters over the container boundary."""
 
@@ -22,10 +31,12 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import re
 import subprocess
 import time
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 
 from kernelagent.adapters.evals.timing import validate_batch_samples
@@ -35,6 +46,16 @@ from kernelagent.adapters.models.generation import (
     GenerationSuccess,
     inspect_candidate_policy,
 )
+from kernelagent.domain.errors import DomainError
+from kernelagent.domain.run_manifest import (
+    MANIFEST_FILENAME,
+    MANIFEST_SCHEMA_VERSION,
+    PipelineStage,
+    RunManifest,
+    RunState,
+)
+from kernelagent.domain.serialization import dumps as domain_dumps
+from kernelagent.domain.serialization import loads as domain_loads
 from kernelagent.orchestrator import (
     Action,
     Budget,
@@ -61,6 +82,11 @@ EXIT_INFRA_ERROR = 4
 _EST_GPU_SECONDS_PER_STAGE = 300.0
 _EST_TOKENS_PER_CANDIDATE = 2048
 
+# Name of the env var holding the provider credential. The credential value
+# itself is only ever read from the environment at call time and never
+# enters the manifest, journal, or reports.
+API_KEY_ENV = "MODEL_PROVIDER_API_KEY"
+
 
 class OptimizationConfigError(ValueError):
     """Raised for user-fixable configuration problems (exit code 3)."""
@@ -80,6 +106,45 @@ class OptimizationConfig:
     resume: bool = False
     snapshot_root: Path | None = None
     gpu_device: str | None = None
+
+    def __post_init__(self) -> None:
+        # Review R6 / RV04: resources and paid calls must never be created
+        # from an invalid configuration. Validation lives on the config
+        # object itself so both the CLI and direct callers fail before any
+        # model or GPU work is scheduled.
+        if (
+            isinstance(self.max_candidates, bool)
+            or not isinstance(self.max_candidates, int)
+            or self.max_candidates < 1
+        ):
+            raise OptimizationConfigError(
+                f"max_candidates must be an integer >= 1; got {self.max_candidates!r}"
+            )
+        if (
+            isinstance(self.max_repair_rounds, bool)
+            or not isinstance(self.max_repair_rounds, int)
+            or self.max_repair_rounds < 0
+        ):
+            raise OptimizationConfigError(
+                f"max_repair_rounds must be an integer >= 0; got {self.max_repair_rounds!r}"
+            )
+        if (
+            isinstance(self.gpu_budget_seconds, bool)
+            or not isinstance(self.gpu_budget_seconds, (int, float))
+            or not math.isfinite(self.gpu_budget_seconds)
+            or self.gpu_budget_seconds <= 0
+        ):
+            raise OptimizationConfigError(
+                f"gpu_budget_seconds must be a finite number > 0; got {self.gpu_budget_seconds!r}"
+            )
+        if (
+            isinstance(self.token_budget, bool)
+            or not isinstance(self.token_budget, int)
+            or self.token_budget <= 0
+        ):
+            raise OptimizationConfigError(
+                f"token_budget must be an integer > 0; got {self.token_budget!r}"
+            )
 
 
 @dataclass(frozen=True, slots=True)
@@ -140,16 +205,17 @@ def default_gpu_device() -> str:
     return f"nvidia.com/gpu={first}" if first else "nvidia.com/gpu=0"
 
 
-def exit_code_for(state: str) -> int:
+def exit_code_for(state: str | RunState) -> int:
+    name = state.value if isinstance(state, RunState) else str(state)
     codes = {
-        "completed": EXIT_SUCCESS,
-        "no_improvement": EXIT_NO_IMPROVEMENT,
-        "budget_exhausted": EXIT_BUDGET_EXHAUSTED,
-        "infra_error": EXIT_INFRA_ERROR,
+        RunState.COMPLETED.value: EXIT_SUCCESS,
+        RunState.NO_IMPROVEMENT.value: EXIT_NO_IMPROVEMENT,
+        RunState.BUDGET_EXHAUSTED.value: EXIT_BUDGET_EXHAUSTED,
+        RunState.INFRA_ERROR.value: EXIT_INFRA_ERROR,
     }
-    if state not in codes:
-        raise OptimizationConfigError(f"unknown terminal state {state!r}")
-    return codes[state]
+    if name not in codes:
+        raise OptimizationConfigError(f"unknown terminal state {name!r}")
+    return codes[name]
 
 
 def parse_exit_code(result: OptimizationResult) -> int:
@@ -172,6 +238,112 @@ def _git_commit() -> str:
     except OSError:
         return "unknown"
     return completed.stdout.strip() or "unknown"
+
+
+def _sha256_file(path: Path) -> str:
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def _protocol_identity() -> dict[str, str]:
+    """Frozen evaluation-protocol identity of the real stack.
+
+    Read lazily through the adapter modules so tests can monkeypatch the
+    pinned image/protocol attributes; the values describe what WOULD run,
+    which is exactly what the manifest must pin. Module attributes are read
+    at call time (not import time) for that reason."""
+    from kernelagent.adapters.evals import kernelbench_eval
+    from kernelagent.adapters.evals import timing as timing_adapter
+
+    protocol = timing_adapter.TimingProtocol()
+    return {
+        "timing_protocol_sha256": protocol.identity_sha256(),
+        "eval_driver_sha256": _sha256_file(kernelbench_eval._DRIVER_PATH),
+        "timing_driver_sha256": _sha256_file(timing_adapter._TIMING_DRIVER_PATH),
+        "image_repo": kernelbench_eval.EVAL_IMAGE_REPO,
+        "image_id": kernelbench_eval.EVAL_IMAGE_ID,
+    }
+
+
+def build_run_manifest(
+    config: OptimizationConfig,
+    *,
+    problem_path: Path,
+    problem_source: str,
+    problem_sha256: str,
+    snapshot_root: Path,
+    gpu_device: str,
+    created_at: str | None = None,
+) -> RunManifest:
+    """Assemble the validated manifest for the run ``config`` describes.
+
+    Pure assembly: no secrets are read (the credential env var is recorded
+    by name only) and no model/GPU work is performed."""
+    protocol = _protocol_identity()
+    snapshot_root = Path(snapshot_root)
+    return RunManifest(
+        schema_version=MANIFEST_SCHEMA_VERSION,
+        created_at=created_at or datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        run_protocol=OPTIMIZATION_PROTOCOL,
+        problem=config.problem,
+        problem_name=problem_path.name,
+        problem_sha256=problem_sha256,
+        problem_source=problem_source,
+        benchmark="kernelbench",
+        snapshot=snapshot_root.name,
+        snapshot_root=str(snapshot_root),
+        backend=config.backend,
+        eval_driver_sha256=protocol["eval_driver_sha256"],
+        timing_driver_sha256=protocol["timing_driver_sha256"],
+        timing_protocol_sha256=protocol["timing_protocol_sha256"],
+        image_repo=protocol["image_repo"],
+        image_id=protocol["image_id"],
+        gpu_device=gpu_device,
+        model_id=config.model_id,
+        base_url=config.base_url,
+        api_key_env=API_KEY_ENV,
+        max_candidates=config.max_candidates,
+        max_repair_rounds=config.max_repair_rounds,
+        gpu_budget_seconds=float(config.gpu_budget_seconds),
+        token_budget=config.token_budget,
+    )
+
+
+def load_run_manifest(path: Path) -> RunManifest:
+    """Load and validate the persisted run manifest for a resume.
+
+    Missing manifests and manifests written by other schema versions are
+    hard configuration errors - a resume never defaults to "identity
+    matches" when the identity cannot be verified (RV01)."""
+    try:
+        text = Path(path).read_text(encoding="utf-8")
+    except FileNotFoundError as exc:
+        raise OptimizationConfigError(
+            f"run manifest missing at {path}: runs without a persisted manifest "
+            "cannot be resumed (start a new experiment)"
+        ) from exc
+    try:
+        manifest = domain_loads(text)
+    except DomainError as exc:
+        raise OptimizationConfigError(
+            f"run manifest at {path} is not a valid RunManifest: {exc}"
+        ) from exc
+    if not isinstance(manifest, RunManifest):
+        raise OptimizationConfigError(
+            f"run manifest at {path} holds {type(manifest).__name__}, not RunManifest"
+        )
+    return manifest
+
+
+def validate_terminal(state: str | RunState, champion_sha256: str | None) -> None:
+    """Enforce the legal-terminal invariant: ``completed`` must carry a
+    verifiable champion (review R6). A champion-less completion is an
+    illegal ledger state and is refused instead of reported as success."""
+    name = state.value if isinstance(state, RunState) else str(state)
+    if name == RunState.COMPLETED.value and not champion_sha256:
+        raise OptimizationConfigError(
+            "internal invariant violated: terminal state 'completed' requires a "
+            "champion with a content hash; refusing to report an empty completion"
+        )
 
 
 def _feedback_note(stage: str, detail: str) -> str:
@@ -229,19 +401,72 @@ def optimize(
 
     The stage ports default to the real adapters; tests inject offline
     fakes. Every candidate is an orchestrator action, so resume semantics
-    and billing come from the durable journal, not from memory."""
+    and billing come from the durable journal, not from memory.
+
+    Run identity (RV01): a fresh run persists a validated RunManifest to
+    ``<output>/run_manifest.json`` before any billable action. Resume loads
+    it and refuses to reuse previous results when the GPU device, container
+    image, evaluation/timing protocol, problem, backend, or model provider
+    configuration changed - start a new experiment with a fresh --output in
+    that case. Revisible fields (candidate allowance, repair rounds,
+    budgets) may be overridden on resume; each override is recorded as an
+    explicit ``manifest_revised`` journal event. A non-resume run into an
+    existing non-empty output directory is a configuration error raised
+    before any model or GPU call."""
     from kernelagent.config import build_stage_ports, default_generator
 
     output = Path(config.output)
-    if config.resume and not Journal(output / "journal.jsonl").path.exists():
+    journal_path = output / "journal.jsonl"
+    manifest_path = output / MANIFEST_FILENAME
+
+    stored_manifest: RunManifest | None = None
+    if config.resume:
+        if not journal_path.exists():
+            raise OptimizationConfigError(
+                f"no run to resume at {output} (journal.jsonl missing); start without --resume"
+            )
+        stored_manifest = load_run_manifest(manifest_path)
+    elif output.exists() and any(output.iterdir()):
         raise OptimizationConfigError(
-            f"no run to resume at {output} (journal.jsonl missing); start without --resume"
+            f"output directory {output} already exists and is not empty; refusing to mix "
+            "experiments - use the resume command to continue this run or pick a new --output"
         )
-    snapshot_root = config.snapshot_root or DEFAULT_SNAPSHOT_ROOT
+
+    snapshot_root = config.snapshot_root
+    if snapshot_root is None and stored_manifest is not None:
+        snapshot_root = Path(stored_manifest.snapshot_root)
+    snapshot_root = snapshot_root or DEFAULT_SNAPSHOT_ROOT
     spec = parse_problem_spec(config.problem)
     problem_path, problem_source = resolve_problem(spec, snapshot_root)
     problem_sha256 = _sha256_text(problem_source)
-    gpu_device = config.gpu_device or default_gpu_device()
+    gpu_device = config.gpu_device
+    if gpu_device is None:
+        gpu_device = (
+            stored_manifest.gpu_device if stored_manifest is not None else default_gpu_device()
+        )
+
+    run_manifest = build_run_manifest(
+        config,
+        problem_path=problem_path,
+        problem_source=problem_source,
+        problem_sha256=problem_sha256,
+        snapshot_root=snapshot_root,
+        gpu_device=gpu_device,
+    )
+    if stored_manifest is not None:
+        # Identity guard (RV01): the environment, problem, protocol and
+        # model identity this run would use must equal the stored manifest
+        # before any previous result may be reused.
+        mismatches = stored_manifest.identity_mismatches(run_manifest)
+        if mismatches:
+            detail = "; ".join(
+                f"{field}: manifest={stored!r} vs requested={requested!r}"
+                for field, (stored, requested) in sorted(mismatches.items())
+            )
+            raise OptimizationConfigError(
+                "resume identity mismatch - previous results must not be reused in a "
+                f"changed environment ({detail}); start a new experiment with a fresh --output"
+            )
 
     if generator is None:
         generator = default_generator(config.base_url)
@@ -269,13 +494,29 @@ def optimize(
     records_dir = output / "records"
     records_dir.mkdir(exist_ok=True)
     champion_dir = output / "champion"
-    journal_path = output / "journal.jsonl"
 
     budget = Budget(
         gpu_seconds_limit=config.gpu_budget_seconds,
         tokens_limit=config.token_budget,
     )
     orchestrator = Orchestrator(journal_path, budget)
+    if stored_manifest is not None:
+        # Allowed changes (budgets / candidate allowance) get explicit,
+        # auditable journal events; the stored manifest stays the record of
+        # what the run was originally created with.
+        for field, (stored, requested) in sorted(
+            stored_manifest.budget_revisions(run_manifest).items()
+        ):
+            orchestrator.journal.append(
+                "manifest_revised",
+                field=field,
+                previous_value=stored,
+                new_value=requested,
+                reason="explicit resume override of a revisable manifest field",
+            )
+    else:
+        # Persisted before the first billable action of the run.
+        manifest_path.write_text(domain_dumps(run_manifest), encoding="utf-8")
 
     state = "completed"
     champion_sha: str | None = None
@@ -289,13 +530,16 @@ def optimize(
         )
 
     def _mark_stage(name: str, stage: str) -> None:
-        """Lightweight heartbeat so status readers can show the stage an
-        in-flight candidate is in; the durable record written at the end
-        of the attempt stays the source of truth for outcomes."""
+        """Record the stage a candidate entered, twice: a lightweight
+        heartbeat file for live status readers, and an append-only
+        ``stage_started`` journal event so an external timeline can be
+        reconstructed from journal.jsonl alone. The durable record written
+        at the end of the attempt stays the source of truth for outcomes."""
         (records_dir / f"{name}.progress.json").write_text(
             json.dumps({"candidate": name, "stage": stage, "ts": time.time()}, sort_keys=True),
             encoding="utf-8",
         )
+        orchestrator.journal.append("stage_started", action_id=name, stage=stage, ts=time.time())
 
     def _load_record(name: str) -> dict | None:
         path = records_dir / f"{name}.json"
@@ -303,7 +547,7 @@ def optimize(
 
     def _baseline_action():
         def run() -> dict:
-            _mark_stage("baseline-eager", "timing")
+            _mark_stage("baseline-eager", PipelineStage.TIMING.value)
             result = timing(problem_source, "eager")
             batches = list(result.get("batches") or ())
             ok, note = validate_batch_samples(batches, expected_count=len(batches))
@@ -342,7 +586,7 @@ def optimize(
 
         def run() -> dict:
             nonlocal feedback
-            _mark_stage(name, "generate")
+            _mark_stage(name, PipelineStage.GENERATE.value)
             gen = generate(problem_source, config.model_id, feedback)
             if not gen["ok"]:
                 record = {
@@ -355,7 +599,7 @@ def optimize(
                 feedback = _feedback_note("generation", gen["reason"])
                 return {"result_ref": f"{name}:generation-failed", "tokens": gen["tokens"]}
 
-            _mark_stage(name, "policy")
+            _mark_stage(name, PipelineStage.POLICY.value)
             source = gen["candidate_source"]
             policy = inspect_candidate_policy(source)
             if not policy.allowed:
@@ -372,7 +616,7 @@ def optimize(
                 )
                 return {"result_ref": f"{name}:policy-rejected", "tokens": gen["tokens"]}
 
-            _mark_stage(name, "evaluate")
+            _mark_stage(name, PipelineStage.EVALUATE.value)
             evaluation = evaluate(source, name)
             if evaluation.get("adapter_pass") is None:
                 # The evaluator itself failed to produce a verdict: this is
@@ -405,7 +649,7 @@ def optimize(
                 feedback = _feedback_note("evaluate", reason)
                 return {"result_ref": f"{name}:eval-failed", "tokens": gen["tokens"]}
 
-            _mark_stage(name, "correctness_pro")
+            _mark_stage(name, PipelineStage.CORRECTNESS_PRO.value)
             pro_note = "not_run"
             pro_ok = True
             if correctness_pro is not None:
@@ -423,7 +667,7 @@ def optimize(
                 feedback = _feedback_note("correctness_pro", str(pro_note))
                 return {"result_ref": f"{name}:pro-failed", "tokens": gen["tokens"]}
 
-            _mark_stage(name, "timing")
+            _mark_stage(name, PipelineStage.TIMING.value)
             timing_result = timing(source, "candidate")
             batches = list(timing_result.get("batches") or ())
             ok, note = validate_batch_samples(batches, expected_count=len(batches))
@@ -453,7 +697,7 @@ def optimize(
                 )
                 return {"result_ref": f"{name}:async-leak", "tokens": gen["tokens"]}
 
-            _mark_stage(name, "confirm")
+            _mark_stage(name, PipelineStage.CONFIRM.value)
             baseline_record = _load_record("baseline-eager") or {}
             incumbent_batches = list(baseline_record.get("batches_ms") or [])
             facts = CandidateFacts(
@@ -479,7 +723,7 @@ def optimize(
                             "problem_sha256": problem_sha256,
                             "backend": config.backend,
                             "gpu_device": gpu_device,
-                            "protocol_sha256": None,
+                            "protocol_sha256": run_manifest.timing_protocol_sha256,
                         },
                         indent=2,
                         sort_keys=True,
@@ -563,6 +807,9 @@ def optimize(
         for path in sorted(records_dir.glob("candidate-*.json"))
         if not path.name.endswith(".progress.json")
     ]
+    # A champion-less "completed" is an illegal terminal state (review R6):
+    # never write such a report.
+    validate_terminal(state, champion_sha)
     report_payload = {
         "protocol": OPTIMIZATION_PROTOCOL,
         "config": {
@@ -579,6 +826,11 @@ def optimize(
         "gpu_device": gpu_device,
         "commit": _git_commit(),
         "state": state,
+        "run_manifest": {
+            "path": str(manifest_path),
+            "schema_version": run_manifest.schema_version,
+            "identity": run_manifest.identity(),
+        },
         "champion": {
             "candidate_sha256": champion_sha,
             "path": str(champion_path) if champion_path else None,
@@ -623,6 +875,7 @@ def run_status(output: Path) -> dict:
         "reserved_gpu_seconds": durable.reserved_gpu_seconds,
         "reserved_tokens": durable.reserved_tokens,
         "has_report": report_path.is_file(),
+        "has_run_manifest": (output / MANIFEST_FILENAME).is_file(),
     }
     if report_path.is_file():
         payload = json.loads(report_path.read_text(encoding="utf-8"))

@@ -80,6 +80,56 @@ def _probe_command(args: argparse.Namespace) -> int:
 
 
 def _optimize_arguments(parser: argparse.ArgumentParser, *, resume_default: bool = False) -> None:
+    """Add the optimize/resume arguments.
+
+    Resume semantics (RV01): every run-scoped argument defaults to None,
+    meaning "restore the original value from the persisted run manifest".
+    A value passed on the command line is an explicit override: identity
+    fields must still match the manifest (the run is refused otherwise) and
+    revisable fields (budgets, candidate allowance) are applied with an
+    explicit revision event. This is how "only --output/--base-url given"
+    resumes the original problem, model and budgets instead of silently
+    falling back to this machine's defaults."""
+    if resume_default:
+        parser.add_argument(
+            "--problem", default=None, help="e.g. kernelbench:l1:40 (default: manifest)"
+        )
+        parser.add_argument("--backend", default=None, help="candidate backend (default: manifest)")
+        parser.add_argument("--model", default=None, help="provider model id (default: manifest)")
+        parser.add_argument(
+            "--base-url",
+            dest="base_url",
+            default=None,
+            help="OpenAI-compatible base URL (default: manifest)",
+        )
+        parser.add_argument(
+            "--max-candidates",
+            type=int,
+            default=None,
+            help="override the manifest's candidate allowance",
+        )
+        parser.add_argument(
+            "--max-repair-rounds",
+            type=int,
+            default=None,
+            help="override the manifest's repair rounds",
+        )
+        parser.add_argument(
+            "--gpu-budget-seconds",
+            type=float,
+            default=None,
+            help="override the manifest's GPU budget",
+        )
+        parser.add_argument(
+            "--token-budget", type=int, default=None, help="override the manifest's token budget"
+        )
+        parser.add_argument("--output", type=Path, default=Path("artifacts/alpha/run"))
+        parser.add_argument(
+            "--snapshot-root", type=Path, default=None, help="snapshot root (default: manifest)"
+        )
+        parser.add_argument("--gpu-device", default=None, help="CDI device (default: manifest)")
+        parser.add_argument("--resume", action="store_true", default=True)
+        return
     parser.add_argument("--problem", default="kernelbench:l1:40", help="e.g. kernelbench:l1:40")
     parser.add_argument("--backend", default="triton", help="candidate backend (triton)")
     parser.add_argument("--model", default="glm-4.5", help="provider model id")
@@ -97,6 +147,61 @@ def _optimize_arguments(parser: argparse.ArgumentParser, *, resume_default: bool
     parser.add_argument("--snapshot-root", type=Path, default=None)
     parser.add_argument("--gpu-device", default=None, help="CDI device, e.g. nvidia.com/gpu=GPU-…")
     parser.add_argument("--resume", action="store_true", default=resume_default)
+
+
+def _resume_config_from_manifest(args: argparse.Namespace):
+    """Build the resume OptimizationConfig: unspecified arguments restore
+    the original values from the run manifest; explicit arguments override
+    (and are re-validated against the manifest's identity inside optimize)."""
+    from kernelagent.domain.errors import DomainError
+    from kernelagent.domain.run_manifest import MANIFEST_FILENAME
+    from kernelagent.domain.serialization import loads as domain_loads
+    from kernelagent.optimization import OptimizationConfig, OptimizationConfigError
+
+    output = Path(args.output)
+    manifest_path = output / MANIFEST_FILENAME
+    if not manifest_path.is_file():
+        raise OptimizationConfigError(
+            f"no run manifest at {manifest_path}: only runs started by this version "
+            "can be resumed (start a new experiment)"
+        )
+    try:
+        manifest = domain_loads(manifest_path.read_text(encoding="utf-8"))
+    except DomainError as exc:
+        raise OptimizationConfigError(
+            f"run manifest at {manifest_path} is unreadable: {exc}"
+        ) from exc
+    if not hasattr(manifest, "model_id"):
+        raise OptimizationConfigError(
+            f"run manifest at {manifest_path} holds {type(manifest).__name__}, not RunManifest"
+        )
+    snapshot_root = args.snapshot_root
+    if snapshot_root is None and manifest.snapshot_root:
+        snapshot_root = Path(manifest.snapshot_root)
+    return OptimizationConfig(
+        problem=args.problem if args.problem is not None else manifest.problem,
+        backend=args.backend if args.backend is not None else manifest.backend,
+        model_id=args.model if args.model is not None else manifest.model_id,
+        base_url=args.base_url if args.base_url is not None else manifest.base_url,
+        max_candidates=(
+            args.max_candidates if args.max_candidates is not None else manifest.max_candidates
+        ),
+        max_repair_rounds=(
+            args.max_repair_rounds
+            if args.max_repair_rounds is not None
+            else manifest.max_repair_rounds
+        ),
+        gpu_budget_seconds=(
+            args.gpu_budget_seconds
+            if args.gpu_budget_seconds is not None
+            else manifest.gpu_budget_seconds
+        ),
+        token_budget=args.token_budget if args.token_budget is not None else manifest.token_budget,
+        output=output,
+        resume=True,
+        snapshot_root=snapshot_root,
+        gpu_device=args.gpu_device if args.gpu_device is not None else manifest.gpu_device,
+    )
 
 
 def _run_optimize(args: argparse.Namespace) -> int:
@@ -118,27 +223,36 @@ def _run_optimize(args: argparse.Namespace) -> int:
             return 3
     if args.command == "resume" and not args.resume:
         args.resume = True
-    if not args.base_url:
-        print(
-            "config error: --base-url (or MODEL_PROVIDER_BASE_URL) is required; "
-            f"the credential goes in {API_KEY_ENV}"
-        )
-        return 3
-    config = OptimizationConfig(
-        problem=args.problem,
-        backend=args.backend,
-        model_id=args.model,
-        base_url=args.base_url,
-        max_candidates=args.max_candidates,
-        max_repair_rounds=args.max_repair_rounds,
-        gpu_budget_seconds=args.gpu_budget_seconds,
-        token_budget=args.token_budget,
-        output=args.output,
-        resume=args.resume,
-        snapshot_root=args.snapshot_root,
-        gpu_device=args.gpu_device,
-    )
     try:
+        if args.resume:
+            config = _resume_config_from_manifest(args)
+            if not config.base_url:
+                print(
+                    "config error: the run manifest has no base_url and no --base-url "
+                    "(or MODEL_PROVIDER_BASE_URL) was given"
+                )
+                return 3
+        else:
+            if not args.base_url:
+                print(
+                    "config error: --base-url (or MODEL_PROVIDER_BASE_URL) is required; "
+                    f"the credential goes in {API_KEY_ENV}"
+                )
+                return 3
+            config = OptimizationConfig(
+                problem=args.problem,
+                backend=args.backend,
+                model_id=args.model,
+                base_url=args.base_url,
+                max_candidates=args.max_candidates,
+                max_repair_rounds=args.max_repair_rounds,
+                gpu_budget_seconds=args.gpu_budget_seconds,
+                token_budget=args.token_budget,
+                output=args.output,
+                resume=args.resume,
+                snapshot_root=args.snapshot_root,
+                gpu_device=args.gpu_device,
+            )
         result = optimize(config)
     except OptimizationConfigError as exc:
         print(f"config error: {exc}")

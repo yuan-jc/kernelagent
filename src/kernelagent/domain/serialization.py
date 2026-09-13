@@ -22,6 +22,7 @@ from kernelagent.domain.implementation import BuildSpec, Implementation, SourceF
 from kernelagent.domain.method import Hypothesis, MethodProposal
 from kernelagent.domain.operator import IOPort, OperatorSpec
 from kernelagent.domain.result import EvaluationResult, TaskResult
+from kernelagent.domain.run_manifest import RunManifest
 from kernelagent.domain.task import OptimizationTask
 from kernelagent.domain.workload import Workload
 
@@ -198,6 +199,36 @@ def _evaluation_result(data: dict[str, Any]) -> EvaluationResult:
     )
 
 
+def _run_manifest(data: dict[str, Any]) -> RunManifest:
+    _reject_unknown_fields(data, RunManifest)
+    return RunManifest(
+        schema_version=data["schema_version"],
+        created_at=data["created_at"],
+        run_protocol=data["run_protocol"],
+        problem=data["problem"],
+        problem_name=data["problem_name"],
+        problem_sha256=data["problem_sha256"],
+        problem_source=data["problem_source"],
+        benchmark=data["benchmark"],
+        snapshot=data["snapshot"],
+        snapshot_root=data["snapshot_root"],
+        backend=data["backend"],
+        eval_driver_sha256=data["eval_driver_sha256"],
+        timing_driver_sha256=data["timing_driver_sha256"],
+        timing_protocol_sha256=data["timing_protocol_sha256"],
+        image_repo=data["image_repo"],
+        image_id=data["image_id"],
+        gpu_device=data["gpu_device"],
+        model_id=data["model_id"],
+        base_url=data["base_url"],
+        api_key_env=data["api_key_env"],
+        max_candidates=data["max_candidates"],
+        max_repair_rounds=data["max_repair_rounds"],
+        gpu_budget_seconds=data["gpu_budget_seconds"],
+        token_budget=data["token_budget"],
+    )
+
+
 def _task_result(data: dict[str, Any]) -> TaskResult:
     _reject_unknown_fields(data, TaskResult)
     champion = data.get("champion")
@@ -235,6 +266,7 @@ _CONSTRUCTORS: dict[str, Callable[[dict[str, Any]], Any]] = {
     "MethodProposal": _method_proposal,
     "EvaluationResult": _evaluation_result,
     "TaskResult": _task_result,
+    "RunManifest": _run_manifest,
 }
 
 
