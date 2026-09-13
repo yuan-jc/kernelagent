@@ -1,0 +1,492 @@
+{
+  "schema_version": "1.0",
+  "repository": "gpu-mode/reference-kernels",
+  "commit": "51e22db671d36c1c76091c43c36a44546ba324a1",
+  "note": "Problem sets pmpp_v2 and linalg only, per-problem file closure plus set-level eval/utils/template and set metadata yaml. License: June 9 Researcher Reciprocity v1.0 - local evaluation only, no training or retrieval reuse, no redistribution.",
+  "files": [
+    {
+      "path": "LICENSE",
+      "git_blob_sha1": "dd8968a30f353a8b8721dbc8d497911d9fea0ec5",
+      "sha256": "9eb39e0fa3b25c043d6165a8ce5aca29501c057e6aae9e54df63b8e92c0efda5",
+      "size": 12596
+    },
+    {
+      "path": "problems/linalg.yaml",
+      "git_blob_sha1": "52a7d9dfdbdd67dc8a74e4944f8398634b04aa89",
+      "sha256": "febd49ebf431669460d09ac6d99b320de98e8d0c575b26d5b602734316545326",
+      "size": 507
+    },
+    {
+      "path": "problems/linalg/cholesky_py/eval.py",
+      "git_blob_sha1": "2840b2b5dbbf78ff38bb20a4c25b5bcceb7fa8ea",
+      "sha256": "c4c6ec6dd8949768be9b876962f3b4b9be9ad163fc460fd786942372b5ba654a",
+      "size": 8464
+    },
+    {
+      "path": "problems/linalg/cholesky_py/reference.py",
+      "git_blob_sha1": "0980ad43bef79bbc4d72f4d7884aac9e5a9969f2",
+      "sha256": "b0334971a413f3a19be634574d54f3885cfdeb1089594df7f1f2759954a0a2ea",
+      "size": 6265
+    },
+    {
+      "path": "problems/linalg/cholesky_py/submission.py",
+      "git_blob_sha1": "6a40f6d30360f180148badd6e11ca328f96f40a4",
+      "sha256": "ae776510ef99107b6e10aa146cb968d0354f19568208c23dd1cd1cf0731fdc4c",
+      "size": 161
+    },
+    {
+      "path": "problems/linalg/cholesky_py/submissions/README.md",
+      "git_blob_sha1": "68ecf15953793f04ed196e05f036edaed5b2a164",
+      "sha256": "5e2f8d3bba716fa1c11472c101a8b2727760a9706bebe45568c16de8724a76af",
+      "size": 264
+    },
+    {
+      "path": "problems/linalg/cholesky_py/submissions/triton_cholesky32.py",
+      "git_blob_sha1": "b4e1770d6bf8e7ebc92438516be3cf9f3155b2c2",
+      "sha256": "1d9733aa35e4c7cd24a1473c9d3f0d8f85ecdf9af6d292503980d062180abee2",
+      "size": 1462
+    },
+    {
+      "path": "problems/linalg/cholesky_py/task.py",
+      "git_blob_sha1": "8683c705db377d1757db06e2c0820162b68b07e5",
+      "sha256": "3a772362e617c8320d76bfe71220b576b3eefdac763290c3272bf4a3ffda849e",
+      "size": 277
+    },
+    {
+      "path": "problems/linalg/cholesky_py/task.yml",
+      "git_blob_sha1": "c14e931741f6212bfda707810123aa6577d52a0e",
+      "sha256": "92ec2614a2f40e98ce66026f52ccd40772d5783183a36e9d726379fca291971a",
+      "size": 3849
+    },
+    {
+      "path": "problems/linalg/cholesky_py/validation.py",
+      "git_blob_sha1": "f84c617a680eb5aa0144a85667f990769822c7bd",
+      "sha256": "8e17144fd3d8282e893f999cf2e68bb19e86c4c3420502f5c07af2ed1754ce85",
+      "size": 13948
+    },
+    {
+      "path": "problems/linalg/eigh_py/eval.py",
+      "git_blob_sha1": "49004c709c66d3f37b2b2c066ff190adb41812e0",
+      "sha256": "ad577ad69c360c43eb68997ea17e2fe14b83848f7a446aa735e379060d4cba42",
+      "size": 10236
+    },
+    {
+      "path": "problems/linalg/eigh_py/reference.py",
+      "git_blob_sha1": "0cf1cc1a08dd7253b27c2264a0a8a93968fda671",
+      "sha256": "56c91b22d96a078dcb2d77c89b8f5a74e6873a2ccee5c22b6853c04b9e666c7c",
+      "size": 16453
+    },
+    {
+      "path": "problems/linalg/eigh_py/submission.py",
+      "git_blob_sha1": "19465b3ef010addbf9ac476e2216178f6e0981f2",
+      "sha256": "064385424391585540c277998237c5b1cd0decebb32bab4cef2872fae545e9cb",
+      "size": 169
+    },
+    {
+      "path": "problems/linalg/eigh_py/submissions/README.md",
+      "git_blob_sha1": "f1fdff6c9c3fea87f5cbd7f4abfe47d7d113f702",
+      "sha256": "d22242e950c8a2c9363d742d8e60e51f8bac344756efc9fa516098d4b977acfd",
+      "size": 1407
+    },
+    {
+      "path": "problems/linalg/eigh_py/submissions/torch_eigh.py",
+      "git_blob_sha1": "19465b3ef010addbf9ac476e2216178f6e0981f2",
+      "sha256": "064385424391585540c277998237c5b1cd0decebb32bab4cef2872fae545e9cb",
+      "size": 169
+    },
+    {
+      "path": "problems/linalg/eigh_py/submissions/triton_diagonal_fast_path.py",
+      "git_blob_sha1": "7c769533aa1a247601f1de2db30605a4e725f690",
+      "sha256": "16720702da4b672a2ae04c5102d526bbcf1905b669e1aee460a1cd7dc0c0d1ab",
+      "size": 1424
+    },
+    {
+      "path": "problems/linalg/eigh_py/task.py",
+      "git_blob_sha1": "e0547dccaae9a69ff49f7c8305d787f68c53ca4c",
+      "sha256": "ab03af2a32b52049b478c1f92cde5d4d9abdfeeecee194a5735260d33d3fec10",
+      "size": 296
+    },
+    {
+      "path": "problems/linalg/eigh_py/task.yml",
+      "git_blob_sha1": "99e2c30ff896718f4cc2f1c96562101a66dc9676",
+      "sha256": "943acfc8ff3fe6fbd4c324777d7b4afc27b7f85b3f9f094a833f1e01ad65a88e",
+      "size": 7632
+    },
+    {
+      "path": "problems/linalg/qr_py/eval.py",
+      "git_blob_sha1": "9b10212f0435d0f78836bee45ffb874c53c68649",
+      "sha256": "3ee309171dbc484ce0fda4ac98d28f8739e6ff491f2ceff99db1dc8ba0fc50ac",
+      "size": 10948
+    },
+    {
+      "path": "problems/linalg/qr_py/reference.py",
+      "git_blob_sha1": "fc8ace77ab547bda217784c5cc31b141f7a5d0d7",
+      "sha256": "6ce53f17ee2f2d4b8b93fd462edc86fedbea6c88acba39f75814aaedf13f73a8",
+      "size": 7453
+    },
+    {
+      "path": "problems/linalg/qr_py/submission.py",
+      "git_blob_sha1": "ac92e0acb69bb3c4f8f8d755bbce0c223518db9e",
+      "sha256": "05618ad3a3261c9d074c9998e257c8494123df8fbd8fe08f90a8b36b75f2dfda",
+      "size": 125
+    },
+    {
+      "path": "problems/linalg/qr_py/task.py",
+      "git_blob_sha1": "e0547dccaae9a69ff49f7c8305d787f68c53ca4c",
+      "sha256": "ab03af2a32b52049b478c1f92cde5d4d9abdfeeecee194a5735260d33d3fec10",
+      "size": 296
+    },
+    {
+      "path": "problems/linalg/qr_py/task.yml",
+      "git_blob_sha1": "8e935eba500df519230e44e4b2403eab2b143044",
+      "sha256": "1c02b420f147ddf874d91bde91daa8a0c6e0899aa6f7e72b0510530b75d707e6",
+      "size": 4911
+    },
+    {
+      "path": "problems/linalg/qr_v2/eval.py",
+      "git_blob_sha1": "9b10212f0435d0f78836bee45ffb874c53c68649",
+      "sha256": "3ee309171dbc484ce0fda4ac98d28f8739e6ff491f2ceff99db1dc8ba0fc50ac",
+      "size": 10948
+    },
+    {
+      "path": "problems/linalg/qr_v2/reference.py",
+      "git_blob_sha1": "539f9094319d283aa47e5c389db0f9a244b91381",
+      "sha256": "56db6700958f3f0108790a65f6e26a0e37f8494c0b96ecd016f711a31adb57d5",
+      "size": 11340
+    },
+    {
+      "path": "problems/linalg/qr_v2/submission.py",
+      "git_blob_sha1": "ac92e0acb69bb3c4f8f8d755bbce0c223518db9e",
+      "sha256": "05618ad3a3261c9d074c9998e257c8494123df8fbd8fe08f90a8b36b75f2dfda",
+      "size": 125
+    },
+    {
+      "path": "problems/linalg/qr_v2/task.py",
+      "git_blob_sha1": "e0547dccaae9a69ff49f7c8305d787f68c53ca4c",
+      "sha256": "ab03af2a32b52049b478c1f92cde5d4d9abdfeeecee194a5735260d33d3fec10",
+      "size": 296
+    },
+    {
+      "path": "problems/linalg/qr_v2/task.yml",
+      "git_blob_sha1": "0da22d88aace708e524e8c61825657118b68f5bf",
+      "sha256": "b2aa2a00721217b4fe903b6ce964ab5f569ccc55f1278e83d676556d02e89778",
+      "size": 6431
+    },
+    {
+      "path": "problems/pmpp_v2.yaml",
+      "git_blob_sha1": "3bdf6777e24530b973485f7513d052b769a741e1",
+      "sha256": "5217ede985dc3e76c11649dede61784046b7540690ed52ca10f6d9fac18d506b",
+      "size": 1350
+    },
+    {
+      "path": "problems/pmpp_v2/conv2d_py/reference.py",
+      "git_blob_sha1": "0f8cb10f54b98e99986ebd0c7ed3fe2d286f4b65",
+      "sha256": "654a4484fad4c2b764ae36fc0eb17f598e77fa575b2bbc150c8b520d91683588",
+      "size": 1804
+    },
+    {
+      "path": "problems/pmpp_v2/conv2d_py/solutions/correct/ref.py",
+      "git_blob_sha1": "89313808d860c2b8ceed0c564f0f2895f5f1e73f",
+      "sha256": "61aa59734d63987f80dc530f32d6d6bf882a88411f168424846dbb9b03eb6c41",
+      "size": 243
+    },
+    {
+      "path": "problems/pmpp_v2/conv2d_py/solutions/wrong/empty.py",
+      "git_blob_sha1": "7e6cef7cfc4580eddfa00a8f7f476fe018b8303a",
+      "sha256": "a04c97a3f28aa3256dda45cb0feebc2b6b566ecc9de76d6697996079231d9cea",
+      "size": 142
+    },
+    {
+      "path": "problems/pmpp_v2/conv2d_py/submission.py",
+      "git_blob_sha1": "4f1efb4cefb48200aaa504328b7a082477ad78f7",
+      "sha256": "4eaddf7046c0a0e04f51be9ddbc9b55809359942f6a02aae595a2829781cf9b3",
+      "size": 513
+    },
+    {
+      "path": "problems/pmpp_v2/conv2d_py/task.py",
+      "git_blob_sha1": "dc0b7710e023be5a446c12e316f632ab575a5e9d",
+      "sha256": "b315411c607ada2f46b0c2cb0d8b1dfd81f71b454d36d614476bb3efb4c0637b",
+      "size": 304
+    },
+    {
+      "path": "problems/pmpp_v2/conv2d_py/task.yml",
+      "git_blob_sha1": "9b44b2b72aea1fa596c568a9917c59a72d4df99b",
+      "sha256": "30f766e54b73c554bcecb56ea4ab30a13b2f8b5ab870dbb8dedb13dc59f4c338",
+      "size": 2026
+    },
+    {
+      "path": "problems/pmpp_v2/eval.py",
+      "git_blob_sha1": "981b932223fb128ce38d136da53af20ee8af97f0",
+      "sha256": "7bbde85d8c4849c9ec8ca2c8a0adf4f59d2fc5bf1ea1f9de992e38f4d81b7c80",
+      "size": 12422
+    },
+    {
+      "path": "problems/pmpp_v2/grayscale_py/reference.py",
+      "git_blob_sha1": "3190a0543613f2dcf0bf057b911ca437ff4706af",
+      "sha256": "c619d1621f515b0146c71e23b85cea8601ec3d05056d7bc1fd7fa88f025dbac8",
+      "size": 1336
+    },
+    {
+      "path": "problems/pmpp_v2/grayscale_py/solutions/correct/ref.py",
+      "git_blob_sha1": "6a9d1b7876825d2c580e6c13e18e147a3fbb3c3b",
+      "sha256": "2129cdc6711dbad23403add15b0946ab6afe951cb6ef46ee28eb4b641ab305e3",
+      "size": 295
+    },
+    {
+      "path": "problems/pmpp_v2/grayscale_py/solutions/wrong/empty.py",
+      "git_blob_sha1": "129b896681ea76cd06dff6b4d504d1f8c73e56dd",
+      "sha256": "3e1a4cf3649391d935c48a5fce2c11444081b0d967048430f1e32165b954d1f0",
+      "size": 152
+    },
+    {
+      "path": "problems/pmpp_v2/grayscale_py/submission.py",
+      "git_blob_sha1": "9e55306c9e075de3d604f2611a306a6f2d187b14",
+      "sha256": "ea7c0f02032cbeca0accb3c9570bded6fc1c91442825e966b5ffd879fe9b3450",
+      "size": 332
+    },
+    {
+      "path": "problems/pmpp_v2/grayscale_py/task.py",
+      "git_blob_sha1": "26a2f524ae2097d099ec21fe54fc55bca83a142e",
+      "sha256": "15a487ee871c204e284424ddd5ac675128992640ba9e2098290972d6f852554c",
+      "size": 438
+    },
+    {
+      "path": "problems/pmpp_v2/grayscale_py/task.yml",
+      "git_blob_sha1": "d1cbb30abdca77a7325653efc1a107ae8a81d70b",
+      "sha256": "7e4885d7eef22697aa4c53a13274bdbc375e53aade81658044df39c896cc1466",
+      "size": 1107
+    },
+    {
+      "path": "problems/pmpp_v2/histogram_py/reference.py",
+      "git_blob_sha1": "4268cec798403fc78e003d2cb0321956e8d220eb",
+      "sha256": "6e000ddb4567ef73f6a41eb50e4c3eeaf0fde80c53156645af72f8ac6762459c",
+      "size": 1809
+    },
+    {
+      "path": "problems/pmpp_v2/histogram_py/solutions/correct/ref.py",
+      "git_blob_sha1": "d96e1a21bc75a6fc9c06fa920dfcb65cf075b7ae",
+      "sha256": "58629fbb937eb08519c816fd894e45f55c205af92114b86aa4efc0732ea691f1",
+      "size": 192
+    },
+    {
+      "path": "problems/pmpp_v2/histogram_py/solutions/wrong/empty.py",
+      "git_blob_sha1": "af7bfcc02e2c3f5ae57672a3901659737158c8c6",
+      "sha256": "34a2d5d17cfeb0d89ab28395bbae6afee5c12cdcb320a812dee3ef0f852eed87",
+      "size": 139
+    },
+    {
+      "path": "problems/pmpp_v2/histogram_py/submission.py",
+      "git_blob_sha1": "590fd03ade2b11bf0cf97278d6f03195bc9f202b",
+      "sha256": "94329070c83f53e0b1607b1b9de9d372e9347aa6ddd66062b6c32e38a669779b",
+      "size": 401
+    },
+    {
+      "path": "problems/pmpp_v2/histogram_py/task.py",
+      "git_blob_sha1": "632ed7f288969cc978a0e0385485f5e3e0a7888a",
+      "sha256": "730258fae4e85f2f3114e5834d3dbe3253dc8333634943025572b870e43f58d3",
+      "size": 250
+    },
+    {
+      "path": "problems/pmpp_v2/histogram_py/task.yml",
+      "git_blob_sha1": "419529abad720cda1a0b7b0ed1cc93ad8cea101f",
+      "sha256": "1858148616fd6d77a47a797668ed4f8e1c84e048bd2fc0e3a69d9fb30a58b893",
+      "size": 1415
+    },
+    {
+      "path": "problems/pmpp_v2/matmul_py/reference.py",
+      "git_blob_sha1": "dc34cd32c920a7fa50b2e1d8100b3f4c85d47075",
+      "sha256": "100e2c3ea92b6c20c6e0b7a7a8497509ab28f3aaf233139ad1019afac7a08365",
+      "size": 701
+    },
+    {
+      "path": "problems/pmpp_v2/matmul_py/solutions/correct/ref.py",
+      "git_blob_sha1": "15898593e1a9e0dfcf701a6475dc4fde7ea85b3e",
+      "sha256": "365e5be70ec8df897226578017abe1e7af4d0964e8dad90236cf56be569dbe25",
+      "size": 147
+    },
+    {
+      "path": "problems/pmpp_v2/matmul_py/solutions/wrong/low-precision.py",
+      "git_blob_sha1": "b9af5586d9d49b08a6145eadd41db6cc62630bac",
+      "sha256": "0befe227721473886149507fc56e15dba445a24a6f911bf5412a40a2ad981b87",
+      "size": 199
+    },
+    {
+      "path": "problems/pmpp_v2/matmul_py/submission.py",
+      "git_blob_sha1": "ecb0408d27e3953824a87fabfcacd1404642c80b",
+      "sha256": "57a2abafed553f8f7860d84d76158cb84ce85bf52a64ae01f059321d1f007cf1",
+      "size": 133
+    },
+    {
+      "path": "problems/pmpp_v2/matmul_py/task.py",
+      "git_blob_sha1": "65a72b3f40e2b79ca77bcae8bf5e7af4787e0f29",
+      "sha256": "927ffb6b0beb68b08e065480b27adbddae1cde291baaf83d977f425f9f110bcf",
+      "size": 262
+    },
+    {
+      "path": "problems/pmpp_v2/matmul_py/task.yml",
+      "git_blob_sha1": "864ba171373b1994d3b2661852cfb1a55a5ebf6e",
+      "sha256": "7381248a91276eab2a23dc6e4e1c14fbac710770fce41fe35ecb8df25cc0cf2f",
+      "size": 1344
+    },
+    {
+      "path": "problems/pmpp_v2/prefixsum_py/reference.py",
+      "git_blob_sha1": "cc25c10a9a711df06a2b3775108927481b4eed47",
+      "sha256": "05b7eec6731394ef6ccba014d8a92dfc5c6debe46136adeadd97d1eacb529b6c",
+      "size": 1450
+    },
+    {
+      "path": "problems/pmpp_v2/prefixsum_py/solutions/correct/ref.py",
+      "git_blob_sha1": "1bfe53c079993b32c53e5a3e61f246f85cef714f",
+      "sha256": "8c0789258ce2b808691f2b44a59502802090814bde7130ee6c752110ff23e471",
+      "size": 182
+    },
+    {
+      "path": "problems/pmpp_v2/prefixsum_py/solutions/wrong/empty.py",
+      "git_blob_sha1": "af7bfcc02e2c3f5ae57672a3901659737158c8c6",
+      "sha256": "34a2d5d17cfeb0d89ab28395bbae6afee5c12cdcb320a812dee3ef0f852eed87",
+      "size": 139
+    },
+    {
+      "path": "problems/pmpp_v2/prefixsum_py/submission.py",
+      "git_blob_sha1": "aa8c90a960e5737ca9e54dc7cd67f8282672eb84",
+      "sha256": "d9f845387cf445d00f846259db10cec98c04852d2168cad7ff6d76126c7589b3",
+      "size": 392
+    },
+    {
+      "path": "problems/pmpp_v2/prefixsum_py/task.py",
+      "git_blob_sha1": "79a29e86809469ce90a02162f85041a577f32951",
+      "sha256": "1980195d04996393b5798a43ae0a74b1b17f3ef2bd0d6d03737baa770ab359f0",
+      "size": 230
+    },
+    {
+      "path": "problems/pmpp_v2/prefixsum_py/task.yml",
+      "git_blob_sha1": "734546d3f1eda3bcc5abb8cb2c4eecb48846706d",
+      "sha256": "a12224794da799308bc868fdb8108675b3a15763db66d08eae4954d95f84824a",
+      "size": 1697
+    },
+    {
+      "path": "problems/pmpp_v2/sort_py/reference.py",
+      "git_blob_sha1": "ca1ab273c4937e88c52bcce2029f74aa114b6a87",
+      "sha256": "76dcfb88b2417fc9b6caea4eb62dd51a845018c6870cedbd43b24c8502e66b18",
+      "size": 1794
+    },
+    {
+      "path": "problems/pmpp_v2/sort_py/solutions/correct/ref.py",
+      "git_blob_sha1": "20be517eb0bffa34ecd15a6e2487d6660a0536dc",
+      "sha256": "e54f8022591c78269425880b1618d588249dd70ad5b12192089b7d8d0c5fc3b9",
+      "size": 249
+    },
+    {
+      "path": "problems/pmpp_v2/sort_py/solutions/wrong/empty.py",
+      "git_blob_sha1": "af7bfcc02e2c3f5ae57672a3901659737158c8c6",
+      "sha256": "34a2d5d17cfeb0d89ab28395bbae6afee5c12cdcb320a812dee3ef0f852eed87",
+      "size": 139
+    },
+    {
+      "path": "problems/pmpp_v2/sort_py/submission.py",
+      "git_blob_sha1": "43175250c8ed2165174b8cf849b4d238e33f2ade",
+      "sha256": "36b7ed74381f1c3cdc8ad7b28e792e5693606f7349d696e4710520ff9f5f6d8c",
+      "size": 385
+    },
+    {
+      "path": "problems/pmpp_v2/sort_py/task.py",
+      "git_blob_sha1": "495e681c7c927b20e9698d9c212f0bf1a8cdfd71",
+      "sha256": "a3ee85b12ca4283f194cc03a673e31e833c05dc34aa076518733570bfcb6d8bd",
+      "size": 225
+    },
+    {
+      "path": "problems/pmpp_v2/sort_py/task.yml",
+      "git_blob_sha1": "7e78a156c6b3cddf016b9e8223b1f6ee4a26b39d",
+      "sha256": "057de55e5f2a0482b7093780f02253b74c4d68a2174222645694386881105dc7",
+      "size": 1225
+    },
+    {
+      "path": "problems/pmpp_v2/template.py",
+      "git_blob_sha1": "4aec6a6cb45e140f6237e20f47b4f0b7b04a5383",
+      "sha256": "d317594add4d551c5f116f28d1a70f11c9f495c486b9addd47dc64d560ac4b38",
+      "size": 92
+    },
+    {
+      "path": "problems/pmpp_v2/utils.py",
+      "git_blob_sha1": "e8a9082f5a0cb2d3b4046e186dee02ffaecc29f9",
+      "sha256": "c73430eaa224f70a3fc5afe8c7906b49ae3525cf4cf21fb4e585eab61fdae640",
+      "size": 6127
+    },
+    {
+      "path": "problems/pmpp_v2/vectoradd_py/reference.py",
+      "git_blob_sha1": "9789711b33960d71dc68f8250dbd6ef415b9b7cc",
+      "sha256": "db478276c63be88cdd030190f82f6f8837a09be8e7df39b2cd441cef619ad154",
+      "size": 1093
+    },
+    {
+      "path": "problems/pmpp_v2/vectoradd_py/solutions/correct/submission_cuda_inline.py",
+      "git_blob_sha1": "ecd070b498c4decaa4074fc4e480546bb346ecf3",
+      "sha256": "5fb8e2b72a73d091646cace3868a0c9fb3d551801b6325ff06278b6e37323343",
+      "size": 2701
+    },
+    {
+      "path": "problems/pmpp_v2/vectoradd_py/solutions/correct/submission_triton.py",
+      "git_blob_sha1": "7d9087bb7e94a3947d2262394641ca10a719cf9f",
+      "sha256": "77bbcb894da93847c7262920d1537006604a5f3fac403f4996abde84fb5d2e66",
+      "size": 1058
+    },
+    {
+      "path": "problems/pmpp_v2/vectoradd_py/submission.py",
+      "git_blob_sha1": "918a1eb893bac0c2ff9c6d01ab92c37c288e78a0",
+      "sha256": "206fa6f083c784ab3451aa2cd2c4f794c96288d22727accce4e61c571151f87e",
+      "size": 149
+    },
+    {
+      "path": "problems/pmpp_v2/vectoradd_py/task.py",
+      "git_blob_sha1": "a630cff73c8f0327342758742e6496dc952732cc",
+      "sha256": "a0c7bd738b93faaf6b603016c7af86678afcd9670061e9e1daa0b0ebf8a3f13d",
+      "size": 231
+    },
+    {
+      "path": "problems/pmpp_v2/vectoradd_py/task.yml",
+      "git_blob_sha1": "f662f16a1fc82b2439d8ba64cd0f1a359756913d",
+      "sha256": "675457e3036c817727f6f0463d76ce282f80f42ff001c6f3030379e11dccd42c",
+      "size": 1078
+    },
+    {
+      "path": "problems/pmpp_v2/vectorsum_py/reference.py",
+      "git_blob_sha1": "313749e153b3a28ab38ad9ca01635db66f9eb6f1",
+      "sha256": "d7363e7c4d28dc4f37072636965a3ddfb7b732e10ee836bbb6233e5f3df9e08a",
+      "size": 1858
+    },
+    {
+      "path": "problems/pmpp_v2/vectorsum_py/solutions/correct/pytorch.py",
+      "git_blob_sha1": "89400913ee8791a0e4f196de667e612e0b325a9f",
+      "sha256": "9747305b252dfb22a74d6af36531c4bd7d8a281dd938453b5b6dc2ab53b9ccee",
+      "size": 284
+    },
+    {
+      "path": "problems/pmpp_v2/vectorsum_py/solutions/wrong/cheat.py",
+      "git_blob_sha1": "83e4f6c781d8131e1c244a6b9261585738df34b0",
+      "sha256": "04ccdbfd2d2a3250bcdb30b1b516f07d9c9f6db43308621c0f550ea4e57cce66",
+      "size": 395
+    },
+    {
+      "path": "problems/pmpp_v2/vectorsum_py/submission.py",
+      "git_blob_sha1": "be8b221fd1d58ceef51b2d5278a6026899c2a123",
+      "sha256": "d8110e6b1e003c2033a22eeec815ac7263d21973b14a27b6f9b23b7c94e5b2b3",
+      "size": 1375
+    },
+    {
+      "path": "problems/pmpp_v2/vectorsum_py/task.py",
+      "git_blob_sha1": "2d48268bf980dfa3c7b1713473784ca108d5fbfd",
+      "sha256": "c63fb7d37effce217768b7d144350c78ba61146ed7aa17eab36aabaef4816d4f",
+      "size": 230
+    },
+    {
+      "path": "problems/pmpp_v2/vectorsum_py/task.yml",
+      "git_blob_sha1": "fc752a83eee56717af3cbf53347b767f4fe6e8e7",
+      "sha256": "b253d268b1eb8b6717e5923e13a3ce6330d6c30a41e0d32d4b64318b5354ad2d",
+      "size": 1147
+    }
+  ],
+  "counts": {
+    "problems_dirs": 74,
+    "files": 80
+  }
+}

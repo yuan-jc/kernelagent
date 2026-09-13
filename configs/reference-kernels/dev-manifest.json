@@ -1,0 +1,631 @@
+{
+  "schema_version": "1.0",
+  "suite": "reference-kernels",
+  "note": "Frozen development subset of the GPU-MODE reference-kernels problem sets pmpp_v2 and linalg. Problem files stay in the local gitignored research cache; this manifest carries ids, embedded task.yml text and sha256 bindings only. It is a selection of upstream data, not a new problem bank.",
+  "upstream": {
+    "repository": "gpu-mode/reference-kernels",
+    "commit": "51e22db671d36c1c76091c43c36a44546ba324a1",
+    "files_manifest": "configs/reference-kernels/snapshot-files.manifest.json",
+    "files_manifest_sha256": "a18ea87c893d2ce59f621778c019f3d44838e226e4b276abec20f372c0eba6e6",
+    "snapshot_counts": {
+      "problems_dirs": 74,
+      "files": 80
+    },
+    "scope": "problem sets pmpp_v2 + linalg only: per-problem file closure plus set-level eval.py/utils.py/template.py and problems/<set>.yaml metadata; other sets (amd*, helion, bioml, nvidia Blackwell-fp4) are out of scope and not snapshotted"
+  },
+  "problems": [
+    {
+      "set": "linalg",
+      "name": "cholesky",
+      "directory": "linalg/cholesky_py",
+      "members": [
+        "problems/linalg/cholesky_py/eval.py",
+        "problems/linalg/cholesky_py/reference.py",
+        "problems/linalg/cholesky_py/submission.py",
+        "problems/linalg/cholesky_py/submissions/README.md",
+        "problems/linalg/cholesky_py/submissions/triton_cholesky32.py",
+        "problems/linalg/cholesky_py/task.py",
+        "problems/linalg/cholesky_py/task.yml",
+        "problems/linalg/cholesky_py/validation.py"
+      ],
+      "member_sha256": [
+        "c4c6ec6dd8949768be9b876962f3b4b9be9ad163fc460fd786942372b5ba654a",
+        "b0334971a413f3a19be634574d54f3885cfdeb1089594df7f1f2759954a0a2ea",
+        "ae776510ef99107b6e10aa146cb968d0354f19568208c23dd1cd1cf0731fdc4c",
+        "5e2f8d3bba716fa1c11472c101a8b2727760a9706bebe45568c16de8724a76af",
+        "1d9733aa35e4c7cd24a1473c9d3f0d8f85ecdf9af6d292503980d062180abee2",
+        "3a772362e617c8320d76bfe71220b576b3eefdac763290c3272bf4a3ffda849e",
+        "92ec2614a2f40e98ce66026f52ccd40772d5783183a36e9d726379fca291971a",
+        "8e17144fd3d8282e893f999cf2e68bb19e86c4c3420502f5c07af2ed1754ce85"
+      ],
+      "task_yml_sha256": "92ec2614a2f40e98ce66026f52ccd40772d5783183a36e9d726379fca291971a",
+      "task_yml_text": "# name: cholesky\n\nfiles:\n  - {\"name\": \"submission.py\", \"source\": \"@SUBMISSION@\"}\n  - {\"name\": \"task.py\", \"source\": \"task.py\"}\n  - {\"name\": \"utils.py\", \"source\": \"../../pmpp_v2/utils.py\"}\n  - {\"name\": \"reference.py\", \"source\": \"reference.py\"}\n  - {\"name\": \"eval.py\", \"source\": \"eval.py\"}\n\nlang: \"py\"\n\ndescription: |\n  Implement batched dense Cholesky factorization.\n\n  Input is `A`, a `batch x n x n` CUDA tensor in `torch.float32`. Every matrix\n  is symmetric positive definite up to FP32 roundoff. Return a lower-triangular\n  FP32 tensor `L` with positive diagonal such that `A = L @ L.T`.\n\n  The checker validates shape, dtype, device, finiteness, lower-triangular\n  structure, positive diagonal, and the reconstruction residual against the\n  original FP32 input. Correctness is property-based rather than elementwise\n  comparison with one library implementation.\n\n  Inputs cover dense covariance-like matrices, planted spectra, diagonal\n  matrices, damped low-rank matrices, scaled rows and columns, and\n  tridiagonal SPD matrices. The `cond` field is a deterministic dynamic-range\n  control; it is not an exact requested condition number for every case.\n\n  The benchmark grid emphasizes batched factorization: from thousands of small\n  matrices through a single 32768 x 32768 matrix. The low-batch entries from\n  n=32 through n=1024 each contain 2^22 FP32 input elements, so matrix scaling\n  is compared at a consistent 16 MiB input footprint. Paired high-batch entries\n  at n=512, 1024, 2048, and 4096 separately exercise throughput and batch\n  parallelism. Among passing submissions, ranking is by the geometric mean of\n  runtime across all benchmark entries.\n\nconfig:\n  main: \"eval.py\"\n\ntemplates:\n  Python: \"submission.py\"\n\ntest_timeout: 240\nbenchmark_timeout: 600\nranked_timeout: 1200\nranking_by: \"geom\"\ngpus:\n  - B200\n\ntests:\n  - {\"batch\": 16, \"n\": 32, \"cond\": 2, \"seed\": 53124}\n  - {\"batch\": 16, \"n\": 64, \"cond\": 2, \"seed\": 53125}\n  - {\"batch\": 16, \"n\": 128, \"cond\": 2, \"seed\": 3321}\n  - {\"batch\": 8, \"n\": 256, \"cond\": 2, \"seed\": 94010}\n  - {\"batch\": 4, \"n\": 512, \"cond\": 2, \"seed\": 32523}\n  - {\"batch\": 2, \"n\": 1024, \"cond\": 2, \"seed\": 4327}\n  - {\"batch\": 1, \"n\": 2048, \"cond\": 2, \"seed\": 224466}\n  - {\"batch\": 8, \"n\": 128, \"cond\": 5, \"seed\": 1200, \"case\": \"spectrum\"}\n  - {\"batch\": 8, \"n\": 128, \"cond\": 5, \"seed\": 1201, \"case\": \"diagonal\"}\n  - {\"batch\": 32, \"n\": 32, \"cond\": 5, \"seed\": 1202, \"case\": \"spectrum\"}\n  - {\"batch\": 32, \"n\": 32, \"cond\": 5, \"seed\": 1203, \"case\": \"diagonal\"}\n  - {\"batch\": 16, \"n\": 64, \"cond\": 5, \"seed\": 1204, \"case\": \"spectrum\"}\n  - {\"batch\": 16, \"n\": 64, \"cond\": 5, \"seed\": 1205, \"case\": \"diagonal\"}\n  - {\"batch\": 4, \"n\": 256, \"cond\": 4, \"seed\": 32524, \"case\": \"lowrank\"}\n  - {\"batch\": 4, \"n\": 512, \"cond\": 4, \"seed\": 32525, \"case\": \"rowscale\"}\n  - {\"batch\": 4, \"n\": 512, \"cond\": 1, \"seed\": 32526, \"case\": \"tridiagonal\"}\n  - {\"batch\": 2, \"n\": 1024, \"cond\": 4, \"seed\": 4330, \"case\": \"lowrank\"}\n\nbenchmarks:\n  - {\"batch\": 4096, \"n\": 32, \"cond\": 2, \"seed\": 41032}\n  - {\"batch\": 1024, \"n\": 64, \"cond\": 2, \"seed\": 41064}\n  - {\"batch\": 256, \"n\": 128, \"cond\": 2, \"seed\": 41128}\n  - {\"batch\": 64, \"n\": 256, \"cond\": 2, \"seed\": 41256}\n  - {\"batch\": 16, \"n\": 512, \"cond\": 2, \"seed\": 41512}\n  - {\"batch\": 640, \"n\": 512, \"cond\": 2, \"seed\": 510512}\n  - {\"batch\": 4, \"n\": 1024, \"cond\": 2, \"seed\": 42024}\n  - {\"batch\": 60, \"n\": 1024, \"cond\": 2, \"seed\": 511024}\n  - {\"batch\": 2, \"n\": 2048, \"cond\": 2, \"seed\": 44048}\n  - {\"batch\": 8, \"n\": 2048, \"cond\": 2, \"seed\": 512048}\n  - {\"batch\": 1, \"n\": 4096, \"cond\": 2, \"seed\": 48096}\n  - {\"batch\": 2, \"n\": 4096, \"cond\": 2, \"seed\": 514096}\n  - {\"batch\": 1, \"n\": 8192, \"cond\": 2, \"seed\": 48192}\n  - {\"batch\": 1, \"n\": 16384, \"cond\": 2, \"seed\": 48284}\n  - {\"batch\": 1, \"n\": 32768, \"cond\": 2, \"seed\": 48368}\n\nvalidation:\n  version: \"cholesky-natural-gradient-v1\"\n  script: \"validation.py\"\n",
+      "inputs": [
+        {
+          "name": "a",
+          "dtype": "float32",
+          "dims": [
+            "batch",
+            "n",
+            "n"
+          ]
+        }
+      ],
+      "test_timeout": 240,
+      "benchmark_timeout": 600,
+      "ranked_timeout": 1200,
+      "official_gpus": [
+        "B200"
+      ]
+    },
+    {
+      "set": "linalg",
+      "name": "eigh",
+      "directory": "linalg/eigh_py",
+      "members": [
+        "problems/linalg/eigh_py/eval.py",
+        "problems/linalg/eigh_py/reference.py",
+        "problems/linalg/eigh_py/submission.py",
+        "problems/linalg/eigh_py/submissions/README.md",
+        "problems/linalg/eigh_py/submissions/torch_eigh.py",
+        "problems/linalg/eigh_py/submissions/triton_diagonal_fast_path.py",
+        "problems/linalg/eigh_py/task.py",
+        "problems/linalg/eigh_py/task.yml"
+      ],
+      "member_sha256": [
+        "ad577ad69c360c43eb68997ea17e2fe14b83848f7a446aa735e379060d4cba42",
+        "56c91b22d96a078dcb2d77c89b8f5a74e6873a2ccee5c22b6853c04b9e666c7c",
+        "064385424391585540c277998237c5b1cd0decebb32bab4cef2872fae545e9cb",
+        "d22242e950c8a2c9363d742d8e60e51f8bac344756efc9fa516098d4b977acfd",
+        "064385424391585540c277998237c5b1cd0decebb32bab4cef2872fae545e9cb",
+        "16720702da4b672a2ae04c5102d526bbcf1905b669e1aee460a1cd7dc0c0d1ab",
+        "ab03af2a32b52049b478c1f92cde5d4d9abdfeeecee194a5735260d33d3fec10",
+        "943acfc8ff3fe6fbd4c324777d7b4afc27b7f85b3f9f094a833f1e01ad65a88e"
+      ],
+      "task_yml_sha256": "943acfc8ff3fe6fbd4c324777d7b4afc27b7f85b3f9f094a833f1e01ad65a88e",
+      "task_yml_text": "# name: eigh\n\nfiles:\n  - {\"name\": \"submission.py\", \"source\": \"@SUBMISSION@\"}\n  - {\"name\": \"task.py\", \"source\": \"task.py\"}\n  - {\"name\": \"utils.py\", \"source\": \"../../pmpp_v2/utils.py\"}\n  - {\"name\": \"reference.py\", \"source\": \"reference.py\"}\n  - {\"name\": \"eval.py\", \"source\": \"eval.py\"}\n\nlang: \"py\"\n\ndescription: |\n  Implement batched real symmetric eigendecomposition.\n\n  Input is `A`, a `batch x n x n` CUDA tensor in `torch.float32`. Every input\n  matrix is symmetric up to FP32 roundoff.\n\n  Return `(Q, L)` in the same eigenvector convention as `torch.linalg.eigh(A)`:\n  `Q` is a `batch x n x n` FP32 tensor whose columns are orthonormal\n  eigenvectors, and `L` is a `batch x n` FP32 tensor of eigenvalues sorted in\n  ascending order. The checker validates the invariant `A @ Q = Q @ diag(L)`,\n  reconstructs `A = Q @ diag(L) @ Q.T`, and checks orthogonality of `Q`.\n\n  Eigenvectors are not unique. Individual signs may flip, and repeated or\n  tightly clustered eigenvalues may rotate within their eigenspaces. Correctness\n  is therefore based on matrix identities, not elementwise comparison against a\n  reference eigensolver.\n\n  This shape set mirrors the optimizer-statistics motivation in `qr_v2`: square\n  matrices produced from gradient views and second-moment style statistics.\n  Batched `512 x 512` is the central target, while `1024`, `2048`, and `4096`\n  cover larger square factors.\n\n  Test and benchmark specs include a `cond` field. In this task `cond` is a\n  deterministic dynamic-range knob, not an exact requested condition number.\n  Some cases create spectra spanning `10^-cond` to `1`; others apply row/column\n  scaling or generate covariance-like positive semidefinite matrices. Stress\n  cases include rank-deficient, near-rank-deficient, repeated-eigenvalue,\n  clustered-eigenvalue, diagonal, banded, row-scaled, and mixed inputs.\n  Correctness tests also include LAPACK DDRVST-inspired matrix types from\n  `TESTING/EIG/ddrvst.f`: zero, identity, diagonal spectra, dense\n  planted-spectrum matrices, random symmetric matrices, and high- and\n  low-magnitude banded variants.\n\n  The `mixed` case builds a heterogeneous batch: each matrix is independently\n  assigned a conditioning profile at a random position in the batch. This\n  mirrors real optimizer-statistics batches, where per-layer or per-block\n  factors do not share one numerical structure. The benchmark set includes\n  mixed batches and homogeneous ill-conditioned batches, so robustness is\n  ranked, not only gated.\n\n  Correctness is residual-gated against the original FP32 input. Low-bit FP16,\n  FP8, or NVFP4 work is allowed as an internal implementation strategy:\n  returned factors must still be FP32 and must represent a numerically\n  meaningful eigendecomposition. Residuals are measured in FP64 to reduce\n  checker noise, and the gates are intentionally dimension-scaled and\n  invariant-based rather than elementwise reference comparisons. This leaves\n  room for approximate low-bit solutions while still rejecting non-orthogonal\n  factors, unsorted eigenvalues, and outputs that do not reconstruct the input.\n  The hard gates are the eigen-equation residual `A @ Q - Q @ diag(L)`,\n  reconstruction residual `Q @ diag(L) @ Q.T - A`, and orthogonality residual\n  `Q.T @ Q - I`, each applied relative to the corresponding matrix L1 norm.\n\n  Among passing submissions, ranking is by runtime using the geometric mean of\n  benchmark cases.\n\nconfig:\n  main: \"eval.py\"\n\ntemplates:\n  Python: \"submission.py\"\n\ntest_timeout: 480\nbenchmark_timeout: 900\nranked_timeout: 900\nranking_by: \"geom\"\ngpus:\n  - B200\n\ntests:\n  - {\"batch\": 20, \"n\": 32, \"cond\": 1, \"seed\": 53124}\n  - {\"batch\": 40, \"n\": 176, \"cond\": 1, \"seed\": 3321}\n  - {\"batch\": 40, \"n\": 352, \"cond\": 1, \"seed\": 1200}\n  - {\"batch\": 16, \"n\": 512, \"cond\": 2, \"seed\": 32523}\n  - {\"batch\": 4, \"n\": 1024, \"cond\": 2, \"seed\": 4327}\n  - {\"batch\": 2, \"n\": 2048, \"cond\": 1, \"seed\": 224466}\n  - {\"batch\": 16, \"n\": 512, \"cond\": 4, \"seed\": 32524, \"case\": \"spectrum\"}\n  - {\"batch\": 16, \"n\": 512, \"cond\": 2, \"seed\": 32525, \"case\": \"psd\"}\n  - {\"batch\": 16, \"n\": 512, \"cond\": 0, \"seed\": 32526, \"case\": \"rankdef\"}\n  - {\"batch\": 16, \"n\": 512, \"cond\": 0, \"seed\": 32527, \"case\": \"nearrank\"}\n  - {\"batch\": 16, \"n\": 512, \"cond\": 0, \"seed\": 32528, \"case\": \"repeated\"}\n  - {\"batch\": 16, \"n\": 512, \"cond\": 0, \"seed\": 32529, \"case\": \"clustered\"}\n  - {\"batch\": 16, \"n\": 512, \"cond\": 0, \"seed\": 32530, \"case\": \"band\"}\n  - {\"batch\": 16, \"n\": 512, \"cond\": 0, \"seed\": 32531, \"case\": \"rowscale\"}\n  - {\"batch\": 4, \"n\": 1024, \"cond\": 4, \"seed\": 4328, \"case\": \"spectrum\"}\n  - {\"batch\": 4, \"n\": 1024, \"cond\": 0, \"seed\": 4329, \"case\": \"rankdef\"}\n  - {\"batch\": 4, \"n\": 1024, \"cond\": 0, \"seed\": 4330, \"case\": \"clustered\"}\n  - {\"batch\": 2, \"n\": 2048, \"cond\": 2, \"seed\": 224467, \"case\": \"mixed\"}\n  - {\"batch\": 1, \"n\": 4096, \"cond\": 1, \"seed\": 75343, \"case\": \"diagonal\"}\n  - {\"batch\": 16, \"n\": 512, \"cond\": 2, \"seed\": 32532, \"case\": \"mixed\"}\n  - {\"batch\": 4, \"n\": 1024, \"cond\": 2, \"seed\": 4331, \"case\": \"mixed\"}\n  - {\"batch\": 16, \"n\": 512, \"cond\": 0, \"seed\": 920001, \"case\": \"lapack_zero\"}\n  - {\"batch\": 16, \"n\": 512, \"cond\": 0, \"seed\": 920002, \"case\": \"lapack_identity\"}\n  - {\"batch\": 16, \"n\": 512, \"cond\": 0, \"seed\": 920003, \"case\": \"lapack_diag_even_spectrum\"}\n  - {\"batch\": 16, \"n\": 512, \"cond\": 0, \"seed\": 920004, \"case\": \"lapack_diag_geometric_spectrum\"}\n  - {\"batch\": 16, \"n\": 512, \"cond\": 0, \"seed\": 920005, \"case\": \"lapack_diag_clustered_spectrum\"}\n  - {\"batch\": 16, \"n\": 512, \"cond\": 0, \"seed\": 920006, \"case\": \"lapack_diag_geometric_high_magnitude\"}\n  - {\"batch\": 16, \"n\": 512, \"cond\": 0, \"seed\": 920007, \"case\": \"lapack_diag_geometric_low_magnitude\"}\n  - {\"batch\": 16, \"n\": 512, \"cond\": 0, \"seed\": 920008, \"case\": \"lapack_dense_even_spectrum\"}\n  - {\"batch\": 16, \"n\": 512, \"cond\": 0, \"seed\": 920009, \"case\": \"lapack_dense_geometric_spectrum\"}\n  - {\"batch\": 4, \"n\": 1024, \"cond\": 0, \"seed\": 920010, \"case\": \"lapack_dense_clustered_spectrum\"}\n  - {\"batch\": 4, \"n\": 1024, \"cond\": 0, \"seed\": 920011, \"case\": \"lapack_dense_even_high_magnitude\"}\n  - {\"batch\": 4, \"n\": 1024, \"cond\": 0, \"seed\": 920012, \"case\": \"lapack_dense_even_low_magnitude\"}\n  - {\"batch\": 4, \"n\": 1024, \"cond\": 0, \"seed\": 920013, \"case\": \"lapack_random_symmetric\"}\n  - {\"batch\": 4, \"n\": 1024, \"cond\": 0, \"seed\": 920014, \"case\": \"lapack_random_symmetric_high_magnitude\"}\n  - {\"batch\": 4, \"n\": 1024, \"cond\": 0, \"seed\": 920015, \"case\": \"lapack_random_symmetric_low_magnitude\"}\n  - {\"batch\": 4, \"n\": 1024, \"cond\": 0, \"seed\": 920016, \"case\": \"lapack_band_even_spectrum\"}\n  - {\"batch\": 4, \"n\": 1024, \"cond\": 0, \"seed\": 920017, \"case\": \"lapack_band_even_high_magnitude\"}\n  - {\"batch\": 4, \"n\": 1024, \"cond\": 0, \"seed\": 920018, \"case\": \"lapack_band_even_low_magnitude\"}\n\nbenchmarks:\n  - {\"batch\": 20, \"n\": 32, \"cond\": 1, \"seed\": 43214}\n  - {\"batch\": 40, \"n\": 176, \"cond\": 1, \"seed\": 423011}\n  - {\"batch\": 40, \"n\": 352, \"cond\": 1, \"seed\": 123456}\n  - {\"batch\": 640, \"n\": 512, \"cond\": 2, \"seed\": 1029}\n  - {\"batch\": 60, \"n\": 1024, \"cond\": 2, \"seed\": 75342}\n  - {\"batch\": 8, \"n\": 2048, \"cond\": 1, \"seed\": 224466}\n  - {\"batch\": 640, \"n\": 512, \"cond\": 2, \"seed\": 770001, \"case\": \"mixed\"}\n  - {\"batch\": 60, \"n\": 1024, \"cond\": 2, \"seed\": 770002, \"case\": \"mixed\"}\n  - {\"batch\": 640, \"n\": 512, \"cond\": 0, \"seed\": 770003, \"case\": \"rankdef\"}\n  - {\"batch\": 640, \"n\": 512, \"cond\": 0, \"seed\": 770004, \"case\": \"clustered\"}\n  - {\"batch\": 60, \"n\": 1024, \"cond\": 0, \"seed\": 770005, \"case\": \"nearrank\"}\n  - {\"batch\": 640, \"n\": 512, \"cond\": 0, \"seed\": 780001, \"case\": \"lapack_dense_even_spectrum\"}\n  - {\"batch\": 60, \"n\": 1024, \"cond\": 0, \"seed\": 780007, \"case\": \"lapack_dense_geometric_spectrum\"}\n",
+      "inputs": [
+        {
+          "name": "a",
+          "dtype": "float32",
+          "dims": [
+            "batch",
+            "n",
+            "n"
+          ]
+        }
+      ],
+      "test_timeout": 480,
+      "benchmark_timeout": 900,
+      "ranked_timeout": 900,
+      "official_gpus": [
+        "B200"
+      ]
+    },
+    {
+      "set": "linalg",
+      "name": "qr",
+      "directory": "linalg/qr_py",
+      "members": [
+        "problems/linalg/qr_py/eval.py",
+        "problems/linalg/qr_py/reference.py",
+        "problems/linalg/qr_py/submission.py",
+        "problems/linalg/qr_py/task.py",
+        "problems/linalg/qr_py/task.yml"
+      ],
+      "member_sha256": [
+        "3ee309171dbc484ce0fda4ac98d28f8739e6ff491f2ceff99db1dc8ba0fc50ac",
+        "6ce53f17ee2f2d4b8b93fd462edc86fedbea6c88acba39f75814aaedf13f73a8",
+        "05618ad3a3261c9d074c9998e257c8494123df8fbd8fe08f90a8b36b75f2dfda",
+        "ab03af2a32b52049b478c1f92cde5d4d9abdfeeecee194a5735260d33d3fec10",
+        "1c02b420f147ddf874d91bde91daa8a0c6e0899aa6f7e72b0510530b75d707e6"
+      ],
+      "task_yml_sha256": "1c02b420f147ddf874d91bde91daa8a0c6e0899aa6f7e72b0510530b75d707e6",
+      "task_yml_text": "# name: qr\n\nfiles:\n  - {\"name\": \"submission.py\", \"source\": \"@SUBMISSION@\"}\n  - {\"name\": \"task.py\", \"source\": \"task.py\"}\n  - {\"name\": \"utils.py\", \"source\": \"../../pmpp_v2/utils.py\"}\n  - {\"name\": \"reference.py\", \"source\": \"reference.py\"}\n  - {\"name\": \"eval.py\", \"source\": \"eval.py\"}\n\nlang: \"py\"\n\ndescription: |\n  Implement batched square compact-Householder QR factorization.\n\n  Input is `A`, a `batch x n x n` CUDA tensor in `torch.float32`.\n\n  Return `(H, tau)` in the same compact Householder convention as\n  `torch.geqrf(A)`. `H` is a `batch x n x n` FP32 tensor containing `R` in its\n  upper triangle and Householder vectors below the diagonal. `tau` is a\n  `batch x n` FP32 tensor containing reflector coefficients. The checker\n  materializes `Q = torch.linalg.householder_product(H, tau)`, uses\n  `R_factor = triu(H)`, and validates the LAPACK-style QR factorization\n  residual `R_factor - Q.T @ A` and orthogonality of `Q`. Since `R_factor`\n  is extracted with `triu`, triangularity is part of the factorization check:\n  if `Q.T @ A` has meaningful lower-triangular leakage, then it cannot match\n  `R_factor`. The checker reports that lower-triangular leakage and the\n  reconstruction residual as diagnostics.\n\n  This shape set targets optimizer-style matrix statistics where gradients are\n  viewed as `[for_each..., basis_dim, contracted_dim]`, statistics are formed as\n  `G @ G.T`, and QR is run on square `basis_dim x basis_dim` matrices. Batched\n  `512 x 512` is especially important, while `1024`, `2048`, and `4096` cover\n  larger square factors.\n\n  Test and benchmark specs include a `cond` field. In this task `cond` is a\n  deterministic input-scaling knob, not an exact requested condition number:\n  dense cases multiply columns by `logspace(0, -cond, n)`, so larger `cond`\n  creates a wider dynamic range across columns. Some stress cases use their own\n  structure, such as rank-deficient, near-rank-deficient, banded, row-scaled,\n  near-collinear, upper-triangular, or clustered-scale inputs.\n\n  Correctness is a hard gate against the original FP32 input and the FP32\n  `torch.geqrf` compact-factor contract. Low-bit FP16, FP8, or NVFP4 work is\n  allowed only as an internal implementation strategy: returned factors must\n  still be FP32 and must satisfy the same QR invariants as an FP32\n  factorization. Residuals are measured in FP64 to reduce checker noise, but\n  the target tolerance is still FP32 accuracy. The numerical property tolerance\n  is purely relative, with no QR `atol`.\n  The hard gates are the LAPACK-style factor residual, which uses\n  `rtol = 20 * n * eps32`, and orthogonality, which uses\n  `rtol = 100 * n * eps32`, each applied to the corresponding matrix L1 norm.\n  Triangularity is reported as lower-triangular leakage in `Q.T @ A` and is\n  already implied by the factor residual against `triu(H)`.\n\n  Among passing submissions, ranking is by runtime using the geometric mean of\n  benchmark cases. We will also celebrate notable submissions beyond the main\n  leaderboard: the fastest, the most elegant, and the strangest working kernels.\n\nconfig:\n  main: \"eval.py\"\n\ntemplates:\n  Python: \"submission.py\"\n\ntest_timeout: 240\nbenchmark_timeout: 480\nranked_timeout: 900\nranking_by: \"geom\"\ngpus:\n  - B200\n\ntests:\n  - {\"batch\": 20, \"n\": 32, \"cond\": 1, \"seed\": 53124}\n  - {\"batch\": 40, \"n\": 176, \"cond\": 1, \"seed\": 3321}\n  - {\"batch\": 40, \"n\": 352, \"cond\": 1, \"seed\": 1200}\n  - {\"batch\": 16, \"n\": 512, \"cond\": 2, \"seed\": 32523}\n  - {\"batch\": 4, \"n\": 1024, \"cond\": 2, \"seed\": 4327}\n  - {\"batch\": 1, \"n\": 4096, \"cond\": 1, \"seed\": 75342}\n  - {\"batch\": 16, \"n\": 512, \"cond\": 4, \"seed\": 32524, \"case\": \"dense\"}\n  - {\"batch\": 16, \"n\": 512, \"cond\": 0, \"seed\": 32525, \"case\": \"rankdef\"}\n  - {\"batch\": 16, \"n\": 512, \"cond\": 0, \"seed\": 32526, \"case\": \"clustered\"}\n  - {\"batch\": 16, \"n\": 512, \"cond\": 0, \"seed\": 32527, \"case\": \"band\"}\n  - {\"batch\": 16, \"n\": 512, \"cond\": 0, \"seed\": 32528, \"case\": \"rowscale\"}\n  - {\"batch\": 16, \"n\": 512, \"cond\": 0, \"seed\": 32529, \"case\": \"nearcollinear\"}\n  - {\"batch\": 4, \"n\": 1024, \"cond\": 4, \"seed\": 4328, \"case\": \"dense\"}\n  - {\"batch\": 4, \"n\": 1024, \"cond\": 0, \"seed\": 4329, \"case\": \"rankdef\"}\n  - {\"batch\": 4, \"n\": 1024, \"cond\": 0, \"seed\": 4330, \"case\": \"nearrank\"}\n  - {\"batch\": 4, \"n\": 1024, \"cond\": 0, \"seed\": 4331, \"case\": \"clustered\"}\n  - {\"batch\": 2, \"n\": 2048, \"cond\": 2, \"seed\": 224466, \"case\": \"dense\"}\n  - {\"batch\": 2, \"n\": 2048, \"cond\": 0, \"seed\": 224467, \"case\": \"rankdef\"}\n  - {\"batch\": 1, \"n\": 4096, \"cond\": 0, \"seed\": 75343, \"case\": \"upper\"}\n\nbenchmarks:\n  - {\"batch\": 20, \"n\": 32, \"cond\": 1, \"seed\": 43214}\n  - {\"batch\": 40, \"n\": 176, \"cond\": 1, \"seed\": 423011}\n  - {\"batch\": 40, \"n\": 352, \"cond\": 1, \"seed\": 123456}\n  - {\"batch\": 640, \"n\": 512, \"cond\": 2, \"seed\": 1029}\n  - {\"batch\": 60, \"n\": 1024, \"cond\": 2, \"seed\": 75342}\n  - {\"batch\": 8, \"n\": 2048, \"cond\": 1, \"seed\": 224466}\n  - {\"batch\": 2, \"n\": 4096, \"cond\": 1, \"seed\": 32412}\n",
+      "inputs": [
+        {
+          "name": "a",
+          "dtype": "float32",
+          "dims": [
+            "batch",
+            "n",
+            "n"
+          ]
+        }
+      ],
+      "test_timeout": 240,
+      "benchmark_timeout": 480,
+      "ranked_timeout": 900,
+      "official_gpus": [
+        "B200"
+      ]
+    },
+    {
+      "set": "linalg",
+      "name": "qr_v2",
+      "directory": "linalg/qr_v2",
+      "members": [
+        "problems/linalg/qr_v2/eval.py",
+        "problems/linalg/qr_v2/reference.py",
+        "problems/linalg/qr_v2/submission.py",
+        "problems/linalg/qr_v2/task.py",
+        "problems/linalg/qr_v2/task.yml"
+      ],
+      "member_sha256": [
+        "3ee309171dbc484ce0fda4ac98d28f8739e6ff491f2ceff99db1dc8ba0fc50ac",
+        "56db6700958f3f0108790a65f6e26a0e37f8494c0b96ecd016f711a31adb57d5",
+        "05618ad3a3261c9d074c9998e257c8494123df8fbd8fe08f90a8b36b75f2dfda",
+        "ab03af2a32b52049b478c1f92cde5d4d9abdfeeecee194a5735260d33d3fec10",
+        "b2aa2a00721217b4fe903b6ce964ab5f569ccc55f1278e83d676556d02e89778"
+      ],
+      "task_yml_sha256": "b2aa2a00721217b4fe903b6ce964ab5f569ccc55f1278e83d676556d02e89778",
+      "task_yml_text": "# name: qr_v2\n\nfiles:\n  - {\"name\": \"submission.py\", \"source\": \"@SUBMISSION@\"}\n  - {\"name\": \"task.py\", \"source\": \"task.py\"}\n  - {\"name\": \"utils.py\", \"source\": \"../../pmpp_v2/utils.py\"}\n  - {\"name\": \"reference.py\", \"source\": \"reference.py\"}\n  - {\"name\": \"eval.py\", \"source\": \"eval.py\"}\n\nlang: \"py\"\n\ndescription: |\n  Implement batched square compact-Householder QR factorization.\n\n  Input is `A`, a `batch x n x n` CUDA tensor in `torch.float32`.\n\n  Return `(H, tau)` in the same compact Householder convention as\n  `torch.geqrf(A)`. `H` is a `batch x n x n` FP32 tensor containing `R` in its\n  upper triangle and Householder vectors below the diagonal. `tau` is a\n  `batch x n` FP32 tensor containing reflector coefficients. The checker\n  materializes `Q = torch.linalg.householder_product(H, tau)`, uses\n  `R_factor = triu(H)`, and validates the LAPACK-style QR factorization\n  residual `R_factor - Q.T @ A` and orthogonality of `Q`. Since `R_factor`\n  is extracted with `triu`, triangularity is part of the factorization check:\n  if `Q.T @ A` has meaningful lower-triangular leakage, then it cannot match\n  `R_factor`. The checker reports that lower-triangular leakage and the\n  reconstruction residual as diagnostics.\n\n  This shape set targets optimizer-style matrix statistics where gradients are\n  viewed as `[for_each..., basis_dim, contracted_dim]`, statistics are formed as\n  `G @ G.T`, and QR is run on square `basis_dim x basis_dim` matrices. Batched\n  `512 x 512` is especially important, while `1024`, `2048`, and `4096` cover\n  larger square factors.\n\n  Test and benchmark specs include a `cond` field. In this task `cond` is a\n  deterministic input-scaling knob, not an exact requested condition number:\n  dense cases multiply columns by `logspace(0, -cond, n)`, so larger `cond`\n  creates a wider dynamic range across columns. Some stress cases use their own\n  structure, such as rank-deficient, near-rank-deficient, banded, row-scaled,\n  near-collinear, upper-triangular, or clustered-scale inputs.\n\n  The `mixed` case builds a heterogeneous batch: each matrix is independently\n  assigned a conditioning profile (a well-conditioned dense majority interleaved\n  with the ill-conditioned stress structures above) at a random position in the\n  batch. This mirrors the real optimizer-statistics regime, where the per-layer\n  or per-block factors batched into one call have widely varying conditioning,\n  rather than all sharing one structure. The benchmark set (not just the test\n  set) now includes both `mixed` batches and fully ill-conditioned homogeneous\n  batches, so conditioning robustness is ranked, not only gated: an\n  implementation cannot inspect a few matrices, decide the whole batch is\n  well-conditioned, and route it to a path that is only valid for well-conditioned\n  inputs, and the runtime cost of the accurate path on hard inputs is part of the\n  score. Each matrix must be factored correctly on its own merits.\n\n  Correctness is a hard gate against the original FP32 input and the FP32\n  `torch.geqrf` compact-factor contract. Low-bit FP16, FP8, or NVFP4 work is\n  allowed only as an internal implementation strategy: returned factors must\n  still be FP32 and must satisfy the same QR invariants as an FP32\n  factorization. Residuals are measured in FP64 to reduce checker noise, but\n  the target tolerance is still FP32 accuracy. The numerical property tolerance\n  is purely relative, with no QR `atol`.\n  The hard gates are the LAPACK-style factor residual, which uses\n  `rtol = 20 * n * eps32`, and orthogonality, which uses\n  `rtol = 100 * n * eps32`, each applied to the corresponding matrix L1 norm.\n  Triangularity is reported as lower-triangular leakage in `Q.T @ A` and is\n  already implied by the factor residual against `triu(H)`.\n\n  Among passing submissions, ranking is by runtime using the geometric mean of\n  benchmark cases. We will also celebrate notable submissions beyond the main\n  leaderboard: the fastest, the most elegant, and the strangest working kernels.\n\nconfig:\n  main: \"eval.py\"\n\ntemplates:\n  Python: \"submission.py\"\n\ntest_timeout: 240\nbenchmark_timeout: 480\nranked_timeout: 900\nranking_by: \"geom\"\ngpus:\n  - B200\n\ntests:\n  - {\"batch\": 20, \"n\": 32, \"cond\": 1, \"seed\": 53124}\n  - {\"batch\": 40, \"n\": 176, \"cond\": 1, \"seed\": 3321}\n  - {\"batch\": 40, \"n\": 352, \"cond\": 1, \"seed\": 1200}\n  - {\"batch\": 16, \"n\": 512, \"cond\": 2, \"seed\": 32523}\n  - {\"batch\": 4, \"n\": 1024, \"cond\": 2, \"seed\": 4327}\n  - {\"batch\": 1, \"n\": 4096, \"cond\": 1, \"seed\": 75342}\n  - {\"batch\": 16, \"n\": 512, \"cond\": 4, \"seed\": 32524, \"case\": \"dense\"}\n  - {\"batch\": 16, \"n\": 512, \"cond\": 0, \"seed\": 32525, \"case\": \"rankdef\"}\n  - {\"batch\": 16, \"n\": 512, \"cond\": 0, \"seed\": 32526, \"case\": \"clustered\"}\n  - {\"batch\": 16, \"n\": 512, \"cond\": 0, \"seed\": 32527, \"case\": \"band\"}\n  - {\"batch\": 16, \"n\": 512, \"cond\": 0, \"seed\": 32528, \"case\": \"rowscale\"}\n  - {\"batch\": 16, \"n\": 512, \"cond\": 0, \"seed\": 32529, \"case\": \"nearcollinear\"}\n  - {\"batch\": 4, \"n\": 1024, \"cond\": 4, \"seed\": 4328, \"case\": \"dense\"}\n  - {\"batch\": 4, \"n\": 1024, \"cond\": 0, \"seed\": 4329, \"case\": \"rankdef\"}\n  - {\"batch\": 4, \"n\": 1024, \"cond\": 0, \"seed\": 4330, \"case\": \"nearrank\"}\n  - {\"batch\": 4, \"n\": 1024, \"cond\": 0, \"seed\": 4331, \"case\": \"clustered\"}\n  - {\"batch\": 2, \"n\": 2048, \"cond\": 2, \"seed\": 224466, \"case\": \"dense\"}\n  - {\"batch\": 2, \"n\": 2048, \"cond\": 0, \"seed\": 224467, \"case\": \"rankdef\"}\n  - {\"batch\": 1, \"n\": 4096, \"cond\": 0, \"seed\": 75343, \"case\": \"upper\"}\n  - {\"batch\": 16, \"n\": 512, \"cond\": 2, \"seed\": 32530, \"case\": \"mixed\"}\n  - {\"batch\": 4, \"n\": 1024, \"cond\": 2, \"seed\": 4332, \"case\": \"mixed\"}\n  - {\"batch\": 2, \"n\": 2048, \"cond\": 2, \"seed\": 224468, \"case\": \"mixed\"}\n\nbenchmarks:\n  - {\"batch\": 20, \"n\": 32, \"cond\": 1, \"seed\": 43214}\n  - {\"batch\": 40, \"n\": 176, \"cond\": 1, \"seed\": 423011}\n  - {\"batch\": 40, \"n\": 352, \"cond\": 1, \"seed\": 123456}\n  - {\"batch\": 640, \"n\": 512, \"cond\": 2, \"seed\": 1029}\n  - {\"batch\": 60, \"n\": 1024, \"cond\": 2, \"seed\": 75342}\n  - {\"batch\": 8, \"n\": 2048, \"cond\": 1, \"seed\": 224466}\n  - {\"batch\": 2, \"n\": 4096, \"cond\": 1, \"seed\": 32412}\n  - {\"batch\": 640, \"n\": 512, \"cond\": 2, \"seed\": 770001, \"case\": \"mixed\"}\n  - {\"batch\": 60, \"n\": 1024, \"cond\": 2, \"seed\": 770002, \"case\": \"mixed\"}\n  - {\"batch\": 640, \"n\": 512, \"cond\": 0, \"seed\": 770003, \"case\": \"rankdef\"}\n  - {\"batch\": 640, \"n\": 512, \"cond\": 0, \"seed\": 770004, \"case\": \"clustered\"}\n  - {\"batch\": 60, \"n\": 1024, \"cond\": 0, \"seed\": 770005, \"case\": \"nearrank\"}\n",
+      "inputs": [
+        {
+          "name": "a",
+          "dtype": "float32",
+          "dims": [
+            "batch",
+            "n",
+            "n"
+          ]
+        }
+      ],
+      "test_timeout": 240,
+      "benchmark_timeout": 480,
+      "ranked_timeout": 900,
+      "official_gpus": [
+        "B200"
+      ]
+    },
+    {
+      "set": "pmpp_v2",
+      "name": "conv2d_v2",
+      "directory": "pmpp_v2/conv2d_py",
+      "members": [
+        "problems/pmpp_v2/conv2d_py/reference.py",
+        "problems/pmpp_v2/conv2d_py/solutions/correct/ref.py",
+        "problems/pmpp_v2/conv2d_py/solutions/wrong/empty.py",
+        "problems/pmpp_v2/conv2d_py/submission.py",
+        "problems/pmpp_v2/conv2d_py/task.py",
+        "problems/pmpp_v2/conv2d_py/task.yml"
+      ],
+      "member_sha256": [
+        "654a4484fad4c2b764ae36fc0eb17f598e77fa575b2bbc150c8b520d91683588",
+        "61aa59734d63987f80dc530f32d6d6bf882a88411f168424846dbb9b03eb6c41",
+        "a04c97a3f28aa3256dda45cb0feebc2b6b566ecc9de76d6697996079231d9cea",
+        "4eaddf7046c0a0e04f51be9ddbc9b55809359942f6a02aae595a2829781cf9b3",
+        "b315411c607ada2f46b0c2cb0d8b1dfd81f71b454d36d614476bb3efb4c0637b",
+        "30f766e54b73c554bcecb56ea4ab30a13b2f8b5ab870dbb8dedb13dc59f4c338"
+      ],
+      "task_yml_sha256": "30f766e54b73c554bcecb56ea4ab30a13b2f8b5ab870dbb8dedb13dc59f4c338",
+      "task_yml_text": "# name: conv2d-py\n\nfiles:\n  - {\"name\": \"submission.py\", \"source\": \"@SUBMISSION@\"}\n  - {\"name\": \"task.py\", \"source\": \"task.py\"}\n  - {\"name\": \"utils.py\", \"source\": \"../utils.py\"}\n  - {\"name\": \"reference.py\", \"source\": \"reference.py\"}\n  - {\"name\": \"eval.py\", \"source\": \"../eval.py\"}\n\nlang: \"py\"\n\ndescription: |\n  Implement a 2D convolution kernel that matches the reference implementation.\n  The kernel should perform 2D convolution with the given specifications\n  We will benchmark different sizes, kernel sizes, channels and batch sizes but they will all \n  be even numbers with the exception of batch size which can sometimes be 1\n  We assume no padding and striding and instead vary the size of the input and kernel,\n  number of channels, and batch size.\n\n  Input: Tuple of (input_tensor, kernel)\n    - input_tensor: 4D tensor of shape (batch, channels, height, width) with arbitrary values\n    - kernel: 4D tensor of shape (channels, channels, kernelsize, kernelsize) with arbitrary values\n  Output: 4D tensor of shape (batch, channels, height-kernelsize+1, width-kernelsize+1) with convolved values\n\nconfig:\n  main: \"eval.py\"\n\ntemplates:\n  Python: \"../template.py\"\n\ntests:\n  - {\"size\": 32, \"kernelsize\": 4, \"channels\": 16, \"batch\": 1, \"seed\": 4242}\n  - {\"size\": 32, \"kernelsize\": 4, \"channels\": 16, \"batch\": 2, \"seed\": 5236}\n  - {\"size\": 64, \"kernelsize\": 4, \"channels\": 32, \"batch\": 1, \"seed\": 1001}\n  - {\"size\": 64, \"kernelsize\": 8, \"channels\": 32, \"batch\": 2, \"seed\": 5531}\n  - {\"size\": 128, \"kernelsize\": 8, \"channels\": 64, \"batch\": 1, \"seed\": 9173}\n\nbenchmarks:\n  - {\"size\": 128, \"kernelsize\": 8, \"channels\": 64, \"batch\": 4, \"seed\": 54352}\n  - {\"size\": 128, \"kernelsize\": 16, \"channels\": 64, \"batch\": 4, \"seed\": 93246}\n  - {\"size\": 256, \"kernelsize\": 16, \"channels\": 128, \"batch\": 2, \"seed\": 6256}\n  - {\"size\": 256, \"kernelsize\": 16, \"channels\": 128, \"batch\": 2, \"seed\": 8841}\n  - {\"size\": 256, \"kernelsize\": 32, \"channels\": 128, \"batch\": 1, \"seed\": 6252}\n\ntest_timeout: 180\nbenchmark_timeout: 180\nranked_timeout: 420\n",
+      "inputs": [
+        {
+          "name": "input",
+          "dtype": "float32",
+          "dims": [
+            "batch",
+            "channels",
+            "size",
+            "size"
+          ]
+        },
+        {
+          "name": "kernel",
+          "dtype": "float32",
+          "dims": [
+            "channels",
+            "channels",
+            "kernelsize",
+            "kernelsize"
+          ]
+        }
+      ],
+      "test_timeout": 180,
+      "benchmark_timeout": 180,
+      "ranked_timeout": 420,
+      "official_gpus": [
+        "B200",
+        "H100",
+        "A100",
+        "L4"
+      ]
+    },
+    {
+      "set": "pmpp_v2",
+      "name": "grayscale_v2",
+      "directory": "pmpp_v2/grayscale_py",
+      "members": [
+        "problems/pmpp_v2/grayscale_py/reference.py",
+        "problems/pmpp_v2/grayscale_py/solutions/correct/ref.py",
+        "problems/pmpp_v2/grayscale_py/solutions/wrong/empty.py",
+        "problems/pmpp_v2/grayscale_py/submission.py",
+        "problems/pmpp_v2/grayscale_py/task.py",
+        "problems/pmpp_v2/grayscale_py/task.yml"
+      ],
+      "member_sha256": [
+        "c619d1621f515b0146c71e23b85cea8601ec3d05056d7bc1fd7fa88f025dbac8",
+        "2129cdc6711dbad23403add15b0946ab6afe951cb6ef46ee28eb4b641ab305e3",
+        "3e1a4cf3649391d935c48a5fce2c11444081b0d967048430f1e32165b954d1f0",
+        "ea7c0f02032cbeca0accb3c9570bded6fc1c91442825e966b5ffd879fe9b3450",
+        "15a487ee871c204e284424ddd5ac675128992640ba9e2098290972d6f852554c",
+        "7e4885d7eef22697aa4c53a13274bdbc375e53aade81658044df39c896cc1466"
+      ],
+      "task_yml_sha256": "7e4885d7eef22697aa4c53a13274bdbc375e53aade81658044df39c896cc1466",
+      "task_yml_text": "files:\n  - {\"name\": \"submission.py\", \"source\": \"@SUBMISSION@\"}\n  - {\"name\": \"task.py\", \"source\": \"task.py\"}\n  - {\"name\": \"utils.py\", \"source\": \"../utils.py\"}\n  - {\"name\": \"reference.py\", \"source\": \"reference.py\"}\n  - {\"name\": \"eval.py\", \"source\": \"../eval.py\"}\n\nlang: \"py\"\n\ndescription: |\n  Implement an RGB to grayscale conversion kernel that matches the reference implementation.\n  The kernel should convert square RGB images with even sizes to grayscale using the standard coefficients:\n  Y = 0.2989 R + 0.5870 G + 0.1140 B\n  \n  Input: RGB tensor of shape (H, W, 3) with values in [0, 1]\n  Output: Grayscale tensor of shape (H, W) with values in [0, 1]\n\nconfig:\n  main: \"eval.py\" \n\ntemplates:\n  Python: \"../template.py\"\n\ntests:\n\n  - {\"size\": 128, \"seed\": 1001}\n  - {\"size\": 256, \"seed\": 5531}\n  - {\"size\": 512, \"seed\": 9173}\n\nbenchmarks:\n  \n  - {\"size\": 512, \"seed\": 54352}\n  - {\"size\": 1024, \"seed\": 93246}\n  - {\"size\": 2048, \"seed\": 6256}\n  - {\"size\": 4096, \"seed\": 8841}\n  - {\"size\": 8192, \"seed\": 6252}\n  - {\"size\": 16384, \"seed\": 54352}\n\ntest_timeout: 180\nbenchmark_timeout: 180\nranked_timeout: 420\n",
+      "inputs": [
+        {
+          "name": "rgb",
+          "dtype": "float32",
+          "dims": [
+            "size",
+            "size",
+            3
+          ]
+        },
+        {
+          "name": "output",
+          "dtype": "float32",
+          "dims": [
+            "size",
+            "size"
+          ]
+        }
+      ],
+      "test_timeout": 180,
+      "benchmark_timeout": 180,
+      "ranked_timeout": 420,
+      "official_gpus": [
+        "B200",
+        "H100",
+        "A100",
+        "L4"
+      ]
+    },
+    {
+      "set": "pmpp_v2",
+      "name": "histogram_v2",
+      "directory": "pmpp_v2/histogram_py",
+      "members": [
+        "problems/pmpp_v2/histogram_py/reference.py",
+        "problems/pmpp_v2/histogram_py/solutions/correct/ref.py",
+        "problems/pmpp_v2/histogram_py/solutions/wrong/empty.py",
+        "problems/pmpp_v2/histogram_py/submission.py",
+        "problems/pmpp_v2/histogram_py/task.py",
+        "problems/pmpp_v2/histogram_py/task.yml"
+      ],
+      "member_sha256": [
+        "6e000ddb4567ef73f6a41eb50e4c3eeaf0fde80c53156645af72f8ac6762459c",
+        "58629fbb937eb08519c816fd894e45f55c205af92114b86aa4efc0732ea691f1",
+        "34a2d5d17cfeb0d89ab28395bbae6afee5c12cdcb320a812dee3ef0f852eed87",
+        "94329070c83f53e0b1607b1b9de9d372e9347aa6ddd66062b6c32e38a669779b",
+        "730258fae4e85f2f3114e5834d3dbe3253dc8333634943025572b870e43f58d3",
+        "1858148616fd6d77a47a797668ed4f8e1c84e048bd2fc0e3a69d9fb30a58b893"
+      ],
+      "task_yml_sha256": "1858148616fd6d77a47a797668ed4f8e1c84e048bd2fc0e3a69d9fb30a58b893",
+      "task_yml_text": "# name: histogram-cuda-inline\n\nfiles:\n  - {\"name\": \"submission.py\", \"source\": \"@SUBMISSION@\"}\n  - {\"name\": \"task.py\", \"source\": \"task.py\"}\n  - {\"name\": \"utils.py\", \"source\": \"../utils.py\"}\n  - {\"name\": \"reference.py\", \"source\": \"reference.py\"}\n  - {\"name\": \"eval.py\", \"source\": \"../eval.py\"}\n\nlang: \"py\"\n\ndescription: |\n  Implement a histogram kernel that counts the number of elements falling into each bin across the specified range.\n  The minimum and maximum values of the range are fixed to 0 and 100 respectively.\n  All sizes are multiples of 16 and the number of bins is set to the size of the input tensor divided by 16.\n\n  Input:\n    - data: a tensor of shape (size,)\n\nconfig:\n  main: \"eval.py\"\n\ntemplates:\n  Python: \"../template.py\"\n\ntests:\n  - {\"size\": 5120,   \"seed\": 9991, \"contention\": 10}\n  - {\"size\": 7840,   \"seed\": 2105, \"contention\": 10}\n  - {\"size\": 30080,  \"seed\": 9999, \"contention\": 10}\n  - {\"size\": 30080,  \"seed\": 4254, \"contention\": 90}\n  - {\"size\": 100000, \"seed\": 1212, \"contention\": 10}\n\nbenchmarks:\n  - {\"size\": 1310720, \"seed\": 6252, \"contention\": 10}\n  - {\"size\": 2621440, \"seed\": 8841, \"contention\": 10}\n  - {\"size\": 2621440, \"seed\": 3411, \"contention\": 40}\n  - {\"size\": 2621440, \"seed\": 8753, \"contention\": 90}\n  - {\"size\": 5242880, \"seed\": 6252, \"contention\": 10}\n  - {\"size\": 10485760, \"seed\": 8841, \"contention\": 10}\n\ntest_timeout: 180\nbenchmark_timeout: 180\nranked_timeout: 420\n",
+      "inputs": [
+        {
+          "name": "data",
+          "dtype": "uint8",
+          "dims": [
+            "size"
+          ]
+        },
+        {
+          "name": "output",
+          "dtype": "int64",
+          "dims": [
+            256
+          ]
+        }
+      ],
+      "test_timeout": 180,
+      "benchmark_timeout": 180,
+      "ranked_timeout": 420,
+      "official_gpus": [
+        "B200",
+        "H100",
+        "A100",
+        "L4"
+      ]
+    },
+    {
+      "set": "pmpp_v2",
+      "name": "matmul_v2",
+      "directory": "pmpp_v2/matmul_py",
+      "members": [
+        "problems/pmpp_v2/matmul_py/reference.py",
+        "problems/pmpp_v2/matmul_py/solutions/correct/ref.py",
+        "problems/pmpp_v2/matmul_py/solutions/wrong/low-precision.py",
+        "problems/pmpp_v2/matmul_py/submission.py",
+        "problems/pmpp_v2/matmul_py/task.py",
+        "problems/pmpp_v2/matmul_py/task.yml"
+      ],
+      "member_sha256": [
+        "100e2c3ea92b6c20c6e0b7a7a8497509ab28f3aaf233139ad1019afac7a08365",
+        "365e5be70ec8df897226578017abe1e7af4d0964e8dad90236cf56be569dbe25",
+        "0befe227721473886149507fc56e15dba445a24a6f911bf5412a40a2ad981b87",
+        "57a2abafed553f8f7860d84d76158cb84ce85bf52a64ae01f059321d1f007cf1",
+        "927ffb6b0beb68b08e065480b27adbddae1cde291baaf83d977f425f9f110bcf",
+        "7381248a91276eab2a23dc6e4e1c14fbac710770fce41fe35ecb8df25cc0cf2f"
+      ],
+      "task_yml_sha256": "7381248a91276eab2a23dc6e4e1c14fbac710770fce41fe35ecb8df25cc0cf2f",
+      "task_yml_text": "# name: matmul-py\n\nfiles:\n  - {\"name\": \"submission.py\", \"source\": \"@SUBMISSION@\"}\n  - {\"name\": \"task.py\", \"source\": \"task.py\"}\n  - {\"name\": \"utils.py\", \"source\": \"../utils.py\"}\n  - {\"name\": \"reference.py\", \"source\": \"reference.py\"}\n  - {\"name\": \"eval.py\", \"source\": \"../eval.py\"}\n\nlang: \"py\"\n\ndescription: |\n  Implement a custom matmul function that matches the reference implementation.\n  The function should handle a tuple of input tensors and apply matmul\n  The shapes of all outer and inner dimensions of tensors are multiples of 16\n\nconfig:\n  main: \"eval.py\"\n\ntemplates:\n  Python: \"../template.py\"\n\ntests:\n  - {\"m\": 64, \"n\": 64, \"k\": 64, \"seed\": 53124}\n  - {\"m\": 128, \"n\": 128, \"k\": 128, \"seed\": 3321}\n  - {\"m\": 256, \"n\": 256, \"k\": 256, \"seed\": 1200}\n\n  - {\"m\": 32, \"n\": 512, \"k\": 32, \"seed\": 32523}\n  - {\"m\": 64, \"n\": 1024, \"k\": 64, \"seed\": 4327}\n\nbenchmarks:\n  - {\"m\": 128, \"n\": 128, \"k\": 128, \"seed\": 43214}\n  - {\"m\": 256, \"n\": 256, \"k\": 256, \"seed\": 423011}\n  - {\"m\": 512, \"n\": 512, \"k\": 512, \"seed\": 123456}\n  - {\"m\": 1024, \"n\": 1024, \"k\": 1024, \"seed\": 1029}\n  - {\"m\": 2048, \"n\": 2048, \"k\": 2048, \"seed\": 75342}\n\n  - {\"m\": 1024, \"n\": 1536, \"k\": 1024, \"seed\": 321}\n  - {\"m\": 2048, \"n\": 3072, \"k\": 2048, \"seed\": 32412}\n  - {\"m\": 4096, \"n\": 5120, \"k\": 4096, \"seed\": 123456}\n\ntest_timeout: 180\nbenchmark_timeout: 180\nranked_timeout: 420\n",
+      "inputs": [
+        {
+          "name": "a",
+          "dtype": "float16",
+          "dims": [
+            "m",
+            "k"
+          ]
+        },
+        {
+          "name": "b",
+          "dtype": "float16",
+          "dims": [
+            "k",
+            "n"
+          ]
+        },
+        {
+          "name": "output",
+          "dtype": "float16",
+          "dims": [
+            "m",
+            "n"
+          ]
+        }
+      ],
+      "test_timeout": 180,
+      "benchmark_timeout": 180,
+      "ranked_timeout": 420,
+      "official_gpus": [
+        "B200",
+        "H100",
+        "A100",
+        "L4"
+      ]
+    },
+    {
+      "set": "pmpp_v2",
+      "name": "prefixsum_v2",
+      "directory": "pmpp_v2/prefixsum_py",
+      "members": [
+        "problems/pmpp_v2/prefixsum_py/reference.py",
+        "problems/pmpp_v2/prefixsum_py/solutions/correct/ref.py",
+        "problems/pmpp_v2/prefixsum_py/solutions/wrong/empty.py",
+        "problems/pmpp_v2/prefixsum_py/submission.py",
+        "problems/pmpp_v2/prefixsum_py/task.py",
+        "problems/pmpp_v2/prefixsum_py/task.yml"
+      ],
+      "member_sha256": [
+        "05b7eec6731394ef6ccba014d8a92dfc5c6debe46136adeadd97d1eacb529b6c",
+        "8c0789258ce2b808691f2b44a59502802090814bde7130ee6c752110ff23e471",
+        "34a2d5d17cfeb0d89ab28395bbae6afee5c12cdcb320a812dee3ef0f852eed87",
+        "d9f845387cf445d00f846259db10cec98c04852d2168cad7ff6d76126c7589b3",
+        "1980195d04996393b5798a43ae0a74b1b17f3ef2bd0d6d03737baa770ab359f0",
+        "a12224794da799308bc868fdb8108675b3a15763db66d08eae4954d95f84824a"
+      ],
+      "task_yml_sha256": "a12224794da799308bc868fdb8108675b3a15763db66d08eae4954d95f84824a",
+      "task_yml_text": "# name: prefixsum-cuda-inline\n\nfiles:\n  - {\"name\": \"submission.py\", \"source\": \"@SUBMISSION@\"}\n  - {\"name\": \"task.py\", \"source\": \"task.py\"}\n  - {\"name\": \"utils.py\", \"source\": \"../utils.py\"}\n  - {\"name\": \"reference.py\", \"source\": \"reference.py\"}\n  - {\"name\": \"eval.py\", \"source\": \"../eval.py\"}\n\nlang: \"py\"\n\ndescription: |\n  Implement an inclusive prefix sum (scan) kernel that matches the reference implementation.\n  The kernel should compute the cumulative sum of all elements up to each position.\n  Because of numerical instability, the tolerance is scaled by the square root of the input size.\n\n  Input:\n  - `data`: A 1D tensor of size `n`\n  Output:\n  - `output`: A 1D tensor of size `n`\n\nconfig:\n  main: \"eval.py\" \n\ntemplates:\n  Python: \"../template.py\"\n\ntests:\n  - {\"size\": 1023, \"seed\": 4242}\n  - {\"size\": 1024, \"seed\": 5236}\n  - {\"size\": 1025, \"seed\": 1001}\n  - {\"size\": 2048, \"seed\": 5531}\n  - {\"size\": 4096, \"seed\": 9173}\n\nbenchmarks:\n  # - {\"size\": 8192, \"seed\": 54352}\n  # - {\"size\": 16384, \"seed\": 93246}\n  # - {\"size\": 32768, \"seed\": 6256}\n  # - {\"size\": 65536, \"seed\": 8841}\n  # - {\"size\": 131072, \"seed\": 6252} \n  - {\"size\": 262144, \"seed\": 12345}\n  - {\"size\": 524288, \"seed\": 67890}\n  - {\"size\": 1048576, \"seed\": 13579}\n  - {\"size\": 2097152, \"seed\": 24680}\n  - {\"size\": 4194304, \"seed\": 35791}\n  - {\"size\": 8388608, \"seed\": 46802}\n  - {\"size\": 16777216, \"seed\": 57913}\n  - {\"size\": 33554432, \"seed\": 68024}\n  - {\"size\": 67108864, \"seed\": 79135}\n  - {\"size\": 134217728, \"seed\": 80246} # fits on T4\n  - {\"size\": 268435456, \"seed\": 91357}\n  # - {\"size\": 536870912, \"seed\": 102468}\n  # - {\"size\": 1073741824, \"seed\": 113579}\n\ntest_timeout: 180\nbenchmark_timeout: 180\nranked_timeout: 420\n",
+      "inputs": [
+        {
+          "name": "x",
+          "dtype": "float32",
+          "dims": [
+            "size"
+          ]
+        },
+        {
+          "name": "output",
+          "dtype": "float32",
+          "dims": [
+            "size"
+          ]
+        }
+      ],
+      "test_timeout": 180,
+      "benchmark_timeout": 180,
+      "ranked_timeout": 420,
+      "official_gpus": [
+        "B200",
+        "H100",
+        "A100",
+        "L4"
+      ]
+    },
+    {
+      "set": "pmpp_v2",
+      "name": "sort_v2",
+      "directory": "pmpp_v2/sort_py",
+      "members": [
+        "problems/pmpp_v2/sort_py/reference.py",
+        "problems/pmpp_v2/sort_py/solutions/correct/ref.py",
+        "problems/pmpp_v2/sort_py/solutions/wrong/empty.py",
+        "problems/pmpp_v2/sort_py/submission.py",
+        "problems/pmpp_v2/sort_py/task.py",
+        "problems/pmpp_v2/sort_py/task.yml"
+      ],
+      "member_sha256": [
+        "76dcfb88b2417fc9b6caea4eb62dd51a845018c6870cedbd43b24c8502e66b18",
+        "e54f8022591c78269425880b1618d588249dd70ad5b12192089b7d8d0c5fc3b9",
+        "34a2d5d17cfeb0d89ab28395bbae6afee5c12cdcb320a812dee3ef0f852eed87",
+        "36b7ed74381f1c3cdc8ad7b28e792e5693606f7349d696e4710520ff9f5f6d8c",
+        "a3ee85b12ca4283f194cc03a673e31e833c05dc34aa076518733570bfcb6d8bd",
+        "057de55e5f2a0482b7093780f02253b74c4d68a2174222645694386881105dc7"
+      ],
+      "task_yml_sha256": "057de55e5f2a0482b7093780f02253b74c4d68a2174222645694386881105dc7",
+      "task_yml_text": "# name: mergesort-cuda-inline\n\nfiles:\n  - {\"name\": \"submission.py\", \"source\": \"@SUBMISSION@\"}\n  - {\"name\": \"task.py\", \"source\": \"task.py\"}\n  - {\"name\": \"utils.py\", \"source\": \"../utils.py\"}\n  - {\"name\": \"reference.py\", \"source\": \"reference.py\"}\n  - {\"name\": \"eval.py\", \"source\": \"../eval.py\"}\n\nlang: \"py\"\n\ndescription: |\n  Implement a sort kernel that matches the reference implementation.\n  The kernel should sort the input array in ascending order using a sort algorithm of your choice.\n  \n  Input arrays are generated as random floating-point numbers, where each row of a roughly square matrix\n  is drawn from a normal distribution with a different mean value per row based on the seed and then flattened into a 1D array.\n  \n\nconfig:\n  main: \"eval.py\" \n\ntemplates:\n  Python: \"../template.py\"\ntests:\n  - {\"size\": 1023, \"seed\": 4242}\n  - {\"size\": 1024, \"seed\": 5236}\n  - {\"size\": 1025, \"seed\": 1001}\n  - {\"size\": 2048, \"seed\": 5531}\n  - {\"size\": 4096, \"seed\": 9173}\n\nbenchmarks:\n  - {\"size\": 100000, \"seed\": 54352}\n  - {\"size\": 500000, \"seed\": 93246}\n  - {\"size\": 1000000, \"seed\": 6256}\n  - {\"size\": 10000000, \"seed\": 8841}\n  - {\"size\": 100000000, \"seed\": 6252} \n\ntest_timeout: 180\nbenchmark_timeout: 180\nranked_timeout: 420\n",
+      "inputs": [
+        {
+          "name": "data",
+          "dtype": "float32",
+          "dims": [
+            "size"
+          ]
+        }
+      ],
+      "test_timeout": 180,
+      "benchmark_timeout": 180,
+      "ranked_timeout": 420,
+      "official_gpus": [
+        "B200",
+        "H100",
+        "A100",
+        "L4"
+      ]
+    },
+    {
+      "set": "pmpp_v2",
+      "name": "vectoradd_v2",
+      "directory": "pmpp_v2/vectoradd_py",
+      "members": [
+        "problems/pmpp_v2/vectoradd_py/reference.py",
+        "problems/pmpp_v2/vectoradd_py/solutions/correct/submission_cuda_inline.py",
+        "problems/pmpp_v2/vectoradd_py/solutions/correct/submission_triton.py",
+        "problems/pmpp_v2/vectoradd_py/submission.py",
+        "problems/pmpp_v2/vectoradd_py/task.py",
+        "problems/pmpp_v2/vectoradd_py/task.yml"
+      ],
+      "member_sha256": [
+        "db478276c63be88cdd030190f82f6f8837a09be8e7df39b2cd441cef619ad154",
+        "5fb8e2b72a73d091646cace3868a0c9fb3d551801b6325ff06278b6e37323343",
+        "77bbcb894da93847c7262920d1537006604a5f3fac403f4996abde84fb5d2e66",
+        "206fa6f083c784ab3451aa2cd2c4f794c96288d22727accce4e61c571151f87e",
+        "a0c7bd738b93faaf6b603016c7af86678afcd9670061e9e1daa0b0ebf8a3f13d",
+        "675457e3036c817727f6f0463d76ce282f80f42ff001c6f3030379e11dccd42c"
+      ],
+      "task_yml_sha256": "675457e3036c817727f6f0463d76ce282f80f42ff001c6f3030379e11dccd42c",
+      "task_yml_text": "# name: vectoradd-cuda-inline\n\nfiles:\n  - {\"name\": \"submission.py\", \"source\": \"@SUBMISSION@\"}\n  - {\"name\": \"task.py\", \"source\": \"task.py\"}\n  - {\"name\": \"utils.py\", \"source\": \"../utils.py\"}\n  - {\"name\": \"reference.py\", \"source\": \"reference.py\"}\n  - {\"name\": \"eval.py\", \"source\": \"../eval.py\"}\n\nlang: \"py\"\n\ndescription: |\n  Implement a float16 vector addition kernel.\n\n  Input: tuple(torch.Tensor, torch.Tensor) with tensors of shape (N, N) and type torch.float16. These tensors are from\n  a normal distribution with mean 0 and variance 1.\n  Output: torch.Tensor of shape (N, N) and type torch.float16\n\nconfig:\n  main: \"eval.py\" \n\ntemplates:\n  Python: \"../template.py\"\n\ntests:\n  - {\"size\": 127, \"seed\": 4242}\n  - {\"size\": 128, \"seed\": 5236}\n  - {\"size\": 129, \"seed\": 1001}\n  - {\"size\": 256, \"seed\": 5531}\n  - {\"size\": 512, \"seed\": 9173}\n\nbenchmarks:\n  - {\"size\": 1024, \"seed\": 31232}\n  - {\"size\": 2048, \"seed\": 4052}\n  - {\"size\": 4096, \"seed\": 2146}\n  - {\"size\": 8192, \"seed\": 3129}\n  - {\"size\": 16384, \"seed\": 54352}\n\ntest_timeout: 180\nbenchmark_timeout: 180\nranked_timeout: 420\n",
+      "inputs": [
+        {
+          "name": "a",
+          "dtype": "float16",
+          "dims": [
+            "size",
+            "size"
+          ]
+        },
+        {
+          "name": "b",
+          "dtype": "float16",
+          "dims": [
+            "size",
+            "size"
+          ]
+        },
+        {
+          "name": "output",
+          "dtype": "float16",
+          "dims": [
+            "size",
+            "size"
+          ]
+        }
+      ],
+      "test_timeout": 180,
+      "benchmark_timeout": 180,
+      "ranked_timeout": 420,
+      "official_gpus": [
+        "B200",
+        "H100",
+        "A100",
+        "L4"
+      ]
+    },
+    {
+      "set": "pmpp_v2",
+      "name": "vectorsum_v2",
+      "directory": "pmpp_v2/vectorsum_py",
+      "members": [
+        "problems/pmpp_v2/vectorsum_py/reference.py",
+        "problems/pmpp_v2/vectorsum_py/solutions/correct/pytorch.py",
+        "problems/pmpp_v2/vectorsum_py/solutions/wrong/cheat.py",
+        "problems/pmpp_v2/vectorsum_py/submission.py",
+        "problems/pmpp_v2/vectorsum_py/task.py",
+        "problems/pmpp_v2/vectorsum_py/task.yml"
+      ],
+      "member_sha256": [
+        "d7363e7c4d28dc4f37072636965a3ddfb7b732e10ee836bbb6233e5f3df9e08a",
+        "9747305b252dfb22a74d6af36531c4bd7d8a281dd938453b5b6dc2ab53b9ccee",
+        "04ccdbfd2d2a3250bcdb30b1b516f07d9c9f6db43308621c0f550ea4e57cce66",
+        "d8110e6b1e003c2033a22eeec815ac7263d21973b14a27b6f9b23b7c94e5b2b3",
+        "c63fb7d37effce217768b7d144350c78ba61146ed7aa17eab36aabaef4816d4f",
+        "b253d268b1eb8b6717e5923e13a3ce6330d6c30a41e0d32d4b64318b5354ad2d"
+      ],
+      "task_yml_sha256": "b253d268b1eb8b6717e5923e13a3ce6330d6c30a41e0d32d4b64318b5354ad2d",
+      "task_yml_text": "# name: vectorsum-cuda-inline\n\nfiles:\n  - {\"name\": \"submission.py\", \"source\": \"@SUBMISSION@\"}\n  - {\"name\": \"task.py\", \"source\": \"task.py\"}\n  - {\"name\": \"utils.py\", \"source\": \"../utils.py\"}\n  - {\"name\": \"reference.py\", \"source\": \"reference.py\"}\n  - {\"name\": \"eval.py\", \"source\": \"../eval.py\"}\n\nlang: \"py\"\n\ndescription: |\n  Implement a vector sum reduction kernel. This kernel computes the sum of all elements in the input tensor.\n\n  Input: A tensor of shape `(N,)` with values from a normal distribution with mean 0 and variance 1.\n  Output: A scalar value equal to the sum of all elements in the input tensor.\n\nconfig:\n  main: \"eval.py\" \n\ntemplates:\n  Python: \"../template.py\"\n\ntests:\n  - {\"size\": 1023, \"seed\": 4242}\n  - {\"size\": 1024, \"seed\": 5236}\n  - {\"size\": 1025, \"seed\": 1001}\n  - {\"size\": 2048, \"seed\": 5531}\n  - {\"size\": 4096, \"seed\": 9173}\n\nbenchmarks:\n  - {\"size\": 1638400, \"seed\": 93246}\n  - {\"size\": 3276800, \"seed\": 6256}\n  - {\"size\": 6553600, \"seed\": 8841}\n  - {\"size\": 13107200, \"seed\": 6252}\n  - {\"size\": 26214400, \"seed\": 82135}\n  - {\"size\": 52428800, \"seed\": 12345}\n\ntest_timeout: 180\nbenchmark_timeout: 180\nranked_timeout: 420\n",
+      "inputs": [
+        {
+          "name": "data",
+          "dtype": "float32",
+          "dims": [
+            "size"
+          ]
+        },
+        {
+          "name": "output",
+          "dtype": "float32",
+          "dims": [
+            1
+          ]
+        }
+      ],
+      "test_timeout": 180,
+      "benchmark_timeout": 180,
+      "ranked_timeout": 420,
+      "official_gpus": [
+        "B200",
+        "H100",
+        "A100",
+        "L4"
+      ]
+    }
+  ],
+  "protocol": {
+    "name": "reference-kernels-local-replica-v1",
+    "identity_sha256": "8a70145fe899b69766ec878f1fa752e364afd7c456dad1ef17478b212066d66b",
+    "identity_rule": "sha256 over canonical JSON {name, commit, problems, files{path: sha256}} where files are the set-level eval/utils/template closure plus each problem's eval.py/reference.py/task.py/validation.py and LICENSE; recomputed by the adapter and cross-checked at verify",
+    "description": "Local replication of upstream per-set eval protocol: correctness via the pinned check_implementation (default utils.verbose_allclose rtol=1e-5/atol=1e-8; per-problem overrides stay pinned), inputs materialized only by the pinned generate_input, timing via CUDA events with clear_l2_cache between runs and ns duration statistics bounded by max_repeats/max_time. All local numbers are replications on hardware the official leaderboard does not list (B200/H100/A100/L4) and must never be compared with official leaderboard results. Separate from kernelbench/multikernelbench/userbench protocols.",
+    "references": "see identity files; verified against the pinned snapshot at load time",
+    "files": {
+      "LICENSE": "9eb39e0fa3b25c043d6165a8ce5aca29501c057e6aae9e54df63b8e92c0efda5",
+      "problems/linalg/cholesky_py/eval.py": "c4c6ec6dd8949768be9b876962f3b4b9be9ad163fc460fd786942372b5ba654a",
+      "problems/linalg/cholesky_py/reference.py": "b0334971a413f3a19be634574d54f3885cfdeb1089594df7f1f2759954a0a2ea",
+      "problems/linalg/cholesky_py/task.py": "3a772362e617c8320d76bfe71220b576b3eefdac763290c3272bf4a3ffda849e",
+      "problems/linalg/cholesky_py/validation.py": "8e17144fd3d8282e893f999cf2e68bb19e86c4c3420502f5c07af2ed1754ce85",
+      "problems/linalg/eigh_py/eval.py": "ad577ad69c360c43eb68997ea17e2fe14b83848f7a446aa735e379060d4cba42",
+      "problems/linalg/eigh_py/reference.py": "56c91b22d96a078dcb2d77c89b8f5a74e6873a2ccee5c22b6853c04b9e666c7c",
+      "problems/linalg/eigh_py/task.py": "ab03af2a32b52049b478c1f92cde5d4d9abdfeeecee194a5735260d33d3fec10",
+      "problems/linalg/qr_py/eval.py": "3ee309171dbc484ce0fda4ac98d28f8739e6ff491f2ceff99db1dc8ba0fc50ac",
+      "problems/linalg/qr_py/reference.py": "6ce53f17ee2f2d4b8b93fd462edc86fedbea6c88acba39f75814aaedf13f73a8",
+      "problems/linalg/qr_py/task.py": "ab03af2a32b52049b478c1f92cde5d4d9abdfeeecee194a5735260d33d3fec10",
+      "problems/linalg/qr_v2/eval.py": "3ee309171dbc484ce0fda4ac98d28f8739e6ff491f2ceff99db1dc8ba0fc50ac",
+      "problems/linalg/qr_v2/reference.py": "56db6700958f3f0108790a65f6e26a0e37f8494c0b96ecd016f711a31adb57d5",
+      "problems/linalg/qr_v2/task.py": "ab03af2a32b52049b478c1f92cde5d4d9abdfeeecee194a5735260d33d3fec10",
+      "problems/pmpp_v2/conv2d_py/reference.py": "654a4484fad4c2b764ae36fc0eb17f598e77fa575b2bbc150c8b520d91683588",
+      "problems/pmpp_v2/conv2d_py/task.py": "b315411c607ada2f46b0c2cb0d8b1dfd81f71b454d36d614476bb3efb4c0637b",
+      "problems/pmpp_v2/eval.py": "7bbde85d8c4849c9ec8ca2c8a0adf4f59d2fc5bf1ea1f9de992e38f4d81b7c80",
+      "problems/pmpp_v2/grayscale_py/reference.py": "c619d1621f515b0146c71e23b85cea8601ec3d05056d7bc1fd7fa88f025dbac8",
+      "problems/pmpp_v2/grayscale_py/task.py": "15a487ee871c204e284424ddd5ac675128992640ba9e2098290972d6f852554c",
+      "problems/pmpp_v2/histogram_py/reference.py": "6e000ddb4567ef73f6a41eb50e4c3eeaf0fde80c53156645af72f8ac6762459c",
+      "problems/pmpp_v2/histogram_py/task.py": "730258fae4e85f2f3114e5834d3dbe3253dc8333634943025572b870e43f58d3",
+      "problems/pmpp_v2/matmul_py/reference.py": "100e2c3ea92b6c20c6e0b7a7a8497509ab28f3aaf233139ad1019afac7a08365",
+      "problems/pmpp_v2/matmul_py/task.py": "927ffb6b0beb68b08e065480b27adbddae1cde291baaf83d977f425f9f110bcf",
+      "problems/pmpp_v2/prefixsum_py/reference.py": "05b7eec6731394ef6ccba014d8a92dfc5c6debe46136adeadd97d1eacb529b6c",
+      "problems/pmpp_v2/prefixsum_py/task.py": "1980195d04996393b5798a43ae0a74b1b17f3ef2bd0d6d03737baa770ab359f0",
+      "problems/pmpp_v2/sort_py/reference.py": "76dcfb88b2417fc9b6caea4eb62dd51a845018c6870cedbd43b24c8502e66b18",
+      "problems/pmpp_v2/sort_py/task.py": "a3ee85b12ca4283f194cc03a673e31e833c05dc34aa076518733570bfcb6d8bd",
+      "problems/pmpp_v2/template.py": "d317594add4d551c5f116f28d1a70f11c9f495c486b9addd47dc64d560ac4b38",
+      "problems/pmpp_v2/utils.py": "c73430eaa224f70a3fc5afe8c7906b49ae3525cf4cf21fb4e585eab61fdae640",
+      "problems/pmpp_v2/vectoradd_py/reference.py": "db478276c63be88cdd030190f82f6f8837a09be8e7df39b2cd441cef619ad154",
+      "problems/pmpp_v2/vectoradd_py/task.py": "a0c7bd738b93faaf6b603016c7af86678afcd9670061e9e1daa0b0ebf8a3f13d",
+      "problems/pmpp_v2/vectorsum_py/reference.py": "d7363e7c4d28dc4f37072636965a3ddfb7b732e10ee836bbb6233e5f3df9e08a",
+      "problems/pmpp_v2/vectorsum_py/task.py": "c63fb7d37effce217768b7d144350c78ba61146ed7aa17eab36aabaef4816d4f"
+    }
+  },
+  "license_note": "Upstream license: June 9 Researcher Reciprocity License v1.0 (Open RAIL-S derivative). This project uses the pinned problem set for local evaluation only: no training on the material, no few-shot/retrieval reuse in candidate generation, no redistribution of the cached bytes (research/sources is gitignored). License text pinned at LICENSE in the snapshot."
+}

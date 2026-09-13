@@ -1,0 +1,621 @@
+{
+  "schema_version": "1.0",
+  "suite": "multikernelbench",
+  "note": "Frozen development subset referencing the pinned upstream snapshot. Problem files stay in the local gitignored research cache; this manifest carries ids, names and sha256 only. It is a selection of upstream data, not a new problem bank.",
+  "upstream": {
+    "repository": "wzzll123/MultiKernelBench",
+    "commit": "460a972c9be7ce18035984321d38b910e27df95f",
+    "scope": "NVIDIA-platform reference/ categories only; npukernelbench_* (Ascend NPU) categories excluded from the snapshot.",
+    "files_manifest": "configs/multikernelbench/snapshot-files.manifest.json",
+    "files_manifest_sha256": "1c1ccbb10cbcd66f92dd28b9c74918a8af4c2a3a0b6ef35fc743c122cef8dc0c",
+    "snapshot_counts": {
+      "problems": 300,
+      "protocol_files": 5
+    }
+  },
+  "selection_rule": "First dev subset: one problem per smaller category plus six fuse problems, restricted to problems whose static AST input estimate is fully resolved and <= 2 GiB (8 GB local card). static estimate default dtype fp32.",
+  "input_exclusion_rule": "Problems whose fully-resolved static input estimate exceeds 6 GiB are excluded from the dev subset and listed in excluded_over_input_budget (runtime OOM remains a legal resource_exceeded outcome). Problems with unresolved static estimates are listed in excluded_unresolved_input_estimate and are not selected this round.",
+  "excluded_over_input_budget": [
+    {
+      "path": "reference/convolution/conv_standard_1d_dilated_strided.py",
+      "sha256": "83736e4c38632e0f72bcba6b3b74065b2dba668913e1b1161f9b5ad8b37e64e3",
+      "estimated_input_bytes": 8589803520
+    },
+    {
+      "path": "reference/fuse/convtranspose2d_batchnorm_tanh_maxpool_groupnorm.py",
+      "sha256": "e10fa44d0dbc6f6d9b7fff411dae2730502c2b15236d9ec1097e7deff37f1981",
+      "estimated_input_bytes": 549755813888
+    },
+    {
+      "path": "reference/index/argmax_over_a_dimension.py",
+      "sha256": "d6a2057c4c95a9737985b2b8ffda23595f812557c26a2263fec8edd594c61fbe",
+      "estimated_input_bytes": 8587837440
+    },
+    {
+      "path": "reference/index/argmin_over_a_dimension.py",
+      "sha256": "e1764caddce33679126f225b4da455a95978be85ccf79a372e3ef549ee35ba8f",
+      "estimated_input_bytes": 8587837440
+    },
+    {
+      "path": "reference/matmul/matrix_vector_multiplication.py",
+      "sha256": "5f1476dfcbd291f393d469a2645ff628f1e393bd720c2fe36d5fa4f9181dd8a1",
+      "estimated_input_bytes": 8594128896
+    },
+    {
+      "path": "reference/normalization/frobenius_norm.py",
+      "sha256": "425dfd6101cb6c922872f9fe7f8705710974f83a74960c7dd915f5b80dc702c5",
+      "estimated_input_bytes": 8589934592
+    },
+    {
+      "path": "reference/normalization/group_norm.py",
+      "sha256": "42325dc79651b049a038f95480b9df37a94d7d445d730103a30eb1a8f7c2c2f0",
+      "estimated_input_bytes": 8589934592
+    },
+    {
+      "path": "reference/normalization/instance_norm.py",
+      "sha256": "68d2c30aa59596a7b5ea65cc080ea2a0dea02a15ebb3095ea36b6c65e333b850",
+      "estimated_input_bytes": 8589934592
+    },
+    {
+      "path": "reference/normalization/l1_norm.py",
+      "sha256": "02d29f98ba28001a4274fe713bf0b985ffc088aef1e83581ad11e4dbe239dfda",
+      "estimated_input_bytes": 8589803520
+    },
+    {
+      "path": "reference/normalization/l2_norm.py",
+      "sha256": "fb8153fbe2a50679fcbbc3114f46c4157547138679fb6ecbabec0497e90a55c3",
+      "estimated_input_bytes": 8589803520
+    },
+    {
+      "path": "reference/normalization/rms_norm.py",
+      "sha256": "60a4b46a29e5f310ea91c0958576f77172b08044c2eb736109f0944d9333dbaf",
+      "estimated_input_bytes": 8589934592
+    },
+    {
+      "path": "reference/pooling/average_pooling_3d.py",
+      "sha256": "bb683a01c421e1e289b7cd765a7c199317984f4fccad885e69acf32fa97ce3d3",
+      "estimated_input_bytes": 8589934592
+    },
+    {
+      "path": "reference/reduce/max_reduction_over_a_dimension.py",
+      "sha256": "77168a328c363272c37b1b949d742b1559b24991612cb8b6977bc6c774b07100",
+      "estimated_input_bytes": 8589934592
+    },
+    {
+      "path": "reference/reduce/mean_reduction_over_a_dimension.py",
+      "sha256": "7680645571d748a156d90e30c9f71ff05ce542f74d4526b78eeb2ff430b59b2b",
+      "estimated_input_bytes": 8589934592
+    },
+    {
+      "path": "reference/reduce/min_reduction_over_a_dimension.py",
+      "sha256": "a898a264e344c9cb8146436f8ef2ccfd84ac53c2d4556e11891f34d503f09129",
+      "estimated_input_bytes": 8589934592
+    },
+    {
+      "path": "reference/reduce/product_reduction_over_a_dimension.py",
+      "sha256": "e2a634378adb89b87ac95aec1ad7cdb15559891a571ad70b8c628489ba2d80a6",
+      "estimated_input_bytes": 8589934592
+    },
+    {
+      "path": "reference/reduce/sum_reduction_over_a_dimension.py",
+      "sha256": "269af932e9d8e2393a6335f67ddb1c21c38268518d0e9a146596af98c26659ea",
+      "estimated_input_bytes": 8589934592
+    }
+  ],
+  "excluded_unresolved_input_estimate": [
+    {
+      "path": "reference/arch/densenet121.py",
+      "sha256": "06bc981e52eeffd0d48dd86346711a68b392b2d4cf962f75277e0efd788835f5"
+    },
+    {
+      "path": "reference/arch/densenet121_dense_block.py",
+      "sha256": "ddaeba7851ccbe7ff08bf5188a7c3471a503e9a54b4f1c7e4d5e30deb975fb27"
+    },
+    {
+      "path": "reference/arch/densenet121_transition_layer.py",
+      "sha256": "bcfebd2d217074b24616b4b4c35ec9a717620b491c296ff40344452f55869429"
+    },
+    {
+      "path": "reference/arch/densenet201.py",
+      "sha256": "576b877998f189f731e1dbf06e7189ce34aa2166ea66303d8726ee48ef5c409e"
+    },
+    {
+      "path": "reference/arch/efficientnet_b1.py",
+      "sha256": "c71964547b244e26ac4205a46032fe69b8f425cefbf3f92503f5641668a2d34f"
+    },
+    {
+      "path": "reference/arch/regnet.py",
+      "sha256": "bd51db0cd40f9e3c334f3360500d6ffef66dfd8d1935b76c71700329c77118d3"
+    },
+    {
+      "path": "reference/arch/squeeze_net_fire_module.py",
+      "sha256": "99864d7e0e7e3b7c06fc4316dd25c2422fec8ba4413d7e2a55c2c5964f89737b"
+    },
+    {
+      "path": "reference/attention/cross_attention.py",
+      "sha256": "d794f5ad58313aa33322c1f409cc4f2c3a6d78b70b4173c902f661cd468d6f39"
+    },
+    {
+      "path": "reference/attention/multi_query_attention.py",
+      "sha256": "c442f1c8e97d8be544ebd4e0894116c351e85b462192eb087e7f5f3202997607"
+    },
+    {
+      "path": "reference/attention/windowed_causal_attention.py",
+      "sha256": "e2b2720a59681d7d2ed92ba19231777b07cda6919472a3900f2e79f21f4a49c9"
+    },
+    {
+      "path": "reference/broadcast/logic_and_broadcast.py",
+      "sha256": "e7fce53d376e7ee4afa13c89563315ae4d889351f6e5d8f34a7550588fc6e6ab"
+    },
+    {
+      "path": "reference/broadcast/where_broadcast.py",
+      "sha256": "3b0b84656da98fda2b1dbab29b4c72479e2594420ddd2ea9468cab2ecabbf1c6"
+    },
+    {
+      "path": "reference/fuse/conv2d_activation_batch_norm.py",
+      "sha256": "e9b0070822d17b3ba2e80c05f20e8bfd70bcde2f92a21d6d6ef811d8f4ddc898"
+    },
+    {
+      "path": "reference/fuse/conv2d_avg_pool_sigmoid_sum.py",
+      "sha256": "7bd02c41c99f336d8515c06cd299fcd95dcc575f3aa1114b4de84b81cadbe7d4"
+    },
+    {
+      "path": "reference/fuse/conv2d_batch_norm_scaling.py",
+      "sha256": "5c2d1c40a5ba00505f8c18579b377052c92ecce39bb3c405dba42ee05a1d7740"
+    },
+    {
+      "path": "reference/fuse/conv2d_divide_leaky_relu.py",
+      "sha256": "412f9c4244239814ab3cc6d58c0837c7ffbc94e5d63453c88f8388fb28309fad"
+    },
+    {
+      "path": "reference/fuse/conv2d_gelu_global_avg_pool.py",
+      "sha256": "3a9572034d80dd060bb523e1d265aa941113a8044ecd30c614e764fdf029d94a"
+    },
+    {
+      "path": "reference/fuse/conv2d_group_norm_scale_max_pool_clamp.py",
+      "sha256": "ba63b5b156a347f2f92a607c4a612e2bb1963dbcb9e7f04b3e4f0cb4a294fff3"
+    },
+    {
+      "path": "reference/fuse/conv2d_group_norm_tanh_hard_swish_residual_add_log_sum_exp.py",
+      "sha256": "d5732faa8c80a56b551b28f064ced01ed0fe640a57f72b117ee19e01dc71952d"
+    },
+    {
+      "path": "reference/fuse/conv2d_hard_swish_relu.py",
+      "sha256": "442df07c27315075294d997dcd7ce61310a7d41a8dff4033c33ef4cf61b4727e"
+    },
+    {
+      "path": "reference/fuse/conv2d_multiply_leaky_relu_gelu.py",
+      "sha256": "863895c0021967f1c4976bbe0f7c408a6d3e19c92e65255e13c214978c2e67d8"
+    },
+    {
+      "path": "reference/fuse/conv2d_relu_hard_swish.py",
+      "sha256": "6c3068e8639d0fce90e78d72027434237594eafe9e1c0919b56c30edeae9ff88"
+    },
+    {
+      "path": "reference/fuse/conv2d_subtract_subtract_mish.py",
+      "sha256": "ab44c31f27a7265867d3842b7b8e5b2ba9d555d597efe6804d474e45c15aa621"
+    },
+    {
+      "path": "reference/fuse/conv2d_subtract_tanh_subtract_avg_pool.py",
+      "sha256": "b52e744528e32863da06d5a713a9932fc51798c93ee252b57fbde10d769bc0ce"
+    },
+    {
+      "path": "reference/fuse/conv2d_tanh_scaling_bias_add_max.py",
+      "sha256": "1085dcf3a5845103c4dcdec8b8d3932ca48c729502fb101654bec085dae1dd8d"
+    },
+    {
+      "path": "reference/fuse/conv3d_group_norm_mean.py",
+      "sha256": "9677116401cf1ec4ac00eb19cb6f08762d63b87b137e6ed10f2c8ec3741310fb"
+    },
+    {
+      "path": "reference/fuse/conv3d_group_norm_min_clamp_dropout.py",
+      "sha256": "223d45d8423c55369bd0b1277abca1d358a28ad77cf7661f1c6e602c856a694a"
+    },
+    {
+      "path": "reference/fuse/conv3d_hardswish_relu_softmax_mean.py",
+      "sha256": "29f0c5f4ddc5b3b7db30e61402fcb6aee535e03274b616a11218893a7c7546bb"
+    },
+    {
+      "path": "reference/fuse/conv3d_leaky_relu_sum_clamp_gelu.py",
+      "sha256": "bd2eaa246f1176ad3bfb887b2ca27666f2f801a648cd4ffe5cf6aae49278dcb2"
+    },
+    {
+      "path": "reference/fuse/conv3d_max_log_sum_exp_relu.py",
+      "sha256": "e274319f222a8938fe0fe51c0f9093bedc7c90f00f1b684ba9be8f39e5db6b19"
+    },
+    {
+      "path": "reference/fuse/conv3d_min_softmax.py",
+      "sha256": "1aad5ff832f3cd5ec353df0d9c040daea4fcddd1bcd6391189a81b94e3fba19a"
+    },
+    {
+      "path": "reference/fuse/conv3d_mish_tanh.py",
+      "sha256": "dad33b133cc3a085e46d7237887e872c4c7c05dd34b48d742f6edabc87aa8b44"
+    },
+    {
+      "path": "reference/fuse/conv3d_multiply_instance_norm_clamp_multiply_max.py",
+      "sha256": "9355597767e42b73adda3ce5f8d60d70a4d8cd823438b782c88b1270d91a3e2d"
+    },
+    {
+      "path": "reference/fuse/conv3d_relu_leaky_relu_gelu_sigmoid_bias_add.py",
+      "sha256": "cd0390e07dda478af0316a61bd1a407677992229ffdf3fa857d143e40a8533d7"
+    },
+    {
+      "path": "reference/fuse/conv3d_scaling_tanh_multiply_sigmoid.py",
+      "sha256": "a2f6bc6b97dfff819695956bdfb21f3a1c6873f81eb6c31e19377b1079a0a157"
+    },
+    {
+      "path": "reference/fuse/conv3d_softmax_max_pool_max_pool.py",
+      "sha256": "55322b483d9bf27e0fefcdfd0e25f53172c194da6b47154d40bd39f781c60a46"
+    },
+    {
+      "path": "reference/fuse/conv_transpose2d_add_min_gelu_multiply.py",
+      "sha256": "3f9c3e542afa320508390c00b28bb407b3999caa919a5885bbd03e2c8f1df547"
+    },
+    {
+      "path": "reference/fuse/conv_transpose2d_min_sum_gelu_add.py",
+      "sha256": "e8a14171f06b41a2bb5067e1397d2b1afd928c95272916b3c16dfff811f98316"
+    },
+    {
+      "path": "reference/fuse/conv_transpose2d_multiply_global_avg_pool_global_avg_pool_mean.py",
+      "sha256": "8b08cbe307167cb006a00e6f8309bce56dad016b9bc5346c4484b315cfdb411d"
+    },
+    {
+      "path": "reference/fuse/conv_transpose3d_add_hard_swish.py",
+      "sha256": "807660889baed4d0c4abade85efaec7f9c1c0c2897b812a281c6f8d0d3748852"
+    },
+    {
+      "path": "reference/fuse/conv_transpose3d_avg_pool_clamp_softmax_multiply.py",
+      "sha256": "913b9a28fa2c866a5f62c06b02aab327728679f3139783053e5872ce5e8e99b6"
+    },
+    {
+      "path": "reference/fuse/conv_transpose3d_batch_norm_avg_pool_avg_pool.py",
+      "sha256": "cc65e3beca217d11df994ed6beb6476909c234b5b5282a1cbfee0c5312908ea6"
+    },
+    {
+      "path": "reference/fuse/conv_transpose3d_batch_norm_subtract.py",
+      "sha256": "43f63a8c7edfdde89349af7fb8c8820a73586cb28d6057c46d5e562f374cef6a"
+    },
+    {
+      "path": "reference/fuse/conv_transpose3d_clamp_min_divide.py",
+      "sha256": "d2ea123f1b6ebcf584e1697eae1d34c61bcb9e257b0ea893ac253350c4067d0f"
+    },
+    {
+      "path": "reference/fuse/conv_transpose3d_layer_norm_gelu_scaling.py",
+      "sha256": "81095e0048e53905573b62f7e2bb37b77505a9fe4913fd8fe736669ffce3f23c"
+    },
+    {
+      "path": "reference/fuse/conv_transpose3d_leaky_relu_multiply_leaky_relu_max.py",
+      "sha256": "7d05e9bcc2a444487b190089498e25fdcfd236ea00b844a5459ac13ce8121833"
+    },
+    {
+      "path": "reference/fuse/conv_transpose3d_log_sum_exp_hard_swish_subtract_clamp_max.py",
+      "sha256": "d89693a52be9080caf580e0a21691a19d1cf9ef44c31a9466b6df97178ac9c21"
+    },
+    {
+      "path": "reference/fuse/conv_transpose3d_max_max_sum.py",
+      "sha256": "72724f4f417c8e598702d327ecb7f22356bde897235b2ac93f0f303b6d9bfefe"
+    },
+    {
+      "path": "reference/fuse/conv_transpose3d_max_pool_softmax_subtract_swish_max.py",
+      "sha256": "300030609984e750550fcf6b263c5fe8bba73389cb644cd48085c30be109b0df"
+    },
+    {
+      "path": "reference/fuse/conv_transpose3d_multiply_max_global_avg_pool_clamp.py",
+      "sha256": "164edd0135adff496adade63a772074630ebf2c13feaa450307d98a9728da2e6"
+    },
+    {
+      "path": "reference/fuse/conv_transpose3d_scale_batch_norm_global_avg_pool.py",
+      "sha256": "cc3dcfba9cd5526d515917bbae7ee2af7d7694322a91a96a4461e73ec8a6278b"
+    },
+    {
+      "path": "reference/fuse/conv_transpose3d_scaling_avg_pool_bias_add_scaling.py",
+      "sha256": "c094d9151eed193c99c1854706203e33d32c7a0e536abf04c81790f873763765"
+    },
+    {
+      "path": "reference/fuse/conv_transpose3d_softmax_sigmoid.py",
+      "sha256": "9386889fc80859671b9ef7f3bd3dd182bd0fb5b51067f88407c4e48fb1107f79"
+    },
+    {
+      "path": "reference/fuse/conv_transpose3d_sum_layer_norm_avg_pool_gelu.py",
+      "sha256": "43613691d1dec5ccfab8b70311ec83621c1f305ecceea490a053859d3c5b10a5"
+    },
+    {
+      "path": "reference/fuse/conv_transpose3d_sum_residual_add_multiply_residual_add.py",
+      "sha256": "d5977ca8e549aac43aa5b4fd78dcbfc11784961891668ed5008fb0978d3e4a61"
+    },
+    {
+      "path": "reference/fuse/conv_transpose3d_swish_group_norm_hard_swish.py",
+      "sha256": "b5f0476a56ce409c0293a0b68bd9f24ac3558916acdc15576890f8665b551bb6"
+    },
+    {
+      "path": "reference/fuse/convtranspose2d_softmax_biasadd_scaling_sigmoid.py",
+      "sha256": "3b571801aec40ec4214ffd9ae7dc4a099560a6bc35564c792280331951023c71"
+    },
+    {
+      "path": "reference/fuse/convtranspose3d_relu_groupnorm.py",
+      "sha256": "ab2c7dfe1edd7cc983e6866deec40edd391a7a64c4b6fe3b30033650205e0b6a"
+    },
+    {
+      "path": "reference/index/embedding.py",
+      "sha256": "06ab904a85549904e788a03f1c8998e40ca0f38cf4acae93b6023fa25666aca5"
+    },
+    {
+      "path": "reference/index/gather.py",
+      "sha256": "ab720efad9b680999978992340bc131b27bcbe8954709b13235e8b8c883cce71"
+    },
+    {
+      "path": "reference/index/index_add.py",
+      "sha256": "3b483c89a231884b069c6318685cec73a8f968f701c2fc2dfb1a490e1c706bc8"
+    },
+    {
+      "path": "reference/index/index_copy.py",
+      "sha256": "0f76258e8c15922972ba267157eee40120082377748b07866ec848574e5c592c"
+    },
+    {
+      "path": "reference/index/index_select.py",
+      "sha256": "2684a9559a3f2e2894eb9f91aa8893914f272e6c64b9e0a1f6ad9ecd687352b0"
+    },
+    {
+      "path": "reference/index/inplace_update.py",
+      "sha256": "eedd37a4fa77ce2344596bf7e4331271a486b86c583478d407363934d2edf2f1"
+    },
+    {
+      "path": "reference/index/masked_fill.py",
+      "sha256": "e513be676da0bf351307c0779492117362a2d3bc4926e064387541259b74d4ca"
+    },
+    {
+      "path": "reference/index/scatter.py",
+      "sha256": "e93c864a8904919dfbf329eeee8e9ea17508af71a7066ee39cfa2a65ac54031b"
+    },
+    {
+      "path": "reference/index/scatter_add.py",
+      "sha256": "ceb09998422aa6080ac2bcc39d0fa7bfe0450afd10c6b8b3a51fe7cd719eefee"
+    },
+    {
+      "path": "reference/index/take_along_dim.py",
+      "sha256": "2f2a5f42ce4f1ca7a6621b3699463d122d0bcb271d6a8911ee10dc80f08e4aa2"
+    },
+    {
+      "path": "reference/loss/cosine_similarity_loss.py",
+      "sha256": "33b804a24c734fc440f16cad78aabf5c96d334bbe212a534d1aff7050be35fe6"
+    },
+    {
+      "path": "reference/loss/cross_entropy_loss.py",
+      "sha256": "4cdfaaf1c2118369987c7a0c24b4487fee4bb90fdce50f592bded59cf61ae9bd"
+    },
+    {
+      "path": "reference/loss/hinge_loss.py",
+      "sha256": "8e7ab261247e266e1b765957db04ea6972ac5dc9544607c059848d2417d5d3a1"
+    },
+    {
+      "path": "reference/loss/huber_loss.py",
+      "sha256": "51a7c78a527206ba8da2b24cbbfd3c8a043146a9d690d4304c5e95a199425747"
+    },
+    {
+      "path": "reference/loss/kl_div_loss.py",
+      "sha256": "ff13e10c26851cc7262cd993dd289ad21b18dbb1dd65bb2159d7052582b1ccd5"
+    },
+    {
+      "path": "reference/loss/mse_loss.py",
+      "sha256": "1bc23c8534d817cd5acff184eb8d3849f43b96b6dffcde6ab78a1c71a8fe64f3"
+    },
+    {
+      "path": "reference/loss/triplet_margin_loss.py",
+      "sha256": "07fce40303b9ba5fdc3e5b6ae61c35ed47ac291e9e0f4e62c21a8ba2763cea0c"
+    },
+    {
+      "path": "reference/math/cumprod.py",
+      "sha256": "17408793b4846d75bef22fff5c2a16c7d836409eabc0476c8060f75183a64665"
+    },
+    {
+      "path": "reference/math/cumsum.py",
+      "sha256": "24eea19436dc41aa36ae3364b422d784c4f20175903f894e06beeb9cff15c02d"
+    },
+    {
+      "path": "reference/math/cumsum_exclusive.py",
+      "sha256": "ec1551c196130f5d7fae707f0750016c35b988e76aa3f1657da4347f463ced86"
+    },
+    {
+      "path": "reference/math/cumsum_reverse.py",
+      "sha256": "170f4bb30f01abdec9b149d78a816e66bdc93967253ade8244dca1b8372038fd"
+    },
+    {
+      "path": "reference/math/masked_cumsum.py",
+      "sha256": "8b1591c5c8242968acc0677a4a1308b7a704534724782c3858b4cb0b10828769"
+    },
+    {
+      "path": "reference/resize/grid_sample_random_warp.py",
+      "sha256": "3eaf178d43c9c24d97b5239bbb36b399c432f82591ee0ed954440b3e584b0f09"
+    }
+  ],
+  "problems": [
+    {
+      "category": "activation",
+      "op": "min_gpt_new_gelu",
+      "path": "reference/activation/min_gpt_new_gelu.py",
+      "sha256": "4c715023579e2edc7d7af2a6799ea6cb9ef1b9278670cfbe2d0e61d111003c4f",
+      "task_id": "mkb-activation-min_gpt_new_gelu",
+      "estimated_input_bytes": 268435456
+    },
+    {
+      "category": "arch",
+      "op": "resnet18",
+      "path": "reference/arch/resnet18.py",
+      "sha256": "7458bb2ffb7e81fe8d9d8bf192e8249f887d6d2436c958480be272629f22be00",
+      "task_id": "mkb-arch-resnet18",
+      "estimated_input_bytes": 1204224
+    },
+    {
+      "category": "attention",
+      "op": "causal_attention",
+      "path": "reference/attention/causal_attention.py",
+      "sha256": "c555f80de645fa494df5b3e1cc62fb034e79ac4bafada1bf8399b76337cb7c95",
+      "task_id": "mkb-attention-causal_attention",
+      "estimated_input_bytes": 4194304
+    },
+    {
+      "category": "broadcast",
+      "op": "add_bias_broadcast",
+      "path": "reference/broadcast/add_bias_broadcast.py",
+      "sha256": "0fa9906f9d8e1fea4846e81d8bdff1843594e4875a0cc88daf3ea1919c12e002",
+      "task_id": "mkb-broadcast-add_bias_broadcast",
+      "estimated_input_bytes": 32768
+    },
+    {
+      "category": "broadcast",
+      "op": "power_broadcast",
+      "path": "reference/broadcast/power_broadcast.py",
+      "sha256": "25f645a4570cb1aec4626ae49ec4e5727e55d1d2b68a681e7d11c4b1dc18186c",
+      "task_id": "mkb-broadcast-power_broadcast",
+      "estimated_input_bytes": 40960
+    },
+    {
+      "category": "convolution",
+      "op": "conv_standard_3d_asymmetric_input_asymmetric_kernel",
+      "path": "reference/convolution/conv_standard_3d_asymmetric_input_asymmetric_kernel.py",
+      "sha256": "649fc141b68b3cd3fa83cdd3dda9a0e02f0367eb0a8307fe7fbe8b5968a305eb",
+      "task_id": "mkb-convolution-conv_standard_3d_asymmetric_input_asymmetric_kernel",
+      "estimated_input_bytes": 25165824
+    },
+    {
+      "category": "fuse",
+      "op": "gemm_scale_batchnorm",
+      "path": "reference/fuse/gemm_scale_batchnorm.py",
+      "sha256": "236f621847118c08863e13c55add78d32b89287d230126c30d2c0cf6df7302f6",
+      "task_id": "mkb-fuse-gemm_scale_batchnorm",
+      "estimated_input_bytes": 524288
+    },
+    {
+      "category": "fuse",
+      "op": "matmul_dropout_mean_softmax",
+      "path": "reference/fuse/matmul_dropout_mean_softmax.py",
+      "sha256": "7a8bcefb75586bbf0acfcdeb0e8391c8881548fe9b55844c0033a96e9f898a29",
+      "task_id": "mkb-fuse-matmul_dropout_mean_softmax",
+      "estimated_input_bytes": 8388608
+    },
+    {
+      "category": "fuse",
+      "op": "matmul_max_pool_sum_scale",
+      "path": "reference/fuse/matmul_max_pool_sum_scale.py",
+      "sha256": "ef3a425677ff103d6080f3f3eddf89cee25f5b54cfa13777de51bc0ab39b41e6",
+      "task_id": "mkb-fuse-matmul_max_pool_sum_scale",
+      "estimated_input_bytes": 16777216
+    },
+    {
+      "category": "fuse",
+      "op": "matmul_min_subtract",
+      "path": "reference/fuse/matmul_min_subtract.py",
+      "sha256": "89b99c3df1d7d0fa49981c9f5aae7755df1d7dfd1e49b85b09d166e486d2670a",
+      "task_id": "mkb-fuse-matmul_min_subtract",
+      "estimated_input_bytes": 8388608
+    },
+    {
+      "category": "fuse",
+      "op": "matmul_sigmoid_sum",
+      "path": "reference/fuse/matmul_sigmoid_sum.py",
+      "sha256": "00070bf8cc6a0d0ff1c4cbb78729620575164e67cb03ef1d646bbab332ae1fa3",
+      "task_id": "mkb-fuse-matmul_sigmoid_sum",
+      "estimated_input_bytes": 16777216
+    },
+    {
+      "category": "fuse",
+      "op": "matmul_swish_scaling",
+      "path": "reference/fuse/matmul_swish_scaling.py",
+      "sha256": "af4bfb47631eb3eee01055c0ae090e7452edacb0aa35fa40d117de2675bc2720",
+      "task_id": "mkb-fuse-matmul_swish_scaling",
+      "estimated_input_bytes": 16777216
+    },
+    {
+      "category": "matmul",
+      "op": "matmul_with_diagonal_matrices",
+      "path": "reference/matmul/matmul_with_diagonal_matrices.py",
+      "sha256": "948d60329c341889dbebe93bb54a1503e92a7f0155a1cf428694ad93db2927f8",
+      "task_id": "mkb-matmul-matmul_with_diagonal_matrices",
+      "estimated_input_bytes": 67125248
+    },
+    {
+      "category": "matmul",
+      "op": "matmul_with_small_k_dimension",
+      "path": "reference/matmul/matmul_with_small_k_dimension.py",
+      "sha256": "66b12b830db873ab706900ffb52abd9fa43321829eee40a27d395441db2f2966",
+      "task_id": "mkb-matmul-matmul_with_small_k_dimension",
+      "estimated_input_bytes": 16777216
+    },
+    {
+      "category": "matmul",
+      "op": "tall_skinny_matrix_multiplication",
+      "path": "reference/matmul/tall_skinny_matrix_multiplication.py",
+      "sha256": "06a133f60f0d704b70014b210031e3937d7a183c90ea11800357ce6b55c89c18",
+      "task_id": "mkb-matmul-tall_skinny_matrix_multiplication",
+      "estimated_input_bytes": 8388608
+    },
+    {
+      "category": "normalization",
+      "op": "layer_norm",
+      "path": "reference/normalization/layer_norm.py",
+      "sha256": "b99cbceb7213cf9b4fa3a77ba368236cc88f5e2d31391ac1cd1ad7ffa0c2a410",
+      "task_id": "mkb-normalization-layer_norm",
+      "estimated_input_bytes": 1073741824
+    },
+    {
+      "category": "optimizer",
+      "op": "adam",
+      "path": "reference/optimizer/adam.py",
+      "sha256": "0178a38019bef8712cd1b87bd7e9f550d5a4df426ff10e0bd92f38d59b86159e",
+      "task_id": "mkb-optimizer-adam",
+      "estimated_input_bytes": 4194304
+    },
+    {
+      "category": "optimizer",
+      "op": "lamb",
+      "path": "reference/optimizer/lamb.py",
+      "sha256": "26b48b2607ceaed5984131887088ac887f82508b49c78a52109f72d29aa03cce",
+      "task_id": "mkb-optimizer-lamb",
+      "estimated_input_bytes": 8388608
+    },
+    {
+      "category": "pooling",
+      "op": "max_pooling_1d",
+      "path": "reference/pooling/max_pooling_1d.py",
+      "sha256": "940962a5f79dc0bf68ceca2f9c327b391bece4c6928bb5f7575fde143a639d6a",
+      "task_id": "mkb-pooling-max_pooling_1d",
+      "estimated_input_bytes": 100663296
+    },
+    {
+      "category": "resize",
+      "op": "upsample_grid_sample",
+      "path": "reference/resize/upsample_grid_sample.py",
+      "sha256": "46f20008793183928701860885555f6cd0db7a4b0426ea1c40983185e6061008",
+      "task_id": "mkb-resize-upsample_grid_sample",
+      "estimated_input_bytes": 2097152
+    }
+  ],
+  "protocol": {
+    "name": "mkb-upstream-cuda-v1",
+    "identity_sha256": "e59362e38f2f3067497ee38a6209a0f75a40a303b01d73d889b67e9de976fb69",
+    "identity_rule": "sha256 over canonical JSON {name, commit, references{path: sha256}}; any protocol file or snapshot commit change changes the identity",
+    "description": "Upstream MultiKernelBench NVIDIA protocol, pinned verbatim: correctness via utils/correctness.py execute_template (torch.allclose atol=rtol=1e-4, bool outputs require exact equality, shape mismatch fails, num_correct_trials=5, seed_num=1024, Model is ground truth) and timing via utils/performance.py time_execution_event_template (CUDA events, num_warmup=3, num_perf_trials=100, per-trial elapsed ms, no L2 cache flush). This track never mixes tolerances or timing numbers with kernelbench / reference-kernels / userbench protocols; MKB numbers are only comparable within this track.",
+    "references": [
+      {
+        "path": "config.py",
+        "sha256": "bfa0c9b1d71ea335556a200720c57bf9b99cc11b9144d2bc588b005a4d6e0946"
+      },
+      {
+        "path": "utils/correctness.py",
+        "sha256": "9bc01f6b76b1e236f5c5df656395fb08da0e070da5d529a1c76cbe84057d39de"
+      },
+      {
+        "path": "utils/performance.py",
+        "sha256": "98589110321124a75c1a4bde5840ad4b4670df4ff56df9011ffb0e1ffa9b40c6"
+      },
+      {
+        "path": "utils/utils.py",
+        "sha256": "618fe536c933a0ed603113344f23cf3d5f2342a7942ea365348cf6875df0b51c"
+      },
+      {
+        "path": "utils/evaluation_utils.py",
+        "sha256": "dbec32f208492e5b05d98f7e0fa36b9da4a468871d0f6faf1270f4c49dfac0f6"
+      }
+    ]
+  }
+}

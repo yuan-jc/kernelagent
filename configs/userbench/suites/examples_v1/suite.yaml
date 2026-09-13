@@ -1,0 +1,20 @@
+api_version: kernelagent/userbench/v1alpha1
+
+suite: examples_v1
+
+protocol:
+  correctness: userbench-correctness-v1
+  timing: userbench-timing-v1
+  timing_params:
+    warmup_iters: 10
+    num_batches: 4
+    iters_per_batch: 500
+    statistics: raw_batch_samples_no_outlier_removal
+    stream_policy: current_stream_events_per_batch_device_sync
+  default_tolerance_ceiling:
+    rtol: 1.0e-4
+    atol: 1.0e-5
+
+allowed_dependencies: ["torch"]
+
+denominator: "all frozen workloads; a missing workload leaves the score unknown and is never a pass"

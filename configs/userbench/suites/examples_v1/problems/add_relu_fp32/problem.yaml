@@ -1,0 +1,42 @@
+api_version: kernelagent/userbench/v1alpha1
+
+problem:
+  name: add_relu_fp32
+  granularity: operator
+  description: "Fused elementwise add and ReLU (torch.add fusion pattern)"
+  reference:
+    source: reference.py
+    entry: run
+    nondeterministic: false
+  inputs:
+    - name: a
+      dtype: float32
+      shape: [-1, -1]
+    - name: b
+      dtype: float32
+      shape: [-1, -1]
+  outputs:
+    - name: y
+      dtype: float32
+      shape: [-1, -1]
+  tolerance:
+    rtol: 1.0e-5
+    atol: 1.0e-6
+    equal_nan: false
+    policy: allclose
+  input_generation:
+    distribution: randn
+    scale: 1.0
+    offset: 0.0
+  workloads:
+    - id: w1_base
+      shapes: [[1024, 4096], [1024, 4096]]
+      dtypes: ["float32", "float32"]
+      seed: 0
+      weight: 1.0
+    - id: w2_wide
+      shapes: [[4096, 8192], [4096, 8192]]
+      dtypes: ["float32", "float32"]
+      seed: 1
+      weight: 2.0
+      guard_max_shape: [4096, 8192]

@@ -1,0 +1,13 @@
+{
+  "schema_version": "1.0",
+  "suite_root": "examples_v1",
+  "files": {
+    "suite.yaml": "acee52a759555df83b72b9ea8adac5ebf7a7fb952ae27a94e6dc0c9a4aa67894",
+    "problems/add_relu_fp32/examples/candidate.py": "1a23844cd1e3b78e86485ebca0dbb5683145589f0f004d25dcf433cfe22e34ee",
+    "problems/add_relu_fp32/problem.yaml": "ec308ce40f42a1b03023d46d6d740a7d2ec4c985e0d377c4cc4f774717fa8fd1",
+    "problems/add_relu_fp32/reference.py": "abf58db9009f621a11974972fee13c87cd42c941d747b2168feb609207db3b83",
+    "problems/rmsnorm_fp32/examples/candidate.py": "171fbc4139ea041e1ba2efd302ce8ead6120897c0962d9c3e7b7bdd7970cb3b1",
+    "problems/rmsnorm_fp32/problem.yaml": "cfb4f211fd16be41d2b7a6cef77ccb5a6341c3c2609a6f2db1ba056a8f3c43a0",
+    "problems/rmsnorm_fp32/reference.py": "544441cd095b8e8446aa9ea094ea3b181125eea0c1b66833f2a943e8986db206"
+  }
+}

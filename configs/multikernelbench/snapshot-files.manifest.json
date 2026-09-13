@@ -1,0 +1,1842 @@
+{
+  "schema_version": "1.0",
+  "repository": "wzzll123/MultiKernelBench",
+  "commit": "460a972c9be7ce18035984321d38b910e27df95f",
+  "note": "NVIDIA-platform reference problems only (npukernelbench_* Ascend categories excluded) plus the upstream protocol file closure.",
+  "files": [
+    {
+      "path": "config.py",
+      "git_blob_sha1": "488b7711e8b6ccb5898398d146e21329bd3315b9",
+      "sha256": "bfa0c9b1d71ea335556a200720c57bf9b99cc11b9144d2bc588b005a4d6e0946",
+      "size": 741
+    },
+    {
+      "path": "reference/activation/elu.py",
+      "git_blob_sha1": "ac871b7e577c964034c42d9e664029c975cd0e6e",
+      "sha256": "295e84c51758555d26571f14353c8c4a02a1c7eb213406129e6ea601385e6fd8",
+      "size": 969
+    },
+    {
+      "path": "reference/activation/gelu.py",
+      "git_blob_sha1": "6b3cdc75e60cd539971ca7ea3c2697b13c8cf0d1",
+      "sha256": "6c08367ffb8a4153714fb8390ece47d8f0294f9e2152245840f3a9764ac8b69b",
+      "size": 721
+    },
+    {
+      "path": "reference/activation/hardsigmoid.py",
+      "git_blob_sha1": "62ab26cd78778ee832ab424fc49bf4797f7a0153",
+      "sha256": "fc773884c6c52af0fd6d41c610ca5bd15f66c4c47f0d4e9fad24564afea4c50a",
+      "size": 749
+    },
+    {
+      "path": "reference/activation/hardtanh.py",
+      "git_blob_sha1": "2f088d77c5cbf76bd8bf53e4b28bffd904a44fff",
+      "sha256": "b73a2ed250f2d9fec69a5899ddae3a15f41a9225b73a20ef6de5b8f8ef05fcf5",
+      "size": 776
+    },
+    {
+      "path": "reference/activation/leaky_relu.py",
+      "git_blob_sha1": "fff5aa11f1306cbbccb3c4470c58d96d97e1b7bf",
+      "sha256": "5dea58d2392f446e0139e6cfb58bec3a1ac23cee90bb5c3e8a6ddab2909b7fbf",
+      "size": 1045
+    },
+    {
+      "path": "reference/activation/log_softmax.py",
+      "git_blob_sha1": "989f6a03a40040323f93d9d515a61702241b2a4c",
+      "sha256": "2aa5cac0c12474ed17fad018fee6ccbb09ca7d200ece7981bb8a608200b81fb8",
+      "size": 797
+    },
+    {
+      "path": "reference/activation/min_gpt_new_gelu.py",
+      "git_blob_sha1": "9a4e2421b49c1f38d30a0597b47ac3928759f9b9",
+      "sha256": "4c715023579e2edc7d7af2a6799ea6cb9ef1b9278670cfbe2d0e61d111003c4f",
+      "size": 716
+    },
+    {
+      "path": "reference/activation/relu.py",
+      "git_blob_sha1": "1f370caec96f53a2d86fc1a8050f5002f8a8c80b",
+      "sha256": "cbbfc9409662168ee7a5d3e7f7a59bf56e0faf9d763197e7f6a41fb5942dd63a",
+      "size": 707
+    },
+    {
+      "path": "reference/activation/selu.py",
+      "git_blob_sha1": "a1292b891b8e438cb218c0f0f3a747ea5f90873f",
+      "sha256": "21aad8c91144bee2c507d134ffc9c365d555a6035dfea71e3044a9cdad8adf99",
+      "size": 711
+    },
+    {
+      "path": "reference/activation/sigmoid.py",
+      "git_blob_sha1": "2da3a601881c5893bfd7b7c876cee1a378ff37f3",
+      "sha256": "8f3ae78284ddd70b5c2fff66e066e967780245dee262fbf8cd2432498833796a",
+      "size": 719
+    },
+    {
+      "path": "reference/activation/softmax.py",
+      "git_blob_sha1": "77821d84ec773782992861a7b8dff7010edf6552",
+      "sha256": "c9fa418447f2d64d5aeb4763d817137c1cb5a6b411a580f0b6291a7b29301d75",
+      "size": 749
+    },
+    {
+      "path": "reference/activation/softplus.py",
+      "git_blob_sha1": "0e547c39641cef73a28d18c64ceac1995f9909f6",
+      "sha256": "dadaed23e8f0194fc4840b5af4d10d397f96f2034eca0e36653078b270ce8539",
+      "size": 737
+    },
+    {
+      "path": "reference/activation/softsign.py",
+      "git_blob_sha1": "e76a5ec763919184639e1102e6da165b139377b6",
+      "sha256": "1c7b8e7dd71284dbfbcc33bf87b94c962b3cca6da90bbd2b5c5e8900b1354a75",
+      "size": 728
+    },
+    {
+      "path": "reference/activation/swish.py",
+      "git_blob_sha1": "18d9b739ab5118e7ccefc6395f0960448b05ddd3",
+      "sha256": "dbc25cc89be043065594c2882809b129a442af34ecdc280b9be2bc04597d653a",
+      "size": 717
+    },
+    {
+      "path": "reference/activation/tanh.py",
+      "git_blob_sha1": "22fc1126ad35e6bc4787ebbc6ad7e457275e16d0",
+      "sha256": "8d47a07cbd045c944bb0bbd613e9375ca8032f7062e36f7a5d3c427c30e88490",
+      "size": 707
+    },
+    {
+      "path": "reference/arch/alexnet.py",
+      "git_blob_sha1": "bd18143d30ed71b56efdb8e0b0df75546715267b",
+      "sha256": "021d44956638c6a4f77eb3a60b0fdb4a3cdc50540e0268eb86fb9d22d8dd971e",
+      "size": 2837
+    },
+    {
+      "path": "reference/arch/convolutional_vision_transformer.py",
+      "git_blob_sha1": "5771f5b61faa47940bd290c13fe91dc0ef3dda98",
+      "sha256": "8ec3e9e2bc98ea22d26857774b1bae578c7c6cf9a0b7f2df3dbdd8469a1033f9",
+      "size": 2755
+    },
+    {
+      "path": "reference/arch/deep_narrow_mlp.py",
+      "git_blob_sha1": "78ca0d2ab61be86a07c0c4fbe9621c390f6561c0",
+      "sha256": "6945a0e90da524f41fd2f228e6ba1a23f0d6d670feb65f260e6e628f5aacfb1e",
+      "size": 1339
+    },
+    {
+      "path": "reference/arch/densenet121.py",
+      "git_blob_sha1": "39489cd99fc9171ce1a2eff82f0d989e1ef67428",
+      "sha256": "06bc981e52eeffd0d48dd86346711a68b392b2d4cf962f75277e0efd788835f5",
+      "size": 4838
+    },
+    {
+      "path": "reference/arch/densenet121_dense_block.py",
+      "git_blob_sha1": "3f8f8a33a2f0542642a3ff22087f4cf27c19a85c",
+      "sha256": "ddaeba7851ccbe7ff08bf5188a7c3471a503e9a54b4f1c7e4d5e30deb975fb27",
+      "size": 1799
+    },
+    {
+      "path": "reference/arch/densenet121_transition_layer.py",
+      "git_blob_sha1": "84cb012eb4eedf79361c979769894c761f6cda5b",
+      "sha256": "bcfebd2d217074b24616b4b4c35ec9a717620b491c296ff40344452f55869429",
+      "size": 1146
+    },
+    {
+      "path": "reference/arch/densenet201.py",
+      "git_blob_sha1": "206f66e064625ce2e2a2928b55b2469dcb255f51",
+      "sha256": "576b877998f189f731e1dbf06e7189ce34aa2166ea66303d8726ee48ef5c409e",
+      "size": 4838
+    },
+    {
+      "path": "reference/arch/efficientnet_b0.py",
+      "git_blob_sha1": "2edcc62c1a0911c4bd31f940b575296d3b065229",
+      "sha256": "4c87c629cfa01ee15ec7142ba6ae9d03e8f6e950290e3998c7a7966fab6d68c4",
+      "size": 4855
+    },
+    {
+      "path": "reference/arch/efficientnet_b1.py",
+      "git_blob_sha1": "61a9c3bf950d79ae1ce58708edb5cdb1abee4497",
+      "sha256": "c71964547b244e26ac4205a46032fe69b8f425cefbf3f92503f5641668a2d34f",
+      "size": 3119
+    },
+    {
+      "path": "reference/arch/efficientnet_b2.py",
+      "git_blob_sha1": "2fe261ba202947debbaea850e393325d5eab9312",
+      "sha256": "643b34d676eaf2a9367050c3c550aad7bc6669dfb35637f9936bef18331e0de4",
+      "size": 3754
+    },
+    {
+      "path": "reference/arch/efficientnet_mb_conv.py",
+      "git_blob_sha1": "a4915908d9be7df4c425f0c4d1f5d165acec5454",
+      "sha256": "24e555726c4856120cceaa8dad2dbbca798a56c0a99313c77fbe84c16e37c20b",
+      "size": 2303
+    },
+    {
+      "path": "reference/arch/googlenet_inception_module.py",
+      "git_blob_sha1": "7d69175c5388770504c7723bb3c54cf7a6f1aca4",
+      "sha256": "a3d863c2a2c6f54ca5509ab39bd4c9f2ad31c960a0bb4200ad1acbede9f3ee85",
+      "size": 2412
+    },
+    {
+      "path": "reference/arch/googlenet_inception_v1.py",
+      "git_blob_sha1": "3c3a36ecc725d1fef6b03aa2b1843a60d84edd48",
+      "sha256": "4b9270e248132f8d15215a69f3395b292e25584b89f6054915bfad37d4388c0d",
+      "size": 4625
+    },
+    {
+      "path": "reference/arch/gru.py",
+      "git_blob_sha1": "e66ea4116b0325916adf19505040e3bff2d56750",
+      "sha256": "6aabf4586f15af75dd6a429b4ff1ba9b3fdc22604d6bff2315ced96a06d3f88e",
+      "size": 1886
+    },
+    {
+      "path": "reference/arch/gru_bidirectional_hidden.py",
+      "git_blob_sha1": "266ad3118da65bb3afe83db14f7503de19f33ea9",
+      "sha256": "0f06b7ef896abbfe304bca92e7c9e873df09821609efb1db33d7415cec7007b6",
+      "size": 1884
+    },
+    {
+      "path": "reference/arch/gru_birectional.py",
+      "git_blob_sha1": "07ebef31329ca8b107e13677f10883131dce5273",
+      "sha256": "617286deb7371cef38786280af5f7efd5c867fe0d855ee6df99ef39bd86ac350",
+      "size": 1960
+    },
+    {
+      "path": "reference/arch/gru_hidden.py",
+      "git_blob_sha1": "c55d726cdcf30d7a932632e235ef76aa4091165b",
+      "sha256": "7638f1c7f65a235d3c45d105531d0b5037fa13656d0ef6812c1a23b4f741f45b",
+      "size": 1883
+    },
+    {
+      "path": "reference/arch/lenet5.py",
+      "git_blob_sha1": "ad96d114672be747534e9209346cb9bdee9bb1e1",
+      "sha256": "517275f989a3c3b7bb8a9e5a9bf63b843b167bf2c7fb93db147f64ff2c1e16de",
+      "size": 1932
+    },
+    {
+      "path": "reference/arch/lstm.py",
+      "git_blob_sha1": "7423ad188e2ee7cd813cf0c087031feaea558bf6",
+      "sha256": "6bd5d8260dbba650dfd57809e125fc4df10e93db3c6a8c2608e0425075319698",
+      "size": 2119
+    },
+    {
+      "path": "reference/arch/lstm_bidirectional.py",
+      "git_blob_sha1": "df2906a31b0b74bc3c7dd1124b0d23ec75e29e4b",
+      "sha256": "84fa50c2d83976b92ef3c0add2b81d08485297afdbd2e4f96702864ec7cd6005",
+      "size": 1910
+    },
+    {
+      "path": "reference/arch/lstm_cn.py",
+      "git_blob_sha1": "06f4a326893f5c693d030eb82d2a58afe5802610",
+      "sha256": "b612d96b0e926560ac48e8766d913dd977fb2f78ac1af62dd85cf3c06c2134cd",
+      "size": 1922
+    },
+    {
+      "path": "reference/arch/lstm_hn.py",
+      "git_blob_sha1": "b3365931a12c5fa52a421e657fb21fb2e50ad057",
+      "sha256": "a6737470247611cf52a96c375e9566f967104ba8f8ab017b9e15a793d4efa37b",
+      "size": 1920
+    },
+    {
+      "path": "reference/arch/mamba_return_final_state.py",
+      "git_blob_sha1": "e0d70bf00585e55550e0b4876defe3762f57216c",
+      "sha256": "d3ab760329c78d78540af79aec556ef9e73c908f3a9e42dadfa84d79bde11e3d",
+      "size": 3474
+    },
+    {
+      "path": "reference/arch/mamba_return_y.py",
+      "git_blob_sha1": "6dba1403b1292297052fa641a4cc051a53c25d31",
+      "sha256": "9d002dee6313689d0ba60694e68a5c352e6afec82d1971408dfcd71382ff8e5c",
+      "size": 3859
+    },
+    {
+      "path": "reference/arch/min_gpt_causal_attention.py",
+      "git_blob_sha1": "f04205f5f5328d8c74ecfb7942d4b34e02caedd2",
+      "sha256": "9d280c98c015edca0e7e521594380f9def43fdea7bbd95f5f71ff83689632900",
+      "size": 2614
+    },
+    {
+      "path": "reference/arch/mini_gpt_block.py",
+      "git_blob_sha1": "079df4241b93d75074d82889cc9ed23807bd14fb",
+      "sha256": "e73093b5d6648474f161cc62c60f121a1468cdacb855cd5ae5ed3056a12ac58e",
+      "size": 3887
+    },
+    {
+      "path": "reference/arch/mlp.py",
+      "git_blob_sha1": "1d9318f97f8b3cf6557c8a882f34bfbed68b0345",
+      "sha256": "3fabb8e6bb6f0f5a9524a62226ce25fc3a8f5289464e809a29a85919536c4efc",
+      "size": 1270
+    },
+    {
+      "path": "reference/arch/mobilenet_v1.py",
+      "git_blob_sha1": "ee286b2d896e6658d889cf0942e57b9f842ac2e4",
+      "sha256": "7c18cb9e79f8fa0e5442b64a472c1a5bfc1b3b5098f4e11fdf1d1c271fe4ce5a",
+      "size": 2673
+    },
+    {
+      "path": "reference/arch/mobilenet_v2.py",
+      "git_blob_sha1": "f21049a7aff040e181d3f9a8278e01b101ed5ec0",
+      "sha256": "919ef276726fa3c68f3733fbc818085721bc309513f3b44ddd315773e9a15b85",
+      "size": 4427
+    },
+    {
+      "path": "reference/arch/net_vlad_no_ghost_clusters.py",
+      "git_blob_sha1": "79365df00c63fd26146b418e8bf0ae73d036a754",
+      "sha256": "c6e7431519d6cb2e974ad354e955674c91f92e96dfef099aa20be1d7148faaea",
+      "size": 3483
+    },
+    {
+      "path": "reference/arch/net_vlad_with_ghost_clusters.py",
+      "git_blob_sha1": "101793efe281064e2cbd00e457d7e20fcc3bc800",
+      "sha256": "2d2f73d0075a94a2655af1ed1c642363627f9be22c1c5b6dc6149ce3e6b27e2d",
+      "size": 3484
+    },
+    {
+      "path": "reference/arch/regnet.py",
+      "git_blob_sha1": "d1a399e8ccf5212d5e9bec9b72615961e58f4e52",
+      "sha256": "bd51db0cd40f9e3c334f3360500d6ffef66dfd8d1935b76c71700329c77118d3",
+      "size": 2688
+    },
+    {
+      "path": "reference/arch/relu_self_attention.py",
+      "git_blob_sha1": "838f085a871a617937a397ff89dd4ea0b68edd5d",
+      "sha256": "08768b53a425354ef974509119705759398c9cbd3ee8b2553210f73bea223820",
+      "size": 2842
+    },
+    {
+      "path": "reference/arch/resnet101.py",
+      "git_blob_sha1": "fa286dab00c6753db7b2eab798fbdb68ceb7e3dd",
+      "sha256": "ab5fab154c73fe7ab056c534c820286ce7ad8e0fc0b3e6bdefb27ffa10f81380",
+      "size": 4203
+    },
+    {
+      "path": "reference/arch/resnet18.py",
+      "git_blob_sha1": "0c6ae06325da774c45e89984e283edf5752b9ea7",
+      "sha256": "7458bb2ffb7e81fe8d9d8bf192e8249f887d6d2436c958480be272629f22be00",
+      "size": 3705
+    },
+    {
+      "path": "reference/arch/resnet_basic_block.py",
+      "git_blob_sha1": "8758f835774739f8bd27c41ebba416017cde83d8",
+      "sha256": "8e1ae06aca5126c9d75e213da14d660b83f2a335059d049cc659b9f0f101a36e",
+      "size": 1860
+    },
+    {
+      "path": "reference/arch/shallow_wide_mlp.py",
+      "git_blob_sha1": "46090a14e5433d46d8957513fad9766187b8a032",
+      "sha256": "d14b777049a7795a02cf7a3c79438541698692dd512538909908547e39335624",
+      "size": 1309
+    },
+    {
+      "path": "reference/arch/shufflenet.py",
+      "git_blob_sha1": "e41a702aba1090be252f440c85b44ea1fc78999d",
+      "sha256": "85a6fbc528ae1cfc55b0040a49e87525fac3ad8a2fa707e2fd34bded17da4f9b",
+      "size": 5946
+    },
+    {
+      "path": "reference/arch/shufflenet_unit.py",
+      "git_blob_sha1": "a4f81e69d433412d2d2dfdf5b2aa99d262e0fdea",
+      "sha256": "420d20f4b43329d6eafe3fd01faddb0efc08dfe7568fe20dcf8f362a712dcdc8",
+      "size": 3352
+    },
+    {
+      "path": "reference/arch/squeeze_net.py",
+      "git_blob_sha1": "22d16b8a1d4ca05705147705a07fb9c7945741c7",
+      "sha256": "690a7f3e49ad8e329e9915b116f834b5cb7223493cff7c04be56416738064638",
+      "size": 3082
+    },
+    {
+      "path": "reference/arch/squeeze_net_fire_module.py",
+      "git_blob_sha1": "6859f1cfef044372a8c56e921aaa4a906cfa2015",
+      "sha256": "99864d7e0e7e3b7c06fc4316dd25c2422fec8ba4413d7e2a55c2c5964f89737b",
+      "size": 1845
+    },
+    {
+      "path": "reference/arch/swin_mlp.py",
+      "git_blob_sha1": "a635a4d0823f0b01c8592769f56dc568bc55bab5",
+      "sha256": "7ad16631ae633d196f2464e40dc7f5786696421eace938cef23c287e3b61042f",
+      "size": 15937
+    },
+    {
+      "path": "reference/arch/swintransformer_v2.py",
+      "git_blob_sha1": "f221ae62e20f1010c17f6afa3ac4b6ff2d9fb5a3",
+      "sha256": "7d1c6195d4f15a88380d5e7e38582361b50b38080f9bb70aff097a9048cd5bd7",
+      "size": 23170
+    },
+    {
+      "path": "reference/arch/unet_softmax.py",
+      "git_blob_sha1": "7003010ae9f9ef1797426840084f7cb311429aa9",
+      "sha256": "e97cb50d77b1da3040581a3aee376b97e20b3b1dda26f261c5baa0ba1171b9aa",
+      "size": 3377
+    },
+    {
+      "path": "reference/arch/vanilla_rnn.py",
+      "git_blob_sha1": "c725983ff084f65683fa1ad1ecbe836b00fa9e08",
+      "sha256": "00cebeed898faa796b965b29e7031422231a7da4d0a2b609d8f1d73a6988abd2",
+      "size": 2005
+    },
+    {
+      "path": "reference/arch/vanilla_rnn_hidden.py",
+      "git_blob_sha1": "04df3201423d1d4ffb2dab451d39fa447a58e0d3",
+      "sha256": "6c7ff403e45c644e7d5bc829eb3c950c38edabdca22ffae90276426dd4815749",
+      "size": 2062
+    },
+    {
+      "path": "reference/arch/vgg16.py",
+      "git_blob_sha1": "faea573f8d3d37eabf10952d4df2d7f7044144b5",
+      "sha256": "61f70e59d41e85a9b54fa9d060ef1aba3f144d2e4af5859ccba5f82f560a9c81",
+      "size": 2963
+    },
+    {
+      "path": "reference/arch/vgg19.py",
+      "git_blob_sha1": "07194fefa0a9b0fd6b475a2baef8db2d0e264904",
+      "sha256": "688113e05dedf10a1881e549d86559e3cc5b32be1259e976bf98b020f503340e",
+      "size": 3168
+    },
+    {
+      "path": "reference/arch/vision_attention.py",
+      "git_blob_sha1": "4e0e04dfff1767a4dccbe7a69def6111eeb7eaeb",
+      "sha256": "96c0d2c7a18b4219266b002728e8d03dddba25e9537ee4c5b74598e9857de64a",
+      "size": 1256
+    },
+    {
+      "path": "reference/arch/vision_transformer.py",
+      "git_blob_sha1": "3eef225222f6e8b338e9ba3b9b907cbf30a4bbc2",
+      "sha256": "f537369b6a72f9e5b976927a74944a272443c509c3db23e1216fd5c8bb2fef8f",
+      "size": 3086
+    },
+    {
+      "path": "reference/attention/causal_attention.py",
+      "git_blob_sha1": "d5aac14e53eb68bd958900f1472ba017db0cfc76",
+      "sha256": "c555f80de645fa494df5b3e1cc62fb034e79ac4bafada1bf8399b76337cb7c95",
+      "size": 1140
+    },
+    {
+      "path": "reference/attention/cross_attention.py",
+      "git_blob_sha1": "a541690a482f6b88d747e003ebabc6f3723b5345",
+      "sha256": "d794f5ad58313aa33322c1f409cc4f2c3a6d78b70b4173c902f661cd468d6f39",
+      "size": 615
+    },
+    {
+      "path": "reference/attention/cross_modal_attention.py",
+      "git_blob_sha1": "3eda029d55de466053b67231b000bbfa4c99235d",
+      "sha256": "39e345b833b1fb2a9089ae88508e940ed24469f6ff343deeb367a80d61f67f80",
+      "size": 823
+    },
+    {
+      "path": "reference/attention/group_query_attention.py",
+      "git_blob_sha1": "774e75999ec71c20979e714d87caf9ccbb459178",
+      "sha256": "2699a942a7009dfe59813a76cb0bee801724ceb29a34fb6444db730f87198381",
+      "size": 2018
+    },
+    {
+      "path": "reference/attention/kv_cached_attention_inference.py",
+      "git_blob_sha1": "c38b01ac7684e67ca0ee77673f7e25c42c452c17",
+      "sha256": "45e9eace6bc13bcf711f92ceca7ae74289d401bf2ce9db3873664626db65dbe4",
+      "size": 769
+    },
+    {
+      "path": "reference/attention/kv_cached_chat_batch_attention.py",
+      "git_blob_sha1": "e976158ee9047b570aa9a5b391a04a0557e69bd2",
+      "sha256": "f27798a2976aec336e95bcff5303cc5114d2d30882f68db76e938f3632d27443",
+      "size": 769
+    },
+    {
+      "path": "reference/attention/kv_cached_speculative_attention.py",
+      "git_blob_sha1": "0dcc57ab3d6c2ef8774798a230a6775b1dcdc7c6",
+      "sha256": "d118f9083080eb1a2b61a47dd72054a330e9eb5027ca1b2241d0c056749bde14",
+      "size": 769
+    },
+    {
+      "path": "reference/attention/linear_attention.py",
+      "git_blob_sha1": "3669a54cc93d8422f3e47fa99a234bf1fdf648a1",
+      "sha256": "9e9fce48dea7b2f75e6b9e4697ff537b7a2ac408039c7125d92f51c70ac4932f",
+      "size": 689
+    },
+    {
+      "path": "reference/attention/multi_head_attention.py",
+      "git_blob_sha1": "f9f933abeabe777b2b6b79709d61d92e727b9c7f",
+      "sha256": "8b0c3aa90464702a9619da3bc996acccc3f541e633557126aa55a0a98c7958e8",
+      "size": 563
+    },
+    {
+      "path": "reference/attention/multi_query_attention.py",
+      "git_blob_sha1": "a5effd49d11264148c700680879eacc0a5930a9b",
+      "sha256": "c442f1c8e97d8be544ebd4e0894116c351e85b462192eb087e7f5f3202997607",
+      "size": 1221
+    },
+    {
+      "path": "reference/attention/scaled_dot_product_attention.py",
+      "git_blob_sha1": "ba4bd02bb2f44ece594fed0f03b1c19bd29c1e6e",
+      "sha256": "a07ca5135657c2ea29f7b7a66ec1815560858ad69fa88221bfc0f82bd5648091",
+      "size": 703
+    },
+    {
+      "path": "reference/attention/scaled_dot_product_attention_inference.py",
+      "git_blob_sha1": "fff814b535f9eb72417ee8fd46e46af3e59b7f55",
+      "sha256": "def639058ad165caf5f92b4d0aa6ba2e8623bc6a444749002e2d1d72b25db94b",
+      "size": 596
+    },
+    {
+      "path": "reference/attention/scaled_dot_product_attention_long_context.py",
+      "git_blob_sha1": "b13ae455d0903e00c29b04a8737a9b565894670e",
+      "sha256": "8b2f7f36f84bb0c29509eba49439fb7472cd0c9c61ca61ce02b37ee30dfc05dd",
+      "size": 598
+    },
+    {
+      "path": "reference/attention/sparse_attention.py",
+      "git_blob_sha1": "7f81a52eb208d02b1f2cf43317ce488ac4c56374",
+      "sha256": "4a1b35baa380a9b23529babb4a031ff703550a381676045f58bc43fd56d5474d",
+      "size": 1395
+    },
+    {
+      "path": "reference/attention/windowed_causal_attention.py",
+      "git_blob_sha1": "45b590b42a3100e6451d60b37e23535348ac92c0",
+      "sha256": "e2b2720a59681d7d2ed92ba19231777b07cda6919472a3900f2e79f21f4a49c9",
+      "size": 1607
+    },
+    {
+      "path": "reference/broadcast/add_bias_broadcast.py",
+      "git_blob_sha1": "1ee2d10dcfb338d5fa3eaa3906dc406b6ca2fe49",
+      "sha256": "0fa9906f9d8e1fea4846e81d8bdff1843594e4875a0cc88daf3ea1919c12e002",
+      "size": 307
+    },
+    {
+      "path": "reference/broadcast/add_bias_four_dim_broadcast.py",
+      "git_blob_sha1": "003d81d14a571adec316e1dced1a61d0493e0ecb",
+      "sha256": "144fff048f9e782d93ac25f06a250d029a995a4c3b24f6759617f8cba1ec7465",
+      "size": 326
+    },
+    {
+      "path": "reference/broadcast/clamp_broadcast.py",
+      "git_blob_sha1": "e0413b456e04e5ba27abaeec6b676666dc973b1d",
+      "sha256": "ec846d09e8c4959fe161fb7ccc68aef33d257cedf13febc2c9df4058ebef7195",
+      "size": 415
+    },
+    {
+      "path": "reference/broadcast/division_broadcast.py",
+      "git_blob_sha1": "7d9d9a7d0bc31c71e1b1ee27902b41558852f7ca",
+      "sha256": "9981c2dce1c16775aee225b0beb0e138881dd5cf99e9b19b0120b6f93190afe6",
+      "size": 376
+    },
+    {
+      "path": "reference/broadcast/elmentwise_mul_broadcast.py",
+      "git_blob_sha1": "e2e8ed3e346bcc98c11725447c6927181452f86e",
+      "sha256": "0efddb5c2904c97fa35513eb96f1e75c5f292e97797f5ee5c88ac1eb3e164de0",
+      "size": 329
+    },
+    {
+      "path": "reference/broadcast/logic_and_broadcast.py",
+      "git_blob_sha1": "397f5bc28223c2116fb15354fe37a940a68173b3",
+      "sha256": "e7fce53d376e7ee4afa13c89563315ae4d889351f6e5d8f34a7550588fc6e6ab",
+      "size": 360
+    },
+    {
+      "path": "reference/broadcast/max_broadcast.py",
+      "git_blob_sha1": "7c8feb28b747071a707d4c68b1759ca3ce34c128",
+      "sha256": "fb007f20ae7489e675995f1eb1e4cb80e5df99358b29555537f6d1bb09a9495c",
+      "size": 312
+    },
+    {
+      "path": "reference/broadcast/power_broadcast.py",
+      "git_blob_sha1": "b9cc10820cecd91bb49656b12d201fa2cb6e98ae",
+      "sha256": "25f645a4570cb1aec4626ae49ec4e5727e55d1d2b68a681e7d11c4b1dc18186c",
+      "size": 346
+    },
+    {
+      "path": "reference/broadcast/subtract_with_bias_broadcast.py",
+      "git_blob_sha1": "bbcc9bc62fae47922532e02b265fcf2fb94733a9",
+      "sha256": "522a129cd3c513e04a9596c6538a84c3cb4e640c1a7e0d9e0aeff6f073c6b1d1",
+      "size": 301
+    },
+    {
+      "path": "reference/broadcast/where_broadcast.py",
+      "git_blob_sha1": "8a05a27389d3c0b67b226660f63a5eaa5955476d",
+      "sha256": "3b0b84656da98fda2b1dbab29b4c72479e2594420ddd2ea9468cab2ecabbf1c6",
+      "size": 393
+    },
+    {
+      "path": "reference/convolution/conv_depthwise_2d_asymmetric_input_asymmetric_kernel.py",
+      "git_blob_sha1": "5f49b88b2d125acefb3b5443c4298028977165da",
+      "sha256": "5538e14c57c791611e5e6a663cbed1051af510257a603100a25cbebc78b7a8aa",
+      "size": 2651
+    },
+    {
+      "path": "reference/convolution/conv_depthwise_2d_asymmetric_input_square_kernel.py",
+      "git_blob_sha1": "345bdf0222b599df70f31c82ac41b6aa265661b1",
+      "sha256": "1af31dab803ef4f4e5b94f7bbe54260ef23930715610d1cbd8e7cdcd88e5c45c",
+      "size": 1681
+    },
+    {
+      "path": "reference/convolution/conv_depthwise_2d_square_input_asymmetric_kernel.py",
+      "git_blob_sha1": "ec46e8a5211a6c3c3b3f7c639d3fdadf878b85bf",
+      "sha256": "09f5690aceba6d92769440e5a2698a76aec7b1f45d63e3198af5884c4d40ea10",
+      "size": 1670
+    },
+    {
+      "path": "reference/convolution/conv_depthwise_2d_square_input_square_kernel.py",
+      "git_blob_sha1": "242ad03bb770afec64bdba8e948fecc47e51d5d4",
+      "sha256": "23578d4c1257ee9c2b86ab8969eb91292aca2b9699ab15b2b72ea7e8d438078f",
+      "size": 1512
+    },
+    {
+      "path": "reference/convolution/conv_depthwise_separable_2d.py",
+      "git_blob_sha1": "fad4c50a123af40105221819849f5fc646f8bf0a",
+      "sha256": "cee48ffdb13900385835c6390154a3886bd9ad8b84154ae1d37f0148cd8feabe",
+      "size": 1906
+    },
+    {
+      "path": "reference/convolution/conv_pointwise_2d.py",
+      "git_blob_sha1": "e8d975661b88961cdf2ac08927224206b3fc48e0",
+      "sha256": "5608fbde926998ce10992790b9c1b09a15481cbd005472b0ad54d70db41eb1d8",
+      "size": 1238
+    },
+    {
+      "path": "reference/convolution/conv_standard_1d.py",
+      "git_blob_sha1": "95091b366e1a270c1d2cd19391bd9f35c92b8c94",
+      "sha256": "d0ddb9f06cbe48f3930a31062b12514fb23eb9bb23500160f1085f795044b205",
+      "size": 1839
+    },
+    {
+      "path": "reference/convolution/conv_standard_1d_dilated_strided.py",
+      "git_blob_sha1": "4898212ef65ab8b0c986f452f49f98df432020f1",
+      "sha256": "83736e4c38632e0f72bcba6b3b74065b2dba668913e1b1161f9b5ad8b37e64e3",
+      "size": 1648
+    },
+    {
+      "path": "reference/convolution/conv_standard_2d_asymmetric_input_asymmetric_kernel.py",
+      "git_blob_sha1": "139025accce36b80e8c61be4eb729d44ab0fce81",
+      "sha256": "c04ef3c4088981e9d3547eed0a0620e8ede3d0af4bff935e4a3e7ba9ba9aa652",
+      "size": 2172
+    },
+    {
+      "path": "reference/convolution/conv_standard_2d_asymmetric_input_square_kernel.py",
+      "git_blob_sha1": "a4a653096718aee879b7da19ea6f2c770d9d8a10",
+      "sha256": "47145a97c980da1d78d88da5b63d2c6aab9a4b172509f3b3663137865b9485ee",
+      "size": 2048
+    },
+    {
+      "path": "reference/convolution/conv_standard_2d_square_input_asymmetric_kernel.py",
+      "git_blob_sha1": "f515967c7ea8a2cdf40507f62c20a0dd38e1c686",
+      "sha256": "033e91bf69225f07e61484d14450903e3d67e7cee1a119abd8b19d3e73a0c849",
+      "size": 1959
+    },
+    {
+      "path": "reference/convolution/conv_standard_2d_square_input_asymmetric_kernel_dilated_padded.py",
+      "git_blob_sha1": "e5bbc457ae62fdd1c008ec7f4c4fa52eb8016f75",
+      "sha256": "4706128a7dfef02da3d2ebb72874eb81db833c6b6369b5413d40985e8ad0ea39",
+      "size": 1888
+    },
+    {
+      "path": "reference/convolution/conv_standard_2d_square_input_square_kernel.py",
+      "git_blob_sha1": "bc84b338fcf228391e2739f598d810a5aa2d888a",
+      "sha256": "86ecad0e77b2c9f81d6c171f1325e85f4f23ae9ad4410bbfd096fca62e84d673",
+      "size": 511
+    },
+    {
+      "path": "reference/convolution/conv_standard_3d_asymmetric_input_asymmetric_kernel.py",
+      "git_blob_sha1": "4659b36a34d55ebe98ede35d5b713696d8852772",
+      "sha256": "649fc141b68b3cd3fa83cdd3dda9a0e02f0367eb0a8307fe7fbe8b5968a305eb",
+      "size": 2239
+    },
+    {
+      "path": "reference/convolution/conv_standard_3d_asymmetric_input_square_kernel.py",
+      "git_blob_sha1": "2f4e31d72c967d3706f0d2cc9c93ca7efe39aa87",
+      "sha256": "fc6c48ace0b1c31d0eedd3c9ff5eca70dd5c84c0b50b9ce01a27eb8df51ca684",
+      "size": 2005
+    },
+    {
+      "path": "reference/convolution/conv_standard_3d_square_input_asymmetric_kernel.py",
+      "git_blob_sha1": "c86a8480902e6e3d73ab878034617edc77b3399a",
+      "sha256": "3f7204c138ec6d09c25c38f39be1d5b7f43f4fa5270d68fe0323ad9b3149ffb9",
+      "size": 2045
+    },
+    {
+      "path": "reference/convolution/conv_standard_3d_square_input_square_kernel.py",
+      "git_blob_sha1": "b7e0dd4f4de4550063417607e8c358881f53eda3",
+      "sha256": "98b074edf89802ed79b9b99c37d94eb1d781ab46037614390046ebf92a1f2f0d",
+      "size": 1976
+    },
+    {
+      "path": "reference/convolution/conv_transposed_1d.py",
+      "git_blob_sha1": "161ab8393808b23d4b3438a6a24dd163083569cf",
+      "sha256": "0ad1a7811c8916691ae516c366a1ac888b011cf5699dd8b2e2a569cbef697c75",
+      "size": 1976
+    },
+    {
+      "path": "reference/convolution/conv_transposed_1d_asymmetric_input_square_kernel_padded_strided_dilated.py",
+      "git_blob_sha1": "f0db96c1c4cf668ab1c9a406ec58e3134ebd3c14",
+      "sha256": "9e1baebd13c14f9b6883023e6ca7881f8d95aa529f01b4c95e54ad713295cc89",
+      "size": 1834
+    },
+    {
+      "path": "reference/convolution/conv_transposed_1d_dilated.py",
+      "git_blob_sha1": "5d3c784cdd93103a10a70df4facaa6705f16c811",
+      "sha256": "25c5106ef9f520916e0d8e778aad984fc6e88008951f0c9458f90dec80976e5e",
+      "size": 1791
+    },
+    {
+      "path": "reference/convolution/conv_transposed_2d_asymmetric_input_asymmetric_kernel.py",
+      "git_blob_sha1": "ca71c3f350168db51e4d55fb6aec1fb328ff0d8a",
+      "sha256": "6014891f7ba7a66ef05c012ab98e086b042fc10ec8a2d6af4f89b00f95861095",
+      "size": 2374
+    },
+    {
+      "path": "reference/convolution/conv_transposed_2d_asymmetric_input_asymmetric_kernel_padded.py",
+      "git_blob_sha1": "4d0120e2d6917889e4a670328f819f326f131e38",
+      "sha256": "0044003d489f732f5679fe7ea162d4a8a10a647503d097826b53fc3e255a8a51",
+      "size": 1767
+    },
+    {
+      "path": "reference/convolution/conv_transposed_2d_asymmetric_input_asymmetric_kernel_strided_grouped_padded_dilated.py",
+      "git_blob_sha1": "366c825aaf2f14f71202c7480e8c86b98eb68dd4",
+      "sha256": "1926419776cf1be2030acb76de1e4a78d3cb8b8f172ffa74786bf3947a4c2bca",
+      "size": 2133
+    },
+    {
+      "path": "reference/convolution/conv_transposed_2d_asymmetric_input_square_kernel.py",
+      "git_blob_sha1": "f4b002dd1db4df3c9dedaa2a9feaa93cd5aca7bc",
+      "sha256": "02bb0b2e7744eb4c7d6576e135400b03da21efa4b999cef2ab4e5a44f49fd295",
+      "size": 2042
+    },
+    {
+      "path": "reference/convolution/conv_transposed_2d_asymmetric_input_square_kernel_dilated_padded_strided.py",
+      "git_blob_sha1": "22da04eac1769d82ad8840e3ea8ad0b6118cfe9b",
+      "sha256": "8f292796522673552a00abd3f89843964ea9e60b06770c4554c9cba602c3499e",
+      "size": 1887
+    },
+    {
+      "path": "reference/convolution/conv_transposed_2d_square_input_asymmetric_kernel.py",
+      "git_blob_sha1": "683f3d57a48d52dad23847a0066a8fceb16c1c70",
+      "sha256": "5a2f6a47e83931e2c3d1e78cff3f6793415f963308ba0c2eb5c1a27596c3cfde",
+      "size": 2057
+    },
+    {
+      "path": "reference/convolution/conv_transposed_2d_square_input_square_kernel.py",
+      "git_blob_sha1": "a386430526982b013f754b19ea4947cb70a0c110",
+      "sha256": "9e84df45806e4fa36bef9b8ef98f255d86470ff81735e9ee98d2c721634fde52",
+      "size": 2047
+    },
+    {
+      "path": "reference/convolution/conv_transposed_3d_asymmetric_input_asymmetric_kernel.py",
+      "git_blob_sha1": "bca05c270ad1bf5c7a6cb7a4883292981e6561a2",
+      "sha256": "1673075fe1a9d3fa00f625f0059011c9aa7aa864d8030311673dab91fb9b3564",
+      "size": 2340
+    },
+    {
+      "path": "reference/convolution/conv_transposed_3d_asymmetric_input_asymmetric_kernel_strided_padded_grouped.py",
+      "git_blob_sha1": "3cf00bc44eefb5db64cc0136a68832478609eafe",
+      "sha256": "e157db716a0915aa5ce7a23dc4c4b249e856cba1980cfd21c335630577382dc1",
+      "size": 2378
+    },
+    {
+      "path": "reference/convolution/conv_transposed_3d_asymmetric_input_square_kernel.py",
+      "git_blob_sha1": "caced58888a5ca8ea9638610badd4db49db2da23",
+      "sha256": "8b56475485149dc43e7475f12434b687dbd9f05fa10738cf7595337aff7adff3",
+      "size": 2411
+    },
+    {
+      "path": "reference/convolution/conv_transposed_3d_asymmetric_input_square_kernel_strided_padded_grouped.py",
+      "git_blob_sha1": "d8634831624d94f617f1cbc0adcc708cb7719486",
+      "sha256": "4622db3c59f819c43af8ac286c1e5b52d5464d0a502745688fe07c5cac087a9a",
+      "size": 1970
+    },
+    {
+      "path": "reference/convolution/conv_transposed_3d_square_input_asymmetric_kernel.py",
+      "git_blob_sha1": "03e7428706905c6fa48b9ac5da52d45614dfbfca",
+      "sha256": "eb318ee386ec2d3581938f4099366a8872936949104eabe312ec325ffdc0abbc",
+      "size": 2264
+    },
+    {
+      "path": "reference/convolution/conv_transposed_3d_square_input_square_kernel.py",
+      "git_blob_sha1": "68c9686085cc13fed99b99ceb14c91a24d24ad0a",
+      "sha256": "e60fffd91a6a43eeefb5069f4dd0f2316c7114f5bd3ca5264723b5d0531e9c76",
+      "size": 2066
+    },
+    {
+      "path": "reference/convolution/conv_transposed_3d_square_input_square_kernel_padded_dilated_strided.py",
+      "git_blob_sha1": "3a4c5b360166cc8d23c79f3038cf4f33490f8408",
+      "sha256": "a16f0026c2249c9f6e3a151fbf3b42db29dd17640a0ef9f001cbd1d09d5f9444",
+      "size": 1951
+    },
+    {
+      "path": "reference/fuse/bmm_instance_norm_sum_residual_add_multiply.py",
+      "git_blob_sha1": "baa0cabe0319c168ec370a7e49bcccc65e1c7b48",
+      "sha256": "5ed41cc50c8b2dfe65d03e642cc471dc3ad7cf6858608c65b911c235946ef00e",
+      "size": 1251
+    },
+    {
+      "path": "reference/fuse/conv2d_activation_batch_norm.py",
+      "git_blob_sha1": "8c846af5f7e8b5d362642aaee9e982f8cec124e1",
+      "sha256": "e9b0070822d17b3ba2e80c05f20e8bfd70bcde2f92a21d6d6ef811d8f4ddc898",
+      "size": 870
+    },
+    {
+      "path": "reference/fuse/conv2d_add_scale_sigmoid_group_norm.py",
+      "git_blob_sha1": "54f4a863e170862b77c3c6b4e40266b08e42217e",
+      "sha256": "c6488d1d4bebd1b43893cd490871dea02f97c7962e25aa79f9f70530926ac454",
+      "size": 1135
+    },
+    {
+      "path": "reference/fuse/conv2d_avg_pool_sigmoid_sum.py",
+      "git_blob_sha1": "33eb2c3fc82706d787825fe3061346378024be42",
+      "sha256": "7bd02c41c99f336d8515c06cd299fcd95dcc575f3aa1114b4de84b81cadbe7d4",
+      "size": 904
+    },
+    {
+      "path": "reference/fuse/conv2d_batch_norm_scaling.py",
+      "git_blob_sha1": "5564a22647b162effb24e8663253d61bc28a70e6",
+      "sha256": "5c2d1c40a5ba00505f8c18579b377052c92ecce39bb3c405dba42ee05a1d7740",
+      "size": 870
+    },
+    {
+      "path": "reference/fuse/conv2d_divide_leaky_relu.py",
+      "git_blob_sha1": "e5448f2ba5bdb298f14c1c72ffb60094dcf863db",
+      "sha256": "412f9c4244239814ab3cc6d58c0837c7ffbc94e5d63453c88f8388fb28309fad",
+      "size": 817
+    },
+    {
+      "path": "reference/fuse/conv2d_gelu_global_avg_pool.py",
+      "git_blob_sha1": "439161e54b8f40de9d19b22797a5b81273ccd55a",
+      "sha256": "3a9572034d80dd060bb523e1d265aa941113a8044ecd30c614e764fdf029d94a",
+      "size": 1001
+    },
+    {
+      "path": "reference/fuse/conv2d_group_norm_scale_max_pool_clamp.py",
+      "git_blob_sha1": "cee378c437e501ba8c4a8606282590703bfe6207",
+      "sha256": "ba63b5b156a347f2f92a607c4a612e2bb1963dbcb9e7f04b3e4f0cb4a294fff3",
+      "size": 1528
+    },
+    {
+      "path": "reference/fuse/conv2d_group_norm_tanh_hard_swish_residual_add_log_sum_exp.py",
+      "git_blob_sha1": "16fa65caab449d5e99150c52661dd94d99b76f81",
+      "sha256": "d5732faa8c80a56b551b28f064ced01ed0fe640a57f72b117ee19e01dc71952d",
+      "size": 1248
+    },
+    {
+      "path": "reference/fuse/conv2d_hard_swish_relu.py",
+      "git_blob_sha1": "bca0104af92c9f369e766a374bc5b9dc5d397fd1",
+      "sha256": "442df07c27315075294d997dcd7ce61310a7d41a8dff4033c33ef4cf61b4727e",
+      "size": 954
+    },
+    {
+      "path": "reference/fuse/conv2d_instance_norm_divide.py",
+      "git_blob_sha1": "2ed101217886eab53c5608038d7139a6b5845f51",
+      "sha256": "bf60129922d425401714b89cf7568b2b6a793ab4303273b24d1d00ed41ed3565",
+      "size": 877
+    },
+    {
+      "path": "reference/fuse/conv2d_min_add_multiply.py",
+      "git_blob_sha1": "9cf4f06b2b968184d0b58b9c848006ff67f733b3",
+      "sha256": "c66711246404f71123a6edf5ddcd5c0a01e2cd986725d21401424ca0669c85a5",
+      "size": 1135
+    },
+    {
+      "path": "reference/fuse/conv2d_min_tanh_tanh.py",
+      "git_blob_sha1": "a4bcabc9a26e989c80c500d92e6f29d98ca35420",
+      "sha256": "15e3e645a6012d772f1197e988d8a0ea4f191ad2459229fecdbe3f1d9ae344b3",
+      "size": 810
+    },
+    {
+      "path": "reference/fuse/conv2d_mish_mish.py",
+      "git_blob_sha1": "a543fb5deda8d4e4c2089cbdd3eda2e2726f6f82",
+      "sha256": "7a234db325da9476ea44646c12e54dab1a84d8d16d993fa1061564e7f5ec0afa",
+      "size": 732
+    },
+    {
+      "path": "reference/fuse/conv2d_multiply_leaky_relu_gelu.py",
+      "git_blob_sha1": "cd820f030dc324990bf6871a82421b92e9122718",
+      "sha256": "863895c0021967f1c4976bbe0f7c408a6d3e19c92e65255e13c214978c2e67d8",
+      "size": 966
+    },
+    {
+      "path": "reference/fuse/conv2d_relu_bias_add.py",
+      "git_blob_sha1": "7f455cf93aa6d5fa694217593701b11497aef364",
+      "sha256": "45ee3a3db038396c982207b36812086bf1b94472ebbf229c5e76c5ea0b90f89f",
+      "size": 822
+    },
+    {
+      "path": "reference/fuse/conv2d_relu_hard_swish.py",
+      "git_blob_sha1": "77362e1f19c52cbac4233be98c1432ca2052a39e",
+      "sha256": "6c3068e8639d0fce90e78d72027434237594eafe9e1c0919b56c30edeae9ff88",
+      "size": 735
+    },
+    {
+      "path": "reference/fuse/conv2d_scaling_min.py",
+      "git_blob_sha1": "94b1763e6752bb08b8d7af77cbf04674d3948d87",
+      "sha256": "61653138241c49110250399f1544bf07db3eafa939ed6dbdab77d7f96c0e76e7",
+      "size": 1108
+    },
+    {
+      "path": "reference/fuse/conv2d_subtract_hard_swish_max_pool_mish.py",
+      "git_blob_sha1": "3e3b4e8646ef69226347193bdaf8cdb2daee7794",
+      "sha256": "40a9db82d8b092243d85dce2406c29c087f3bccb371019f8b89a68eb84769b4b",
+      "size": 1035
+    },
+    {
+      "path": "reference/fuse/conv2d_subtract_subtract_mish.py",
+      "git_blob_sha1": "221a6d21d564ae0761567068b6a91a5de10d9a3b",
+      "sha256": "ab44c31f27a7265867d3842b7b8e5b2ba9d555d597efe6804d474e45c15aa621",
+      "size": 986
+    },
+    {
+      "path": "reference/fuse/conv2d_subtract_tanh_subtract_avg_pool.py",
+      "git_blob_sha1": "e01a4efdbf70fadcf7c05f2d917fa725709cf12f",
+      "sha256": "b52e744528e32863da06d5a713a9932fc51798c93ee252b57fbde10d769bc0ce",
+      "size": 1117
+    },
+    {
+      "path": "reference/fuse/conv2d_tanh_scaling_bias_add_max.py",
+      "git_blob_sha1": "dfbd913cc728c70fba14c526a27e596fd2f8f654",
+      "sha256": "1085dcf3a5845103c4dcdec8b8d3932ca48c729502fb101654bec085dae1dd8d",
+      "size": 1225
+    },
+    {
+      "path": "reference/fuse/conv3d_divide_max_global_avg_pool_bias_add_sum.py",
+      "git_blob_sha1": "695db007eb31236a5a5a2ccd704f75acd90a24ac",
+      "sha256": "80e0126cbb0f9287f7118cba2e8bfa73c1c3401b6f590e10bc240bdd0223d06a",
+      "size": 1340
+    },
+    {
+      "path": "reference/fuse/conv3d_group_norm_mean.py",
+      "git_blob_sha1": "f3d4f8ae548f366124d6dfb83366b6e6b7a2b591",
+      "sha256": "9677116401cf1ec4ac00eb19cb6f08762d63b87b137e6ed10f2c8ec3741310fb",
+      "size": 1078
+    },
+    {
+      "path": "reference/fuse/conv3d_group_norm_min_clamp_dropout.py",
+      "git_blob_sha1": "d29fa6770ff66808ded0d874c719cb4219fccbd6",
+      "sha256": "223d45d8423c55369bd0b1277abca1d358a28ad77cf7661f1c6e602c856a694a",
+      "size": 1102
+    },
+    {
+      "path": "reference/fuse/conv3d_hardswish_relu_softmax_mean.py",
+      "git_blob_sha1": "717fae2c37a362a7e8b909d1b5a652a2798088e6",
+      "sha256": "29f0c5f4ddc5b3b7db30e61402fcb6aee535e03274b616a11218893a7c7546bb",
+      "size": 1166
+    },
+    {
+      "path": "reference/fuse/conv3d_leaky_relu_sum_clamp_gelu.py",
+      "git_blob_sha1": "a5ad059c409062d4ffc18e54ec60ebf3b3d02492",
+      "sha256": "bd2eaa246f1176ad3bfb887b2ca27666f2f801a648cd4ffe5cf6aae49278dcb2",
+      "size": 1035
+    },
+    {
+      "path": "reference/fuse/conv3d_max_log_sum_exp_relu.py",
+      "git_blob_sha1": "388b6b4de6f33105aa36d75f74882009f6825b15",
+      "sha256": "e274319f222a8938fe0fe51c0f9093bedc7c90f00f1b684ba9be8f39e5db6b19",
+      "size": 1159
+    },
+    {
+      "path": "reference/fuse/conv3d_min_softmax.py",
+      "git_blob_sha1": "3b78f80805c1f79b3614f6445cbbb42c9ae3b1f9",
+      "sha256": "1aad5ff832f3cd5ec353df0d9c040daea4fcddd1bcd6391189a81b94e3fba19a",
+      "size": 1241
+    },
+    {
+      "path": "reference/fuse/conv3d_mish_tanh.py",
+      "git_blob_sha1": "d22edafd221e0f37d96b2d2e6419f6bec8e3cf53",
+      "sha256": "dad33b133cc3a085e46d7237887e872c4c7c05dd34b48d742f6edabc87aa8b44",
+      "size": 1011
+    },
+    {
+      "path": "reference/fuse/conv3d_multiply_instance_norm_clamp_multiply_max.py",
+      "git_blob_sha1": "3274956d8b2affdee0934333b9fef2f54a7aa5c1",
+      "sha256": "9355597767e42b73adda3ce5f8d60d70a4d8cd823438b782c88b1270d91a3e2d",
+      "size": 1261
+    },
+    {
+      "path": "reference/fuse/conv3d_relu_leaky_relu_gelu_sigmoid_bias_add.py",
+      "git_blob_sha1": "498103a26775a309cff7fa32544154203f0a25f8",
+      "sha256": "cd0390e07dda478af0316a61bd1a407677992229ffdf3fa857d143e40a8533d7",
+      "size": 1007
+    },
+    {
+      "path": "reference/fuse/conv3d_scaling_tanh_multiply_sigmoid.py",
+      "git_blob_sha1": "bd511c618482e71c6d4749ca0f766dfc10edb8b8",
+      "sha256": "a2f6bc6b97dfff819695956bdfb21f3a1c6873f81eb6c31e19377b1079a0a157",
+      "size": 1069
+    },
+    {
+      "path": "reference/fuse/conv3d_softmax_max_pool_max_pool.py",
+      "git_blob_sha1": "a712994c6bb3970b297c7976d63ff161ca4289b6",
+      "sha256": "55322b483d9bf27e0fefcdfd0e25f53172c194da6b47154d40bd39f781c60a46",
+      "size": 1224
+    },
+    {
+      "path": "reference/fuse/conv_transpose2d_add_min_gelu_multiply.py",
+      "git_blob_sha1": "2b23bbc86c16ec7d2d90ab318386bdacf0b9b056",
+      "sha256": "3f9c3e542afa320508390c00b28bb407b3999caa919a5885bbd03e2c8f1df547",
+      "size": 1102
+    },
+    {
+      "path": "reference/fuse/conv_transpose2d_bias_add_clamp_scaling_clamp_divide.py",
+      "git_blob_sha1": "b6b77f99f58f909582f86e5814a79c27102c0eec",
+      "sha256": "2b69e31d12d28d291fb5b56634176269ba6513e8d240fc01d6f8a7b706abc109",
+      "size": 1279
+    },
+    {
+      "path": "reference/fuse/conv_transpose2d_gelu_group_norm.py",
+      "git_blob_sha1": "ba7382bad967a5b283f2e17e19874991f2be23e6",
+      "sha256": "b7b68e7498c80dfe9491981ef97feb07aa684ce7229943d2cc701fdb83fb509c",
+      "size": 975
+    },
+    {
+      "path": "reference/fuse/conv_transpose2d_max_pool_hardtanh_mean_tanh.py",
+      "git_blob_sha1": "c2b490f53b175d2e44667212b1f85160afbf07dd",
+      "sha256": "a8f0fab54e125017083473ddee3bcff6546b4eda28ba98cacbebfbe14ae8130b",
+      "size": 1339
+    },
+    {
+      "path": "reference/fuse/conv_transpose2d_min_sum_gelu_add.py",
+      "git_blob_sha1": "b76d16c8d922767e346d754d010a6926fc510f83",
+      "sha256": "e8a14171f06b41a2bb5067e1397d2b1afd928c95272916b3c16dfff811f98316",
+      "size": 1224
+    },
+    {
+      "path": "reference/fuse/conv_transpose2d_mish_add_hardtanh_scaling.py",
+      "git_blob_sha1": "9a44ca6c740fe20a1bfa9de93ca1afc65bf71216",
+      "sha256": "3a5a97178dad5b980b33f35b7712826a08a92a5fd8a486a22cdabc84b97dcc15",
+      "size": 1241
+    },
+    {
+      "path": "reference/fuse/conv_transpose2d_multiply_global_avg_pool_global_avg_pool_mean.py",
+      "git_blob_sha1": "dc4d51a6e6be3328ac16f541b3e41779455574de",
+      "sha256": "8b08cbe307167cb006a00e6f8309bce56dad016b9bc5346c4484b315cfdb411d",
+      "size": 1190
+    },
+    {
+      "path": "reference/fuse/conv_transpose2d_subtract_tanh.py",
+      "git_blob_sha1": "3fb041e941091e056c892988f243b4a34ab894f7",
+      "sha256": "442f35521753e48196379d5a4659d13d979817fd605cfb1a1a205b536faa90cc",
+      "size": 972
+    },
+    {
+      "path": "reference/fuse/conv_transpose3d_add_hard_swish.py",
+      "git_blob_sha1": "f47c6f9d1c6d49883cf073e486a54aa7b39b5f10",
+      "sha256": "807660889baed4d0c4abade85efaec7f9c1c0c2897b812a281c6f8d0d3748852",
+      "size": 1540
+    },
+    {
+      "path": "reference/fuse/conv_transpose3d_avg_pool_clamp_softmax_multiply.py",
+      "git_blob_sha1": "328a879546ee0257a64f0733accd84aa77c60f87",
+      "sha256": "913b9a28fa2c866a5f62c06b02aab327728679f3139783053e5872ce5e8e99b6",
+      "size": 1800
+    },
+    {
+      "path": "reference/fuse/conv_transpose3d_batch_norm_avg_pool_avg_pool.py",
+      "git_blob_sha1": "d0e99bcabbb6ff073c1524e094f6967ebf81ed9b",
+      "sha256": "cc65e3beca217d11df994ed6beb6476909c234b5b5282a1cbfee0c5312908ea6",
+      "size": 1136
+    },
+    {
+      "path": "reference/fuse/conv_transpose3d_batch_norm_subtract.py",
+      "git_blob_sha1": "e840deae560f1d149b953469b9e5636e83a3c3a8",
+      "sha256": "43f63a8c7edfdde89349af7fb8c8820a73586cb28d6057c46d5e562f374cef6a",
+      "size": 999
+    },
+    {
+      "path": "reference/fuse/conv_transpose3d_clamp_min_divide.py",
+      "git_blob_sha1": "8d70ac9a0c60b5f7fe68e78acd7a0a3c4abc3e37",
+      "sha256": "d2ea123f1b6ebcf584e1697eae1d34c61bcb9e257b0ea893ac253350c4067d0f",
+      "size": 1056
+    },
+    {
+      "path": "reference/fuse/conv_transpose3d_layer_norm_gelu_scaling.py",
+      "git_blob_sha1": "0ed244cf222c13b804d769e7cb29735092975a96",
+      "sha256": "81095e0048e53905573b62f7e2bb37b77505a9fe4913fd8fe736669ffce3f23c",
+      "size": 1350
+    },
+    {
+      "path": "reference/fuse/conv_transpose3d_leaky_relu_multiply_leaky_relu_max.py",
+      "git_blob_sha1": "d86943fc00da03ee9e25d9b7d6ff027b7bb53aff",
+      "sha256": "7d05e9bcc2a444487b190089498e25fdcfd236ea00b844a5459ac13ce8121833",
+      "size": 1344
+    },
+    {
+      "path": "reference/fuse/conv_transpose3d_log_sum_exp_hard_swish_subtract_clamp_max.py",
+      "git_blob_sha1": "662f2f7647b98cbc2c100c2b08708342c774ea2d",
+      "sha256": "d89693a52be9080caf580e0a21691a19d1cf9ef44c31a9466b6df97178ac9c21",
+      "size": 1081
+    },
+    {
+      "path": "reference/fuse/conv_transpose3d_max_max_sum.py",
+      "git_blob_sha1": "233552154e8f530003d9470eb51cbf3704ae3552",
+      "sha256": "72724f4f417c8e598702d327ecb7f22356bde897235b2ac93f0f303b6d9bfefe",
+      "size": 1024
+    },
+    {
+      "path": "reference/fuse/conv_transpose3d_max_pool_softmax_subtract_swish_max.py",
+      "git_blob_sha1": "a4f0e8060e03d095c522dadf4c49e769b14d14e0",
+      "sha256": "300030609984e750550fcf6b263c5fe8bba73389cb644cd48085c30be109b0df",
+      "size": 1621
+    },
+    {
+      "path": "reference/fuse/conv_transpose3d_multiply_max_global_avg_pool_clamp.py",
+      "git_blob_sha1": "f401d4aef4daf080e39928432150d9c31b3e0d4b",
+      "sha256": "164edd0135adff496adade63a772074630ebf2c13feaa450307d98a9728da2e6",
+      "size": 1315
+    },
+    {
+      "path": "reference/fuse/conv_transpose3d_scale_batch_norm_global_avg_pool.py",
+      "git_blob_sha1": "61922cd07ecbfcfd03d8377ac064883120f630d9",
+      "sha256": "cc3dcfba9cd5526d515917bbae7ee2af7d7694322a91a96a4461e73ec8a6278b",
+      "size": 1122
+    },
+    {
+      "path": "reference/fuse/conv_transpose3d_scaling_avg_pool_bias_add_scaling.py",
+      "git_blob_sha1": "91f1cae7d9c0bb70192e6a4e38bff4a21a36b608",
+      "sha256": "c094d9151eed193c99c1854706203e33d32c7a0e536abf04c81790f873763765",
+      "size": 1263
+    },
+    {
+      "path": "reference/fuse/conv_transpose3d_softmax_sigmoid.py",
+      "git_blob_sha1": "ff337bc0831f39fda71d952b7a91dd2d36d3fa0b",
+      "sha256": "9386889fc80859671b9ef7f3bd3dd182bd0fb5b51067f88407c4e48fb1107f79",
+      "size": 1225
+    },
+    {
+      "path": "reference/fuse/conv_transpose3d_sum_layer_norm_avg_pool_gelu.py",
+      "git_blob_sha1": "d39cd9f8c3d9cd66774e59a81abf57c1dbcf90f5",
+      "sha256": "43613691d1dec5ccfab8b70311ec83621c1f305ecceea490a053859d3c5b10a5",
+      "size": 1424
+    },
+    {
+      "path": "reference/fuse/conv_transpose3d_sum_residual_add_multiply_residual_add.py",
+      "git_blob_sha1": "22f480b871d292577084c05be55a83fd0c633899",
+      "sha256": "d5977ca8e549aac43aa5b4fd78dcbfc11784961891668ed5008fb0978d3e4a61",
+      "size": 1187
+    },
+    {
+      "path": "reference/fuse/conv_transpose3d_swish_group_norm_hard_swish.py",
+      "git_blob_sha1": "e685c1509ad9dbde7f9c96cd36316052f3af72b5",
+      "sha256": "b5f0476a56ce409c0293a0b68bd9f24ac3558916acdc15576890f8665b551bb6",
+      "size": 1155
+    },
+    {
+      "path": "reference/fuse/convtranspose2d_batchnorm_tanh_maxpool_groupnorm.py",
+      "git_blob_sha1": "6855825949bd4bacfd57a1b7721244aade1c9cf0",
+      "sha256": "e10fa44d0dbc6f6d9b7fff411dae2730502c2b15236d9ec1097e7deff37f1981",
+      "size": 1281
+    },
+    {
+      "path": "reference/fuse/convtranspose2d_globalavgpool_biasadd_logsumexp_sum_multiply.py",
+      "git_blob_sha1": "a35901edcf00c779e0054882468a80459ad443b0",
+      "sha256": "0eeb1e46e5bacfed11e5bfddffe6f4fdfd981332e0fb56c4e67b219d6faba3a6",
+      "size": 1097
+    },
+    {
+      "path": "reference/fuse/convtranspose2d_softmax_biasadd_scaling_sigmoid.py",
+      "git_blob_sha1": "efc266dc46f774098b756c822b3fa67810d55d66",
+      "sha256": "3b571801aec40ec4214ffd9ae7dc4a099560a6bc35564c792280331951023c71",
+      "size": 1235
+    },
+    {
+      "path": "reference/fuse/convtranspose3d_mean_add_softmax_tanh_scaling.py",
+      "git_blob_sha1": "40a564fb5889de2ed6f0595f3d609e73ffeac657",
+      "sha256": "f33a027962c4ffa7b73bc48fe1e26e38d878c21b084e0c2a0a94c0bc290bd4f3",
+      "size": 1607
+    },
+    {
+      "path": "reference/fuse/convtranspose3d_relu_groupnorm.py",
+      "git_blob_sha1": "0c13cb0f0cf1a603e6646021e456c9b9878c287a",
+      "sha256": "ab2c7dfe1edd7cc983e6866deec40edd391a7a64c4b6fe3b30033650205e0b6a",
+      "size": 1162
+    },
+    {
+      "path": "reference/fuse/gemm_add_relu.py",
+      "git_blob_sha1": "a072f56a6df8b9437a70e1dcf7be7ece72ccb134",
+      "sha256": "88e932ace4f16e0477574c5c99b8d5665393e02f82f664dc99f2e22a2674ea42",
+      "size": 961
+    },
+    {
+      "path": "reference/fuse/gemm_batch_norm_gelu_group_norm_mean_relu.py",
+      "git_blob_sha1": "a53accd462bf61d258841249b8620ac5d7e4e819",
+      "sha256": "e95f261a671d1b5a425ee132a8975f682420c861b97453340131579d212fc7db",
+      "size": 914
+    },
+    {
+      "path": "reference/fuse/gemm_batch_norm_scaling_softmax.py",
+      "git_blob_sha1": "68e127c2d46aaa8c8d4e8efd2cdecd05d17ae0e8",
+      "sha256": "e6f588ca44598dc81bbd2d626d3c40bda2287a1d1cc644f8afe01b288f1babfe",
+      "size": 1181
+    },
+    {
+      "path": "reference/fuse/gemm_bias_add_hardtanh_mish_group_norm.py",
+      "git_blob_sha1": "dcae5798dbf9710bbeed88dbb9095943f73f8262",
+      "sha256": "649fe2a6aaefeffcd6209c6afb873586c35751756585a9c1a7ab2a11a546c8d3",
+      "size": 1206
+    },
+    {
+      "path": "reference/fuse/gemm_divide_sum_scaling.py",
+      "git_blob_sha1": "85a88ec3f99ad660b616c5a1169e868cfece96c9",
+      "sha256": "8bd6a36d6dafc8916d9b47d413f668fb7a4c25444378717a4c09f495b3891cd2",
+      "size": 1042
+    },
+    {
+      "path": "reference/fuse/gemm_group_norm_hardtanh.py",
+      "git_blob_sha1": "4523c0b610293b51407f936bdf623d3a2c11ef2f",
+      "sha256": "461335ed064d25b193afd8cee6645eb12b37540ce15baa5170f3d61b765d2a90",
+      "size": 1117
+    },
+    {
+      "path": "reference/fuse/gemm_group_norm_min_bias_add.py",
+      "git_blob_sha1": "6a3748960ec679a89001362e9f3f7108842d34dd",
+      "sha256": "5485a335508d1a92464b644e2be1d166a9072bb0f62d3e2c3426dd4768e06342",
+      "size": 902
+    },
+    {
+      "path": "reference/fuse/gemm_group_norm_swish_multiply_swish.py",
+      "git_blob_sha1": "8fa09c55834684402132168aa41de65178684ea4",
+      "sha256": "eda8a47c825eb3fc49836d6cc0c9cd6ba596cc35ece1d22c871bba198009c6e7",
+      "size": 1302
+    },
+    {
+      "path": "reference/fuse/gemm_log_sum_exp_leaky_relu_leaky_relu_gelu_gelu.py",
+      "git_blob_sha1": "8f798f5b0a94d3d8eed9c27d3c28fef327553e75",
+      "sha256": "3cb78d4eb7f710768b801f0081fef85a5fb5f119a3e49a00ad97bf4baea33a83",
+      "size": 1010
+    },
+    {
+      "path": "reference/fuse/gemm_max_subtract_gelu.py",
+      "git_blob_sha1": "486376a986b2141a77bdef108534184dec928a22",
+      "sha256": "44dff2e3c3e9b014df3f41f40e3678aa17830ecc7b161d2f142f556f87ee134c",
+      "size": 964
+    },
+    {
+      "path": "reference/fuse/gemm_multiply_leakyrelu.py",
+      "git_blob_sha1": "2564103787ce2abaa8631294bda2cb23177b35a5",
+      "sha256": "0150537a4e53a29b1436d22667aa05b26c30301dd865d5ccf0f929b2c0cc29f6",
+      "size": 816
+    },
+    {
+      "path": "reference/fuse/gemm_relu_divide.py",
+      "git_blob_sha1": "62dcb84ce16e5574bf87e1ad9f8dd27153915d7b",
+      "sha256": "d4013c4cf5639bd56d28fd036c10c7c9103a6bd3573c3f6f79fd93a79bfc2a5a",
+      "size": 698
+    },
+    {
+      "path": "reference/fuse/gemm_scale_batch_norm.py",
+      "git_blob_sha1": "52ee43bfec34938d1a9bf0c7e6f9fc0fd2c9bb85",
+      "sha256": "6f7733e04363f470d27a26eadc7c8ab7b94e9c9a4efc3066e42c4e0df4e53e6f",
+      "size": 853
+    },
+    {
+      "path": "reference/fuse/gemm_scale_batchnorm.py",
+      "git_blob_sha1": "49949ba2cd6d6d1d7f33c4483220329d40cc8195",
+      "sha256": "236f621847118c08863e13c55add78d32b89287d230126c30d2c0cf6df7302f6",
+      "size": 849
+    },
+    {
+      "path": "reference/fuse/gemm_scaling_hard_tanh_gelu.py",
+      "git_blob_sha1": "5843d0445b09409daf0f2e5d21861bf5f17ab56c",
+      "sha256": "d296d0b49a0a620b3528506997f600dd7c5635551a13c95b418428bbed50010e",
+      "size": 940
+    },
+    {
+      "path": "reference/fuse/gemm_sigmoid_scaling_residual_add.py",
+      "git_blob_sha1": "cdc2f94c9157bbdfdc6b6201a73f29776c22a670",
+      "sha256": "a1544425f96477bad2814578d9ba2d928568d952527af98bd6acbbd0c2170fbc",
+      "size": 1000
+    },
+    {
+      "path": "reference/fuse/gemm_sigmoid_sum_log_sum_exp.py",
+      "git_blob_sha1": "347af8eb7142204023055e6bc59fb142f1fa770d",
+      "sha256": "c206fcec5ac6b6253fb2f86992a865ea2f560fe54ebfd7a7bf542fc9852cd2c4",
+      "size": 852
+    },
+    {
+      "path": "reference/fuse/gemm_subtract_global_avg_pool_log_sum_exp_gelu_residual_add.py",
+      "git_blob_sha1": "329c501df131d16ed81d6a30a57606c20a0e4c2e",
+      "sha256": "0a777c0d54e91a3a20d5cc2781e1678b90e4fcda8ed2c1f5e33009e010792b03",
+      "size": 1035
+    },
+    {
+      "path": "reference/fuse/gemm_swish_divide_clamp_tanh_clamp.py",
+      "git_blob_sha1": "1aeca85ab69988ef0d1f2b71d7917566f0359272",
+      "sha256": "291d748f061f23d3bf97e012c69cf321cb8821159cce45e403af7cfaee7f14ed",
+      "size": 1063
+    },
+    {
+      "path": "reference/fuse/matmul_add_swish_tanh_gelu_hardtanh.py",
+      "git_blob_sha1": "de9ccb407a7d0d236e2dc2b5bae270e95c964bb6",
+      "sha256": "0c5123322ffe7a5436f194147612833f0c1ae0ecbd21788515718d720c8e5d96",
+      "size": 975
+    },
+    {
+      "path": "reference/fuse/matmul_avg_pool_gelu_scale_max.py",
+      "git_blob_sha1": "df2cca07f4a8c7294635b321cdf7b82338611f31",
+      "sha256": "8e5df29ff246f69cde03ab21ab53c706d58cd082014184641332cbb157607eb7",
+      "size": 1144
+    },
+    {
+      "path": "reference/fuse/matmul_batch_norm_bias_add_divide_swish.py",
+      "git_blob_sha1": "6ab7eb9b8dbf5ea4c1c8f3054399aa45800d2d48",
+      "sha256": "49ed9c680b1764ddc4b7dfe42a328923ab5b6685afd7dfa702c0587d1cb59685",
+      "size": 1077
+    },
+    {
+      "path": "reference/fuse/matmul_divide_gelu.py",
+      "git_blob_sha1": "2c2e9a9a7fa295bc24da7b897ada17d929ca357b",
+      "sha256": "d6fc788bd7aa852d0740320aa786189d89a6489ed9634ee0b28f488d809b335a",
+      "size": 917
+    },
+    {
+      "path": "reference/fuse/matmul_dropout_mean_softmax.py",
+      "git_blob_sha1": "4a126c5e7d9c07f8932b979e50130db117636190",
+      "sha256": "7a8bcefb75586bbf0acfcdeb0e8391c8881548fe9b55844c0033a96e9f898a29",
+      "size": 961
+    },
+    {
+      "path": "reference/fuse/matmul_gelu_softmax.py",
+      "git_blob_sha1": "5c0f46af9d0ccac5e972d410cd5c6b94f805cc86",
+      "sha256": "a27769675f355605c1931433193bbf36a309e050c4b27d3e6375938f22329709",
+      "size": 669
+    },
+    {
+      "path": "reference/fuse/matmul_group_norm_leaky_relu_sum.py",
+      "git_blob_sha1": "84a6121298ebd940715a8a476d0d80ba627ddbd5",
+      "sha256": "9ac23a8651df7ef366e1a9928886bb3fa116fa97d62e5eeba0bc6c138d6bb91e",
+      "size": 1117
+    },
+    {
+      "path": "reference/fuse/matmul_max_pool_sum_scale.py",
+      "git_blob_sha1": "2c29dce1889ebd4cfcd24ca0cf50aac3bd5ed023",
+      "sha256": "ef3a425677ff103d6080f3f3eddf89cee25f5b54cfa13777de51bc0ab39b41e6",
+      "size": 1073
+    },
+    {
+      "path": "reference/fuse/matmul_min_subtract.py",
+      "git_blob_sha1": "8bd38b63f313f406ba27bac2b24f50722c2344a5",
+      "sha256": "89b99c3df1d7d0fa49981c9f5aae7755df1d7dfd1e49b85b09d166e486d2670a",
+      "size": 749
+    },
+    {
+      "path": "reference/fuse/matmul_mish_mish.py",
+      "git_blob_sha1": "4b992eb7c5c704732a5b5fd216cba20929d759cf",
+      "sha256": "f7b1c4c4c90d56de3dbd3605ed285d3e68efe5f6d98a245417533371c692b3ec",
+      "size": 657
+    },
+    {
+      "path": "reference/fuse/matmul_scale_residual_add_clamp_log_sum_exp_mish.py",
+      "git_blob_sha1": "8f2998e2fab9a3c0adeb7ceecba8d7143ed51dab",
+      "sha256": "3ff6a8c5da733c978b3c86bbbba3190e487ae959b63d4501715e60489b6baab9",
+      "size": 1306
+    },
+    {
+      "path": "reference/fuse/matmul_scaling_residual_add.py",
+      "git_blob_sha1": "89db29f16440aeaa227f99e512b5f2cb273083cd",
+      "sha256": "333bf992fd77297a4c43f4287b44662dcc43c8036be69d486b28e7a9db7bffd5",
+      "size": 1220
+    },
+    {
+      "path": "reference/fuse/matmul_sigmoid_sum.py",
+      "git_blob_sha1": "caef4dd1f0e2b54ab104cc5296ee7c31b0134adc",
+      "sha256": "00070bf8cc6a0d0ff1c4cbb78729620575164e67cb03ef1d646bbab332ae1fa3",
+      "size": 815
+    },
+    {
+      "path": "reference/fuse/matmul_subtract_multiply_relu.py",
+      "git_blob_sha1": "789980a134e9de8c1a2d187e99cb8299e18ad071",
+      "sha256": "110e75834cd898f532262ce516e318b8e7a9e85acda705baefcebe687ff85b21",
+      "size": 876
+    },
+    {
+      "path": "reference/fuse/matmul_sum_max_avg_pool_log_sum_exp_log_sum_exp.py",
+      "git_blob_sha1": "974fdad305d02036e5e9e0bfc793bcfc67854184",
+      "sha256": "0a7391a12a0c88164045b68580b57f51efee843465aa0060d86fbb5f00f65861",
+      "size": 1234
+    },
+    {
+      "path": "reference/fuse/matmul_swish_scaling.py",
+      "git_blob_sha1": "8ed88f42ae48117fae036feaa35a170b586059c7",
+      "sha256": "af4bfb47631eb3eee01055c0ae090e7452edacb0aa35fa40d117de2675bc2720",
+      "size": 776
+    },
+    {
+      "path": "reference/fuse/matmul_swish_sum_group_norm.py",
+      "git_blob_sha1": "69c5198d89ab1e2206414bc36354e93de4752e61",
+      "sha256": "fe2e8dc5418f1549cb3b6e34535b6f3dee0fc37ecce1b6be19a57ed8733156d4",
+      "size": 1152
+    },
+    {
+      "path": "reference/index/argmax_over_a_dimension.py",
+      "git_blob_sha1": "11859e43d0a0ba1ce67602e3780cacc61829d5f5",
+      "sha256": "d6a2057c4c95a9737985b2b8ffda23595f812557c26a2263fec8edd594c61fbe",
+      "size": 937
+    },
+    {
+      "path": "reference/index/argmin_over_a_dimension.py",
+      "git_blob_sha1": "8cfde908a2474ef035c500382e55e4c7d652771e",
+      "sha256": "e1764caddce33679126f225b4da455a95978be85ccf79a372e3ef549ee35ba8f",
+      "size": 996
+    },
+    {
+      "path": "reference/index/embedding.py",
+      "git_blob_sha1": "3c91f7318028554f9e11f04a1b434f3d207df254",
+      "sha256": "06ab904a85549904e788a03f1c8998e40ca0f38cf4acae93b6023fa25666aca5",
+      "size": 363
+    },
+    {
+      "path": "reference/index/gather.py",
+      "git_blob_sha1": "d5cc71de124d1ed6154e8378bd9398039736e097",
+      "sha256": "ab720efad9b680999978992340bc131b27bcbe8954709b13235e8b8c883cce71",
+      "size": 293
+    },
+    {
+      "path": "reference/index/index_add.py",
+      "git_blob_sha1": "a90670e9229750ecabf6560d3d3cf418a322e005",
+      "sha256": "3b483c89a231884b069c6318685cec73a8f968f701c2fc2dfb1a490e1c706bc8",
+      "size": 370
+    },
+    {
+      "path": "reference/index/index_copy.py",
+      "git_blob_sha1": "207e39ba5dce2d11fac3ceebbf640009f0772ef8",
+      "sha256": "0f76258e8c15922972ba267157eee40120082377748b07866ec848574e5c592c",
+      "size": 342
+    },
+    {
+      "path": "reference/index/index_select.py",
+      "git_blob_sha1": "b2d7cf5f4c91b560f41f30c2084d293043d66cc0",
+      "sha256": "2684a9559a3f2e2894eb9f91aa8893914f272e6c64b9e0a1f6ad9ecd687352b0",
+      "size": 311
+    },
+    {
+      "path": "reference/index/inplace_update.py",
+      "git_blob_sha1": "961a8eecf8ad68054e48b9e2fcd9426c9f0e1d28",
+      "sha256": "eedd37a4fa77ce2344596bf7e4331271a486b86c583478d407363934d2edf2f1",
+      "size": 333
+    },
+    {
+      "path": "reference/index/masked_fill.py",
+      "git_blob_sha1": "904385e3e6b41d1caf81787e68c44042dca82328",
+      "sha256": "e513be676da0bf351307c0779492117362a2d3bc4926e064387541259b74d4ca",
+      "size": 318
+    },
+    {
+      "path": "reference/index/scatter.py",
+      "git_blob_sha1": "95654da2456ad157f9f1362255228f94bc991965",
+      "sha256": "e93c864a8904919dfbf329eeee8e9ea17508af71a7066ee39cfa2a65ac54031b",
+      "size": 371
+    },
+    {
+      "path": "reference/index/scatter_add.py",
+      "git_blob_sha1": "0b5cd554f5e8dc09ea0ee649101cbf89fb1b9a8c",
+      "sha256": "ceb09998422aa6080ac2bcc39d0fa7bfe0450afd10c6b8b3a51fe7cd719eefee",
+      "size": 356
+    },
+    {
+      "path": "reference/index/take_along_dim.py",
+      "git_blob_sha1": "795957a42e5c526f747583c5ae7d1a3882e5c617",
+      "sha256": "2f2a5f42ce4f1ca7a6621b3699463d122d0bcb271d6a8911ee10dc80f08e4aa2",
+      "size": 295
+    },
+    {
+      "path": "reference/loss/cosine_similarity_loss.py",
+      "git_blob_sha1": "b463546e2a60cdce30112709f6359536944ab01a",
+      "sha256": "33b804a24c734fc440f16cad78aabf5c96d334bbe212a534d1aff7050be35fe6",
+      "size": 610
+    },
+    {
+      "path": "reference/loss/cross_entropy_loss.py",
+      "git_blob_sha1": "fa4a224562336d1ad1f099ea8a28a51cc9a02b5e",
+      "sha256": "4cdfaaf1c2118369987c7a0c24b4487fee4bb90fdce50f592bded59cf61ae9bd",
+      "size": 597
+    },
+    {
+      "path": "reference/loss/hinge_loss.py",
+      "git_blob_sha1": "0b733a0595518c3d054b4479ab3e0eaa650be726",
+      "sha256": "8e7ab261247e266e1b765957db04ea6972ac5dc9544607c059848d2417d5d3a1",
+      "size": 566
+    },
+    {
+      "path": "reference/loss/huber_loss.py",
+      "git_blob_sha1": "5e60d5df3b1110fb0c53466b0298b672b0c01b39",
+      "sha256": "51a7c78a527206ba8da2b24cbbfd3c8a043146a9d690d4304c5e95a199425747",
+      "size": 586
+    },
+    {
+      "path": "reference/loss/kl_div_loss.py",
+      "git_blob_sha1": "7043a992463b8c3f41f80845b2f8ef876761fcfb",
+      "sha256": "ff13e10c26851cc7262cd993dd289ad21b18dbb1dd65bb2159d7052582b1ccd5",
+      "size": 668
+    },
+    {
+      "path": "reference/loss/mse_loss.py",
+      "git_blob_sha1": "2dc77eed18166d5881e639edfe69a02e06c79320",
+      "sha256": "1bc23c8534d817cd5acff184eb8d3849f43b96b6dffcde6ab78a1c71a8fe64f3",
+      "size": 575
+    },
+    {
+      "path": "reference/loss/triplet_margin_loss.py",
+      "git_blob_sha1": "3ca0b4467e43ffcbb9831fc5021f35ba432e5894",
+      "sha256": "07fce40303b9ba5fdc3e5b6ae61c35ed47ac291e9e0f4e62c21a8ba2763cea0c",
+      "size": 782
+    },
+    {
+      "path": "reference/math/cumprod.py",
+      "git_blob_sha1": "7bc3cda4b1d3690019ef7060be9db9136ed67d9c",
+      "sha256": "17408793b4846d75bef22fff5c2a16c7d836409eabc0476c8060f75183a64665",
+      "size": 1133
+    },
+    {
+      "path": "reference/math/cumsum.py",
+      "git_blob_sha1": "8088d2b73d62514e771a1982c46acb82c76b998a",
+      "sha256": "24eea19436dc41aa36ae3364b422d784c4f20175903f894e06beeb9cff15c02d",
+      "size": 1593
+    },
+    {
+      "path": "reference/math/cumsum_exclusive.py",
+      "git_blob_sha1": "e68dacaddbbee86e3633100e82549a78e36a8683",
+      "sha256": "ec1551c196130f5d7fae707f0750016c35b988e76aa3f1657da4347f463ced86",
+      "size": 766
+    },
+    {
+      "path": "reference/math/cumsum_reverse.py",
+      "git_blob_sha1": "19ad6fd8cda26c0356980f2eebab28b19e8bbeed",
+      "sha256": "170f4bb30f01abdec9b149d78a816e66bdc93967253ade8244dca1b8372038fd",
+      "size": 621
+    },
+    {
+      "path": "reference/math/masked_cumsum.py",
+      "git_blob_sha1": "87e5d56d06798cbf62768fb3e34a9c7b7ba75b4a",
+      "sha256": "8b1591c5c8242968acc0677a4a1308b7a704534724782c3858b4cb0b10828769",
+      "size": 977
+    },
+    {
+      "path": "reference/math/matrix_scalar_multiplication.py",
+      "git_blob_sha1": "6b46f8b5ff406e1b150fb350544224999b444f6e",
+      "sha256": "f4d52425a8f72b4b22375494064f2ab1675e2caf29376c47a102211ce66d6987",
+      "size": 711
+    },
+    {
+      "path": "reference/matmul/batched_matrix_multiplication.py",
+      "git_blob_sha1": "f3f807bf47581f01233740fa12f3522d3d8da33a",
+      "sha256": "310fb3bdf4f69ea178a5b5868bf204e83196cba71e4750be3fbbcb68b78d37f7",
+      "size": 873
+    },
+    {
+      "path": "reference/matmul/four_dim_tensor_matrix_multiplication.py",
+      "git_blob_sha1": "aae74fb45439656495be8c6cc13b137cff7c4c66",
+      "sha256": "f4e0b2e7721b68c8cf3d7109ae24690b0761eb01c79601f4330bbeffe8471bc8",
+      "size": 1052
+    },
+    {
+      "path": "reference/matmul/matmul_for_lower_triangular_matrices.py",
+      "git_blob_sha1": "49b9e40b549ef470f0fb6059f135491be1fe23f6",
+      "sha256": "eb1491ef5450d332f680c390e23fb6bed47bb09702f0027168ce5b121b6077d3",
+      "size": 909
+    },
+    {
+      "path": "reference/matmul/matmul_for_symmetric_matrices.py",
+      "git_blob_sha1": "e594c6007f0c5efecca542e1d8bf8c2c9ae53ea6",
+      "sha256": "5ee7c49134f3ed1d0af9a54ddcb3c00f57c91e1e3d28f1c1c9bbeb79e448c9cb",
+      "size": 1128
+    },
+    {
+      "path": "reference/matmul/matmul_for_upper_triangular_matrices.py",
+      "git_blob_sha1": "5bf5c5d3e6ff86d27540321aa05d6539d34e1172",
+      "sha256": "b661589687579a277b660c781f6f1e65921f7005e5fe85fb3de87e4cf9ea73aa",
+      "size": 1126
+    },
+    {
+      "path": "reference/matmul/matmul_with_diagonal_matrices.py",
+      "git_blob_sha1": "41369a3bc86ba756fb1658aaee708048588d359a",
+      "sha256": "948d60329c341889dbebe93bb54a1503e92a7f0155a1cf428694ad93db2927f8",
+      "size": 882
+    },
+    {
+      "path": "reference/matmul/matmul_with_irregular_shapes.py",
+      "git_blob_sha1": "518bbfb3b7dd031675175d6213ac7a2607835ea5",
+      "sha256": "717f98e135d8c11b5005bd869b36843960de2c06151beb3d7dd6a760a987223c",
+      "size": 791
+    },
+    {
+      "path": "reference/matmul/matmul_with_large_k_dimension.py",
+      "git_blob_sha1": "1e7b72662c24b4e439d3dc3d3f0842cdfae0f097",
+      "sha256": "18287323c43d000af0eaf384d8e142424182fb48e17cc317fc7009bb345bd7b0",
+      "size": 786
+    },
+    {
+      "path": "reference/matmul/matmul_with_small_k_dimension.py",
+      "git_blob_sha1": "d24386f44ad2af71b6c653c5292feee92fbe354d",
+      "sha256": "66b12b830db873ab706900ffb52abd9fa43321829eee40a27d395441db2f2966",
+      "size": 786
+    },
+    {
+      "path": "reference/matmul/matmul_with_transposed_a.py",
+      "git_blob_sha1": "c523f80da23925966ec5811078f720ed075af7ec",
+      "sha256": "d3b2abe010f0732a889c8ccf21ac56885e7e013957a421c197de3681d56b4be9",
+      "size": 763
+    },
+    {
+      "path": "reference/matmul/matmul_with_transposed_b.py",
+      "git_blob_sha1": "9922d1c11f2081bb1c6f57116e1a968e969a96ca",
+      "sha256": "00ef34b7e76d97b7cc95599fd2ff93d4d90f53c348fcc3c4cb657c2126f026b1",
+      "size": 763
+    },
+    {
+      "path": "reference/matmul/matmul_with_transposed_both.py",
+      "git_blob_sha1": "a40e19820e380a06831171b129ec60fba093f790",
+      "sha256": "58f61b728890855d009329dbdbd0da4ac7d9390e46f7199b27dc353dd512ad19",
+      "size": 765
+    },
+    {
+      "path": "reference/matmul/matrix_vector_multiplication.py",
+      "git_blob_sha1": "fb6a59ca9d7e6fdd395b77031f2b7fa958323ae4",
+      "sha256": "5f1476dfcbd291f393d469a2645ff628f1e393bd720c2fe36d5fa4f9181dd8a1",
+      "size": 772
+    },
+    {
+      "path": "reference/matmul/square_matrix_multiplication.py",
+      "git_blob_sha1": "963a3f87b1f98a7636c96a7f8284b3b7b483f96b",
+      "sha256": "7626d611b8f2c97a71ae40d731da8cb7ba067dc43cc2f3e8185ad85c68533f30",
+      "size": 796
+    },
+    {
+      "path": "reference/matmul/standard_matrix_multiplication.py",
+      "git_blob_sha1": "e751dbfff4dee08138eec06ea075dea07f41c40f",
+      "sha256": "136a33c4d598d07cd7931ef8c0eff4e683c221af6fc43c2d89b6632d3f9902a0",
+      "size": 761
+    },
+    {
+      "path": "reference/matmul/tall_skinny_matrix_multiplication.py",
+      "git_blob_sha1": "dc8f28c99a220b7854571b4b15010bbf56798a29",
+      "sha256": "06a133f60f0d704b70014b210031e3937d7a183c90ea11800357ce6b55c89c18",
+      "size": 890
+    },
+    {
+      "path": "reference/matmul/three_dim_tensor_matrix_multiplication.py",
+      "git_blob_sha1": "2048d0f59eadd5c3170f94667cf63ac6c7c2aef5",
+      "sha256": "bd4013a4d5563e3a0a7da6c055dd9c83fbedb5fdd2842e8610a84a510f75e0af",
+      "size": 825
+    },
+    {
+      "path": "reference/normalization/batch_norm.py",
+      "git_blob_sha1": "0afd9c8ce822b3919a3a69fbd9e7046cecd3e3b5",
+      "sha256": "0b7f5ca58d6ec76a6faef2f583fa84ab2c14c0bfd09e7faf8c6289187a56cfc4",
+      "size": 981
+    },
+    {
+      "path": "reference/normalization/frobenius_norm.py",
+      "git_blob_sha1": "14c98097a0f78d7dfee0ed55e2896acc65f68b0b",
+      "sha256": "425dfd6101cb6c922872f9fe7f8705710974f83a74960c7dd915f5b80dc702c5",
+      "size": 870
+    },
+    {
+      "path": "reference/normalization/group_norm.py",
+      "git_blob_sha1": "85b7f0fd1dd7e08ad22ad5b4a43cde6a1eb7f780",
+      "sha256": "42325dc79651b049a038f95480b9df37a94d7d445d730103a30eb1a8f7c2c2f0",
+      "size": 1138
+    },
+    {
+      "path": "reference/normalization/instance_norm.py",
+      "git_blob_sha1": "6460cc2286c385c5841935569c4b2b7b7b9b3dd6",
+      "sha256": "68d2c30aa59596a7b5ea65cc080ea2a0dea02a15ebb3095ea36b6c65e333b850",
+      "size": 1015
+    },
+    {
+      "path": "reference/normalization/l1_norm.py",
+      "git_blob_sha1": "f2d5774421eef9ae0acd87f82f09dd75450082ca",
+      "sha256": "02d29f98ba28001a4274fe713bf0b985ffc088aef1e83581ad11e4dbe239dfda",
+      "size": 820
+    },
+    {
+      "path": "reference/normalization/l2_norm.py",
+      "git_blob_sha1": "f101d6584bf4fa5d7b5e5a318ea7e3d083dc17f3",
+      "sha256": "fb8153fbe2a50679fcbbc3114f46c4157547138679fb6ecbabec0497e90a55c3",
+      "size": 874
+    },
+    {
+      "path": "reference/normalization/layer_norm.py",
+      "git_blob_sha1": "133354250d3ab3a3e1e578f4574b04480ad16808",
+      "sha256": "b99cbceb7213cf9b4fa3a77ba368236cc88f5e2d31391ac1cd1ad7ffa0c2a410",
+      "size": 1009
+    },
+    {
+      "path": "reference/normalization/rms_norm.py",
+      "git_blob_sha1": "b23d9fb53870f64adb532edf2e3301c2cf1c0511",
+      "sha256": "60a4b46a29e5f310ea91c0958576f77172b08044c2eb736109f0944d9333dbaf",
+      "size": 1300
+    },
+    {
+      "path": "reference/optimizer/adagrad.py",
+      "git_blob_sha1": "0c2284e9f315066cefc00a2350db3f0f9d8b498a",
+      "sha256": "ea2464051a5a2ad96d3a9ee5049af5e20abf5c2b6625d0a8be36688b54a97d2c",
+      "size": 537
+    },
+    {
+      "path": "reference/optimizer/adam.py",
+      "git_blob_sha1": "d21070cec36ab14500d6d507c26b5397d0ba9e5a",
+      "sha256": "0178a38019bef8712cd1b87bd7e9f550d5a4df426ff10e0bd92f38d59b86159e",
+      "size": 850
+    },
+    {
+      "path": "reference/optimizer/lamb.py",
+      "git_blob_sha1": "4c0b25beec39db759730a05f789f1c39557df9c2",
+      "sha256": "26b48b2607ceaed5984131887088ac887f82508b49c78a52109f72d29aa03cce",
+      "size": 581
+    },
+    {
+      "path": "reference/optimizer/rmsprop.py",
+      "git_blob_sha1": "7cac449b916d5d64c26c34544db712528ddaf86e",
+      "sha256": "4bae5c8f4b5728684ae91f9ce93466e4f15d1e4fc28f943add8f77161c5d27e8",
+      "size": 583
+    },
+    {
+      "path": "reference/optimizer/sgd.py",
+      "git_blob_sha1": "e94970b6c7237c983d4e82ba528045b8578ea168",
+      "sha256": "a8c6c8475deac603fc91036a5165c4d3ecc92239d5bd8dc23ec9572e6bb52257",
+      "size": 550
+    },
+    {
+      "path": "reference/pooling/average_pooling_1d.py",
+      "git_blob_sha1": "337708791f92c07e7d26db323596a07441dd59db",
+      "sha256": "2c55c057fff2439d7bf30ad1cd33b9e72da6b9996cfc2f2bbde981e114a5b774",
+      "size": 1325
+    },
+    {
+      "path": "reference/pooling/average_pooling_2d.py",
+      "git_blob_sha1": "d09e7fe6fc0fc9d47819d9489a3dc50028dbe848",
+      "sha256": "47b1e045adb332063c6112bc21a524a3f8a42277eedaf12e529dc87be12863e0",
+      "size": 1256
+    },
+    {
+      "path": "reference/pooling/average_pooling_3d.py",
+      "git_blob_sha1": "46487b04c16872d00f5b258fa473f42f3d62c438",
+      "sha256": "bb683a01c421e1e289b7cd765a7c199317984f4fccad885e69acf32fa97ce3d3",
+      "size": 1379
+    },
+    {
+      "path": "reference/pooling/max_pooling_1d.py",
+      "git_blob_sha1": "cf2bba4c55d2ff06f24046168ee5fe79f02e9b9a",
+      "sha256": "940962a5f79dc0bf68ceca2f9c327b391bece4c6928bb5f7575fde143a639d6a",
+      "size": 1673
+    },
+    {
+      "path": "reference/pooling/max_pooling_2d.py",
+      "git_blob_sha1": "b0d429953fa3a7b238bc9e769492a995eddd6ebc",
+      "sha256": "96610ef02aef2d2e499353f2d94454bd6bcd66bfbc01a6d894ae94b41154f824",
+      "size": 1309
+    },
+    {
+      "path": "reference/pooling/max_pooling_3d.py",
+      "git_blob_sha1": "81bd226d2fd7571a5ea2f338ef9ddb22595c382c",
+      "sha256": "936471339adb3539ad07680c419e869e4bf36ae91dc02cdaebb7485c06f6da63",
+      "size": 1780
+    },
+    {
+      "path": "reference/reduce/max_reduction_over_a_dimension.py",
+      "git_blob_sha1": "440416317a8fae7621fb3ad775e04fd91fc0b9be",
+      "sha256": "77168a328c363272c37b1b949d742b1559b24991612cb8b6977bc6c774b07100",
+      "size": 969
+    },
+    {
+      "path": "reference/reduce/mean_reduction_over_a_dimension.py",
+      "git_blob_sha1": "ffeae7920c753c730700c4df208ec341d81c9471",
+      "sha256": "7680645571d748a156d90e30c9f71ff05ce542f74d4526b78eeb2ff430b59b2b",
+      "size": 1025
+    },
+    {
+      "path": "reference/reduce/min_reduction_over_a_dimension.py",
+      "git_blob_sha1": "532bb0d314655e69b7c312f8c960bf5c1405c061",
+      "sha256": "a898a264e344c9cb8146436f8ef2ccfd84ac53c2d4556e11891f34d503f09129",
+      "size": 969
+    },
+    {
+      "path": "reference/reduce/product_reduction_over_a_dimension.py",
+      "git_blob_sha1": "0e5161d9c1f777d1f2087222c9089f4bad6cfa6d",
+      "sha256": "e2a634378adb89b87ac95aec1ad7cdb15559891a571ad70b8c628489ba2d80a6",
+      "size": 916
+    },
+    {
+      "path": "reference/reduce/sum_reduction_over_a_dimension.py",
+      "git_blob_sha1": "70e20b91d413c936a2b0ebcb8c91c95157f11d4a",
+      "sha256": "269af932e9d8e2393a6335f67ddb1c21c38268518d0e9a146596af98c26659ea",
+      "size": 959
+    },
+    {
+      "path": "reference/resize/bicubic_upsample.py",
+      "git_blob_sha1": "0edd696468f64ad831034b6fa84e6d6938cf871b",
+      "sha256": "882a011adf2147cbffebf1145f9cf9e82e610a07e73a922aa1362e03ce600428",
+      "size": 308
+    },
+    {
+      "path": "reference/resize/bilinear_upsample.py",
+      "git_blob_sha1": "a6c2c2477d86ba6cc524d7760e3b8c0aed560879",
+      "sha256": "cf968c5420ef5f5528cfc85cd5f653d65a11a6e0d4ea2e0a520c7959ea6b99ec",
+      "size": 313
+    },
+    {
+      "path": "reference/resize/downsample_bilinear.py",
+      "git_blob_sha1": "59e278c338220ecbc96cfc6433d0ac9ede14e0f7",
+      "sha256": "67728c05fb12a47e15d8eff35016c945e438798f8a69da39fddc2d41dc08ff50",
+      "size": 310
+    },
+    {
+      "path": "reference/resize/grid_sample_affine.py",
+      "git_blob_sha1": "40106778f520cca7d159c318ef97573c66094f23",
+      "sha256": "04f645b935e697a3f1f30622f25e5fb903d62089de8b9ea26931bc135e1be261",
+      "size": 470
+    },
+    {
+      "path": "reference/resize/grid_sample_random_warp.py",
+      "git_blob_sha1": "f12d566ee3639210504815324a8532907c18fb72",
+      "sha256": "3eaf178d43c9c24d97b5239bbb36b399c432f82591ee0ed954440b3e584b0f09",
+      "size": 540
+    },
+    {
+      "path": "reference/resize/interpolate_dynamic.py",
+      "git_blob_sha1": "b9a3190a687b87e9aec56541a0652f64f16a8c65",
+      "sha256": "017345d3a5af04d73fd6d7cc497e6614a5698ef3fa54836d12ef14f49054ad6d",
+      "size": 354
+    },
+    {
+      "path": "reference/resize/nearest_neighbor_upsample.py",
+      "git_blob_sha1": "f6d66e161c788df48a7477480f9c44736cfd404d",
+      "sha256": "80d19b7e36030d74c7eacae75be88ce4532297fbbc57ff9f73bb58c8bbac0875",
+      "size": 290
+    },
+    {
+      "path": "reference/resize/resize_with_antialias.py",
+      "git_blob_sha1": "25935cbcfc452f116bed4f89a1338fa267a856bf",
+      "sha256": "20da8eee7d76ffd050f5841af5a2c14044c73d93f5a3f9a7a6e8b54201eb4fc2",
+      "size": 326
+    },
+    {
+      "path": "reference/resize/trilinear_upsample.py",
+      "git_blob_sha1": "5e1399e9be74c8366e810658c1d7a89050bf6ef3",
+      "sha256": "6c7bea35e60001d4f8a6fa69e304e1518d4e3a9a3515280ee29e15cc5dc8e0b4",
+      "size": 320
+    },
+    {
+      "path": "reference/resize/upsample_grid_sample.py",
+      "git_blob_sha1": "0b8fb2fedc392493a4ee51db5cdc11b572531eb1",
+      "sha256": "46f20008793183928701860885555f6cd0db7a4b0426ea1c40983185e6061008",
+      "size": 532
+    },
+    {
+      "path": "utils/correctness.py",
+      "git_blob_sha1": "b3f5aefa687db67fe8d307ca66f0431ffcda9c41",
+      "sha256": "9bc01f6b76b1e236f5c5df656395fb08da0e070da5d529a1c76cbe84057d39de",
+      "size": 3564
+    },
+    {
+      "path": "utils/evaluation_utils.py",
+      "git_blob_sha1": "77081fa1b92d4992ab3f57718b04c9ce6cadf476",
+      "sha256": "dbec32f208492e5b05d98f7e0fa36b9da4a468871d0f6faf1270f4c49dfac0f6",
+      "size": 4317
+    },
+    {
+      "path": "utils/performance.py",
+      "git_blob_sha1": "2f455b7f8b3133f8a3136e032e1431c502d8774e",
+      "sha256": "98589110321124a75c1a4bde5840ad4b4670df4ff56df9011ffb0e1ffa9b40c6",
+      "size": 1760
+    },
+    {
+      "path": "utils/utils.py",
+      "git_blob_sha1": "2858e1ed13aa5070a9d95daa57eed192e00c4484",
+      "sha256": "618fe536c933a0ed603113344f23cf3d5f2342a7942ea365348cf6875df0b51c",
+      "size": 2720
+    }
+  ],
+  "counts": {
+    "problems": 300,
+    "protocol_files": 5
+  }
+}
