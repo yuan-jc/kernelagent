@@ -34,7 +34,7 @@ from kernelagent.promotion import CandidateFacts, confirm_promotion
 API_KEY_ENV = "MODEL_PROVIDER_API_KEY"
 
 
-def default_generator(config: OptimizationConfig) -> CandidateGenerator:
+def default_generator(base_url: str) -> CandidateGenerator:
     """Real generation port: OpenAI-compatible transport + cost ledger.
 
     Missing credentials are a permanent, user-fixable configuration
@@ -45,7 +45,7 @@ def default_generator(config: OptimizationConfig) -> CandidateGenerator:
             f"environment variable {API_KEY_ENV} is not set: live generation requires "
             "provider credentials on the control plane"
         )
-    client = OpenAICompatModelClient(base_url=config.base_url, api_key=api_key)
+    client = OpenAICompatModelClient(base_url=base_url, api_key=api_key)
     return CandidateGenerator(client, CostLedger())
 
 

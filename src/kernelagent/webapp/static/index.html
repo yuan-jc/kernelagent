@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KernelAgent 控制台</title>
+<style>
+  :root {
+    --bg: #0f1419; --panel: #171d24; --panel2: #1d252e; --line: #2a3440;
+    --text: #d8e0e8; --muted: #8a98a6; --accent: #4da3ff; --ok: #3fbf7f;
+    --warn: #e0a63f; --bad: #e05c5c; --chip: #232d38;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 14px/1.6 -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; }
+  header { display: flex; align-items: center; gap: 12px; padding: 14px 22px;
+           border-bottom: 1px solid var(--line); background: var(--panel); }
+  header h1 { font-size: 17px; margin: 0; font-weight: 600; }
+  .badge { font-size: 11px; padding: 2px 8px; border-radius: 10px;
+           background: var(--chip); color: var(--muted); }
+  .badge.warn { color: var(--warn); }
+  main { display: grid; grid-template-columns: 360px 1fr; gap: 16px; padding: 16px 22px; }
+  @media (max-width: 980px) { main { grid-template-columns: 1fr; } }
+  .panel { background: var(--panel); border: 1px solid var(--line);
+           border-radius: 10px; padding: 14px 16px; margin-bottom: 14px; }
+  .panel h2 { font-size: 13px; margin: 0 0 10px; color: var(--muted);
+              text-transform: uppercase; letter-spacing: .06em; }
+  label { display: block; font-size: 12px; color: var(--muted); margin: 8px 0 3px; }
+  input, select { width: 100%; background: var(--panel2); color: var(--text);
+                  border: 1px solid var(--line); border-radius: 7px; padding: 7px 9px;
+                  font: inherit; }
+  input:focus, select:focus { outline: 1px solid var(--accent); }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  button { margin-top: 12px; width: 100%; padding: 9px; border: 0; border-radius: 8px;
+           background: var(--accent); color: #06121f; font-weight: 700; font-size: 14px;
+           cursor: pointer; }
+  button:disabled { background: var(--chip); color: var(--muted); cursor: not-allowed; }
+  .hint { font-size: 11px; color: var(--muted); margin-top: 6px; }
+  .statechip { display: inline-block; padding: 2px 10px; border-radius: 10px;
+               font-size: 12px; background: var(--chip); }
+  .state-running { color: var(--accent); } .state-completed { color: var(--ok); }
+  .state-no_improvement { color: var(--muted); }
+  .state-budget_exhausted { color: var(--warn); }
+  .state-infra_error, .state-journal_corrupt { color: var(--bad); }
+  .stages { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 2px; }
+  .stage { font-size: 12px; padding: 3px 10px; border-radius: 12px;
+           background: var(--chip); color: var(--muted); }
+  .stage.done { color: var(--ok); background: #14251c; }
+  .stage.active { color: #06121f; background: var(--accent); font-weight: 700; }
+  .cand { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px;
+          margin: 8px 0; background: var(--panel2); }
+  .cand .head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .cand .name { font-weight: 600; }
+  .chip { font-size: 11px; padding: 1px 8px; border-radius: 9px; background: var(--chip); }
+  .chip.ok { color: var(--ok); } .chip.bad { color: var(--bad); }
+  .chip.warn { color: var(--warn); } .chip.muted { color: var(--muted); }
+  .chip.accent { color: var(--accent); }
+  .detail { font-size: 12px; color: var(--muted); white-space: pre-wrap;
+            word-break: break-all; margin-top: 5px;
+            max-height: 64px; overflow: hidden; }
+  .bar { height: 8px; background: var(--chip); border-radius: 5px; overflow: hidden;
+         margin-top: 4px; }
+  .bar > i { display: block; height: 100%; background: var(--ok); }
+  .bar.warn > i { background: var(--warn); }
+  .meterline { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .speed { font-size: 13px; margin-top: 4px; }
+  .speed b { color: var(--ok); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 500; }
+  tr.click { cursor: pointer; } tr.click:hover { background: var(--panel2); }
+  .champ { border: 1px solid #234534; background: #12211a; border-radius: 8px;
+           padding: 10px 12px; margin-top: 10px; }
+  .muted { color: var(--muted); } .mono { font-family: ui-monospace, monospace; }
+</style>
+</head>
+<body>
+<header>
+  <h1>KernelAgent 控制台</h1>
+  <span class="badge">v1 Alpha</span>
+  <span class="badge warn">candidate_trust = cooperative（champion 需人工审查）</span>
+  <span class="badge" id="gpu-badge"></span>
+</header>
+<main>
+  <section>
+    <div class="panel">
+      <h2>运行配置</h2>
+      <label>运行模式</label>
+      <select id="mode">
+        <option value="live">真实模型生成（LIVE，需要 API Key）</option>
+        <option value="demo-correct">演示 · 已知正确固定候选（证明闭环）</option>
+        <option value="demo-wrong">演示 · 已知错误固定候选（证明拒绝）</option>
+      </select>
+      <label>Benchmark</label>
+      <select id="bench" disabled>
+        <option value="kernelbench">KernelBench（已接入 optimize）</option>
+        <option disabled>TritonBench（适配器未接入 optimize）</option>
+        <option disabled>FlashInfer-Bench（适配器未接入 optimize）</option>
+      </select>
+      <div class="row2">
+        <div><label>Level</label><select id="level"></select></div>
+        <div><label>Problem</label><select id="problem"></select></div>
+      </div>
+      <div class="row2">
+        <div><label>模型 ID</label><input id="model" value="glm-4.5"></div>
+        <div><label>候选数上限</label><input id="maxc" type="number" value="5" min="1" max="20"></div>
+      </div>
+      <label>Provider Base URL</label>
+      <input id="baseurl" placeholder="https://.../v1 （OpenAI 兼容）">
+      <label>API Key（仅本机内存，不落盘/不进日志）</label>
+      <input id="apikey" type="password" placeholder="sk-...">
+      <div class="row2">
+        <div><label>修复轮数上限</label><input id="maxr" type="number" value="2" min="0" max="10"></div>
+        <div><label>GPU 预算（秒）</label><input id="gpub" type="number" value="1800" min="60"></div>
+      </div>
+      <label>Token 预算</label>
+      <input id="tokb" type="number" value="200000" min="1000">
+      <button id="start">开始优化</button>
+      <div class="hint" id="formmsg"></div>
+    </div>
+    <div class="panel">
+      <h2>运行历史</h2>
+      <table><thead><tr><th>运行</th><th>模式</th><th>状态</th></tr></thead>
+      <tbody id="runs-tbody"></tbody></table>
+    </div>
+  </section>
+  <section>
+    <div class="panel">
+      <h2>当前运行 <span class="muted mono" id="cur-id"></span></h2>
+      <div>状态：<span class="statechip" id="cur-state">—</span>
+           <span class="muted" id="cur-mode"></span></div>
+      <div class="meterline">GPU 预算 <span id="gpu-num"></span></div>
+      <div class="bar" id="gpu-bar"><i style="width:0%"></i></div>
+      <div class="meterline">Token 预算 <span id="tok-num"></span></div>
+      <div class="bar warn" id="tok-bar"><i style="width:0%"></i></div>
+      <div class="hint" id="cur-error" style="color:var(--bad)"></div>
+    </div>
+    <div class="panel">
+      <h2>阶段流水（当前候选）</h2>
+      <div class="stages" id="stages"></div>
+      <div class="hint">生成 → 策略门 → 容器评测 → 增强正确性 → 正式计时 → 晋升确认</div>
+    </div>
+    <div class="panel" id="champ-panel" style="display:none">
+      <h2>Champion</h2>
+      <div id="champ-body"></div>
+    </div>
+    <div class="panel">
+      <h2>候选</h2>
+      <div id="cands"><span class="muted">尚无候选记录。</span></div>
+    </div>
+  </section>
+</main>
+<script>
+const STAGES = [["generate","生成"],["policy","策略门"],["evaluate","容器评测"],
+                ["correctness_pro","增强正确性"],["timing","正式计时"],["confirm","晋升确认"]];
+const STATE_TEXT = {running:"运行中", completed:"完成（已晋升）", no_improvement:"无改进",
+                    budget_exhausted:"预算耗尽", infra_error:"基础设施错误",
+                    journal_corrupt:"journal 损坏", unknown:"未知"};
+const $ = (id) => document.getElementById(id);
+let pollTimer = null, currentRun = null;
+
+async function jget(url) { const r = await fetch(url); return {status: r.status, body: await r.json()}; }
+
+function fmtState(s) {
+  const t = STATE_TEXT[s] || s || "—";
+  return `<span class="statechip state-${s||'unknown'}">${t}</span>`;
+}
+
+async function loadProblems() {
+  const {body} = await jget("/api/problems");
+  const lv = $("level"), pb = $("problem");
+  lv.innerHTML = ""; pb.innerHTML = "";
+  (body.levels || []).forEach(l => {
+    const o = document.createElement("option");
+    o.value = l.level; o.textContent = `Level ${l.level}（${l.problems.length} 题）`;
+    lv.appendChild(o);
+  });
+  const fill = () => {
+    const level = (body.levels || []).find(l => String(l.level) === lv.value);
+    pb.innerHTML = "";
+    (level ? level.problems : []).forEach(p => {
+      const o = document.createElement("option");
+      o.value = p.spec; o.textContent = p.label; pb.appendChild(o);
+    });
+    const p40 = [...pb.options].find(o => o.value === "kernelbench:l1:40");
+    if (p40) pb.value = "kernelbench:l1:40";
+  };
+  lv.onchange = fill; fill();
+}
+
+async function loadRuns() {
+  const {body} = await jget("/api/runs");
+  const tb = $("runs-tbody"); tb.innerHTML = "";
+  (body.runs || []).forEach(r => {
+    const tr = document.createElement("tr");
+    tr.className = "click";
+    tr.innerHTML = `<td class="mono">${r.run_id}</td><td>${r.mode || "—"}</td>
+                    <td>${fmtState(r.state)}${r.champion ? " 🏆" : ""}</td>`;
+    tr.onclick = () => selectRun(r.run_id);
+    tb.appendChild(tr);
+  });
+}
+
+function selectRun(runId) {
+  currentRun = runId;
+  $("cur-id").textContent = runId;
+  pollOnce(); if (!pollTimer) pollTimer = setInterval(pollOnce, 1500);
+}
+
+function budgetBar(el, numEl, used, limit) {
+  if (limit == null || limit === 0) { numEl.textContent = `${used ?? 0}`; return; }
+  const pct = Math.min(100, (used / limit) * 100);
+  el.firstElementChild.style.width = pct.toFixed(1) + "%";
+  numEl.textContent = `${(used ?? 0).toFixed(0)} / ${limit}（${pct.toFixed(0)}%）`;
+}
+
+function stageStrip(progressStage, doneStages) {
+  const strip = $("stages"); strip.innerHTML = "";
+  let hit = false;
+  STAGES.forEach(([key, label]) => {
+    const s = document.createElement("span");
+    s.className = "stage";
+    if (doneStages.includes(key)) s.classList.add("done");
+    if (!hit && progressStage === key) { s.classList.add("active"); hit = true; }
+    s.textContent = label; strip.appendChild(s);
+  });
+  if (!strip.children.length) {
+    strip.innerHTML = '<span class="muted">当前没有运行中的候选。</span>';
+  }
+}
+
+function renderCandidates(cands) {
+  const box = $("cands");
+  if (!cands || !cands.length) { box.innerHTML = '<span class="muted">尚无候选记录。</span>'; return; }
+  box.innerHTML = "";
+  cands.forEach(c => {
+    const d = document.createElement("div");
+    d.className = "cand";
+    const chip = c.status === "promoted" ? '<span class="chip ok">晋升</span>'
+               : c.status === "retained" ? '<span class="chip muted">保留 incumbent</span>'
+               : c.status === "failed" ? '<span class="chip bad">失败</span>'
+               : c.status === "rejected" ? '<span class="chip warn">策略拒绝</span>'
+               : `<span class="chip muted">${c.status || "—"}</span>`;
+    const stageChip = `<span class="chip accent">${(STAGES.find(s => s[0] === c.stage) || [0, c.stage])[1] || c.stage}</span>`;
+    let speed = "";
+    if (c.ratio_ci_95 && c.ratio_ci_95.length === 2) {
+      const [lo, hi] = c.ratio_ci_95;
+      speed = `<div class="speed">加速比（batch 级 bootstrap CI）：<b>${lo.toFixed(2)}× – ${hi.toFixed(2)}×</b>
+               <div class="bar"><i style="width:${Math.min(100, lo * 25)}%"></i></div></div>`;
+    }
+    d.innerHTML = `<div class="head"><span class="name mono">${c.candidate || ""}</span>
+                   ${stageChip}${chip}</div>
+                   <div class="detail">${(c.detail || "").toString().slice(0, 400)}</div>${speed}`;
+    box.appendChild(d);
+  });
+}
+
+function renderChampion(champ, candidates) {
+  const panel = $("champ-panel");
+  if (!champ || !champ.candidate_sha256) { panel.style.display = "none"; return; }
+  panel.style.display = "";
+  const rec = (candidates || []).find(c => c.status === "promoted");
+  let ci = "";
+  if (rec && rec.ratio_ci_95) {
+    ci = `加速比 CI：<b>${rec.ratio_ci_95[0].toFixed(3)}× – ${rec.ratio_ci_95[1].toFixed(3)}×</b>`;
+  }
+  $("champ-body").innerHTML =
+    `<div class="mono">sha256 ${champ.candidate_sha256}</div>
+     <div class="muted mono">${champ.path || ""}</div><div>${ci}</div>`;
+}
+
+async function pollOnce() {
+  if (!currentRun) return;
+  const {status, body} = await jget(`/api/runs/${currentRun}`);
+  if (status !== 200) { $("cur-state").outerHTML = `<span class="statechip" id="cur-state">无法读取</span>`; return; }
+  $("cur-state").outerHTML = `<span class="statechip state-${body.state}" id="cur-state">${STATE_TEXT[body.state] || body.state}</span>`;
+  const cfg = (body.job || {}).config || {};
+  $("cur-mode").textContent = modeText((body.job || {}).mode) + (cfg.problem ? ` · ${cfg.problem}` : "");
+  const b = body.budget || {};
+  budgetBar($("gpu-bar"), $("gpu-num"), b.settled_gpu_seconds, b.gpu_seconds_limit);
+  budgetBar($("tok-bar"), $("tok-num"), b.settled_tokens, b.tokens_limit);
+  $("cur-error").textContent = body.error_tail ? body.error_tail.slice(-300) : "";
+
+  if (body.in_flight && body.in_flight.length) {
+    const name = body.in_flight[body.in_flight.length - 1];
+    const prog = body.progress[name];
+    const done = prog ? STAGES.slice(0, STAGES.findIndex(s => s[0] === prog)).map(s => s[0]) : [];
+    stageStrip(prog, done);
+  } else stageStrip(null, []);
+
+  renderCandidates(body.candidates);
+  renderChampion(body.champion, body.candidates);
+  if (["completed","no_improvement","budget_exhausted","infra_error","journal_corrupt"].includes(body.state)) {
+    clearInterval(pollTimer); pollTimer = null; loadRuns();
+  }
+}
+
+function modeText(m) {
+  return {live:"真实模型", "demo-correct":"演示·正确候选", "demo-wrong":"演示·错误候选"}[m] || m || "";
+}
+
+$("start").onclick = async () => {
+  $("formmsg").textContent = "";
+  const payload = {
+    mode: $("mode").value,
+    problem: $("problem").value,
+    model: $("model").value,
+    base_url: $("baseurl").value,
+    api_key: $("apikey").value,
+    max_candidates: +$("maxc").value,
+    max_repair_rounds: +$("maxr").value,
+    gpu_budget_seconds: +$("gpub").value,
+    token_budget: +$("tokb").value,
+  };
+  const r = await fetch("/api/runs", {method: "POST",
+    headers: {"Content-Type": "application/json"}, body: JSON.stringify(payload)});
+  const body = await r.json();
+  if (r.status !== 200) { $("formmsg").textContent = body.error || `HTTP ${r.status}`; return; }
+  $("apikey").value = "";
+  selectRun(body.run_id); loadRuns();
+};
+
+(async () => {
+  const h = await jget("/api/health");
+  $("gpu-badge").textContent = h.body.gpu_device || "GPU: 未知";
+  await loadProblems(); await loadRuns();
+})();
+</script>
+</body>
+</html>

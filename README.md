@@ -40,6 +40,15 @@ kernelagent resume --base-url '...' --output artifacts/alpha/run  # 断点续跑
 退出码：成功 0 / 无改进 1 / 预算耗尽 2 / 配置错误 3 / 基础设施错误 4。
 详见 [Alpha Runbook](docs/alpha-runbook.md)。
 
+## Web 控制台
+
+```bash
+.venv/bin/python -m kernelagent.webapp --port 8501   # http://127.0.0.1:8501
+```
+
+本地网页（标准库实现，零新增依赖）：填写 API Key（仅本机内存）、按 Level/Problem 选择 KernelBench、
+实时展示候选阶段流水与加速比 CI、预算进度与历史运行。见 [docs/web-ui.md](docs/web-ui.md)。
+
 ## 快速自检
 
 已有 Git 与 uv 0.12.13 时，在仓库根目录运行：

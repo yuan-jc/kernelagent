@@ -19,7 +19,6 @@ import argparse
 import json
 from pathlib import Path
 
-from kernelagent.adapters.models.client import ModelClient, ModelRequest, ModelResponse, ModelUsage
 from kernelagent.config import default_generator
 from kernelagent.optimization import (
     OptimizationConfig,
@@ -32,24 +31,7 @@ SNAPSHOT_DEFAULT = Path("research/sources/ScalingIntelligence__KernelBench")
 FIXTURES_DEFAULT = Path("configs/kernelbench/eval-fixtures")
 
 
-class FixedCandidateClient(ModelClient):
-    """Offline stand-in for the provider: always returns the same frozen
-    candidate. Used ONLY for U1/U2 loop proofs - never report these runs
-    as LIVE_MODEL acceptance."""
-
-    def __init__(self, source: str):
-        self._source = source
-        self.calls = 0
-
-    def complete(self, request: ModelRequest) -> ModelResponse:
-        self.calls += 1
-        return ModelResponse(
-            request_sha256=request.request_sha256,
-            model_id=request.model_id,
-            content=json.dumps({"code": self._source}),
-            finish_reason="stop",
-            usage=ModelUsage(prompt_tokens=1, completion_tokens=1),
-        )
+from kernelagent.webapp.jobs import FixedCandidateClient  # noqa: E402
 
 
 def main() -> int:
@@ -136,7 +118,7 @@ def main() -> int:
     return code
 
 
-def _generator_for(config: OptimizationConfig, client: ModelClient):
+def _generator_for(config: OptimizationConfig, client: object):
     from kernelagent.adapters.models.costing import CostLedger
     from kernelagent.adapters.models.generation import CandidateGenerator
 

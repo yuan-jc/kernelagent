@@ -24,6 +24,7 @@ import hashlib
 import json
 import re
 import subprocess
+import time
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -243,7 +244,7 @@ def optimize(
     gpu_device = config.gpu_device or default_gpu_device()
 
     if generator is None:
-        generator = default_generator(config)
+        generator = default_generator(config.base_url)
     generate = GenerationPort(generator)
     if evaluate is None or timing is None or confirm is None:
         real = build_stage_ports(config, spec, problem_path, snapshot_root, gpu_device)
@@ -287,12 +288,22 @@ def optimize(
             json.dumps(record, indent=2, sort_keys=True), encoding="utf-8"
         )
 
+    def _mark_stage(name: str, stage: str) -> None:
+        """Lightweight heartbeat so status readers can show the stage an
+        in-flight candidate is in; the durable record written at the end
+        of the attempt stays the source of truth for outcomes."""
+        (records_dir / f"{name}.progress.json").write_text(
+            json.dumps({"candidate": name, "stage": stage, "ts": time.time()}, sort_keys=True),
+            encoding="utf-8",
+        )
+
     def _load_record(name: str) -> dict | None:
         path = records_dir / f"{name}.json"
         return json.loads(path.read_text(encoding="utf-8")) if path.is_file() else None
 
     def _baseline_action():
         def run() -> dict:
+            _mark_stage("baseline-eager", "timing")
             result = timing(problem_source, "eager")
             batches = list(result.get("batches") or ())
             ok, note = validate_batch_samples(batches, expected_count=len(batches))
@@ -331,6 +342,7 @@ def optimize(
 
         def run() -> dict:
             nonlocal feedback
+            _mark_stage(name, "generate")
             gen = generate(problem_source, config.model_id, feedback)
             if not gen["ok"]:
                 record = {
@@ -343,6 +355,7 @@ def optimize(
                 feedback = _feedback_note("generation", gen["reason"])
                 return {"result_ref": f"{name}:generation-failed", "tokens": gen["tokens"]}
 
+            _mark_stage(name, "policy")
             source = gen["candidate_source"]
             policy = inspect_candidate_policy(source)
             if not policy.allowed:
@@ -359,6 +372,7 @@ def optimize(
                 )
                 return {"result_ref": f"{name}:policy-rejected", "tokens": gen["tokens"]}
 
+            _mark_stage(name, "evaluate")
             evaluation = evaluate(source, name)
             if evaluation.get("adapter_pass") is None:
                 # The evaluator itself failed to produce a verdict: this is
@@ -391,6 +405,7 @@ def optimize(
                 feedback = _feedback_note("evaluate", reason)
                 return {"result_ref": f"{name}:eval-failed", "tokens": gen["tokens"]}
 
+            _mark_stage(name, "correctness_pro")
             pro_note = "not_run"
             pro_ok = True
             if correctness_pro is not None:
@@ -408,6 +423,7 @@ def optimize(
                 feedback = _feedback_note("correctness_pro", str(pro_note))
                 return {"result_ref": f"{name}:pro-failed", "tokens": gen["tokens"]}
 
+            _mark_stage(name, "timing")
             timing_result = timing(source, "candidate")
             batches = list(timing_result.get("batches") or ())
             ok, note = validate_batch_samples(batches, expected_count=len(batches))
@@ -437,6 +453,7 @@ def optimize(
                 )
                 return {"result_ref": f"{name}:async-leak", "tokens": gen["tokens"]}
 
+            _mark_stage(name, "confirm")
             baseline_record = _load_record("baseline-eager") or {}
             incumbent_batches = list(baseline_record.get("batches_ms") or [])
             facts = CandidateFacts(
@@ -477,6 +494,7 @@ def optimize(
                     "candidate_sha256": gen["candidate_sha256"],
                     "champion_path": str(champion_file),
                     "ratio_ci_95": list(decision.ratio_ci_95 or ()),
+                    "candidate_batches_ms": batches,
                 }
                 _persist_record(name, record)
                 feedback = ""
@@ -491,6 +509,7 @@ def optimize(
                 "status": "retained",
                 "detail": decision.reason,
                 "candidate_sha256": gen["candidate_sha256"],
+                "candidate_batches_ms": batches,
             }
             _persist_record(name, record)
             feedback = _feedback_note("confirm", decision.reason)
@@ -540,7 +559,9 @@ def optimize(
 
     durable = reconstruct_budget(orchestrator.journal.entries)
     candidate_records = [
-        _load_record(path.stem) for path in sorted(records_dir.glob("candidate-*.json"))
+        _load_record(path.stem)
+        for path in sorted(records_dir.glob("candidate-*.json"))
+        if not path.name.endswith(".progress.json")
     ]
     report_payload = {
         "protocol": OPTIMIZATION_PROTOCOL,
