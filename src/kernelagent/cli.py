@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -78,6 +79,77 @@ def _probe_command(args: argparse.Namespace) -> int:
     return code if code in (0, 1) else 1
 
 
+def _optimize_arguments(parser: argparse.ArgumentParser, *, resume_default: bool = False) -> None:
+    parser.add_argument("--problem", default="kernelbench:l1:40", help="e.g. kernelbench:l1:40")
+    parser.add_argument("--backend", default="triton", help="candidate backend (triton)")
+    parser.add_argument("--model", default="glm-4.5", help="provider model id")
+    parser.add_argument(
+        "--base-url",
+        dest="base_url",
+        default=os.environ.get("MODEL_PROVIDER_BASE_URL", ""),
+        help="OpenAI-compatible base URL (or MODEL_PROVIDER_BASE_URL)",
+    )
+    parser.add_argument("--max-candidates", type=int, default=5)
+    parser.add_argument("--max-repair-rounds", type=int, default=2)
+    parser.add_argument("--gpu-budget-seconds", type=float, default=1800.0)
+    parser.add_argument("--token-budget", type=int, default=200000)
+    parser.add_argument("--output", type=Path, default=Path("artifacts/alpha/run"))
+    parser.add_argument("--snapshot-root", type=Path, default=None)
+    parser.add_argument("--gpu-device", default=None, help="CDI device, e.g. nvidia.com/gpu=GPU-…")
+    parser.add_argument("--resume", action="store_true", default=resume_default)
+
+
+def _run_optimize(args: argparse.Namespace) -> int:
+    from kernelagent.config import API_KEY_ENV
+    from kernelagent.optimization import (
+        OptimizationConfig,
+        OptimizationConfigError,
+        optimize,
+        parse_exit_code,
+        run_status,
+    )
+
+    if args.command == "status":
+        try:
+            print(json.dumps(run_status(args.output), indent=2, sort_keys=True))
+            return 0
+        except OptimizationConfigError as exc:
+            print(f"config error: {exc}")
+            return 3
+    if args.command == "resume" and not args.resume:
+        args.resume = True
+    if not args.base_url:
+        print(
+            "config error: --base-url (or MODEL_PROVIDER_BASE_URL) is required; "
+            f"the credential goes in {API_KEY_ENV}"
+        )
+        return 3
+    config = OptimizationConfig(
+        problem=args.problem,
+        backend=args.backend,
+        model_id=args.model,
+        base_url=args.base_url,
+        max_candidates=args.max_candidates,
+        max_repair_rounds=args.max_repair_rounds,
+        gpu_budget_seconds=args.gpu_budget_seconds,
+        token_budget=args.token_budget,
+        output=args.output,
+        resume=args.resume,
+        snapshot_root=args.snapshot_root,
+        gpu_device=args.gpu_device,
+    )
+    try:
+        result = optimize(config)
+    except OptimizationConfigError as exc:
+        print(f"config error: {exc}")
+        return 3
+    print(
+        f"state={result.state} champion={result.champion_sha256 or 'none'} "
+        f"report={result.report_path}"
+    )
+    return parse_exit_code(result)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="kernelagent")
     parser.add_argument("--version", action="version", version=__version__)
@@ -114,6 +186,16 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="Optionally record the report into an EvidenceStore at this root",
     )
+    optimize = commands.add_parser(
+        "optimize", help="Optimize one pinned KernelBench problem (generate/eval/time/promote)"
+    )
+    _optimize_arguments(optimize)
+    resume = commands.add_parser(
+        "resume", help="Resume an interrupted optimize run from its durable journal"
+    )
+    _optimize_arguments(resume, resume_default=True)
+    status = commands.add_parser("status", help="Show a run's durable state and budget")
+    status.add_argument("--output", type=Path, required=True, help="Run output directory")
     args = parser.parse_args(argv)
     if args.command == "bench":
         summary, exit_code = run_verify(args.root, args.manifest, args.dev_manifest)
@@ -121,6 +203,8 @@ def main(argv: list[str] | None = None) -> int:
         return exit_code
     if args.command == "probe":
         return _probe_command(args)
+    if args.command in ("optimize", "resume", "status"):
+        return _run_optimize(args)
     if args.timeout <= 0:
         parser.error("--timeout must be greater than zero")
     report = run_checks(args.tests, args.output, args.timeout)
