@@ -332,3 +332,39 @@ def test_models_import_no_provider_sdks_or_gpu_stack():
     )
     run = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True)
     assert run.returncode == 0, run.stderr
+
+
+# --- Provider URL normalization and self-explanatory HTTP errors ---------
+
+
+def test_normalize_base_url_trims_user_paste():
+    from kernelagent.adapters.models.openai_compat import normalize_base_url
+
+    assert normalize_base_url(" https://api.deepseek.com ") == "https://api.deepseek.com"
+    assert (
+        normalize_base_url("https://api.deepseek.com/v1/chat/completions")
+        == "https://api.deepseek.com/v1"
+    )
+    assert normalize_base_url('"https://x/v1/"') == "https://x/v1"
+    assert normalize_base_url("https://x/v1") == "https://x/v1"
+
+
+def test_list_models_surfaces_provider_reason(monkeypatch):
+    import io
+    import urllib.error
+
+    from kernelagent.adapters.models.errors import PermanentModelError
+    from kernelagent.adapters.models.openai_compat import list_models
+
+    def raise_http_error(request, timeout):
+        raise urllib.error.HTTPError(
+            url="https://api.deepseek.com/models",
+            code=401,
+            msg="Unauthorized",
+            hdrs=None,
+            fp=io.BytesIO(b'{"error":{"message":"Your api key is invalid"}}'),
+        )
+
+    monkeypatch.setattr("urllib.request.urlopen", raise_http_error)
+    with pytest.raises(PermanentModelError, match="401.*api key is invalid"):
+        list_models("https://api.deepseek.com", "sk-wrong")

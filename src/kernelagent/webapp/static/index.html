@@ -112,7 +112,8 @@
         <div><label>候选数上限</label><input id="maxc" type="number" value="5" min="1" max="20"></div>
       </div>
       <label>Provider Base URL</label>
-      <input id="baseurl" placeholder="https://.../v1 （OpenAI 兼容）">
+      <input id="baseurl" placeholder="https://api.deepseek.com 或 https://open.bigmodel.cn/api/paas/v4">
+      <div class="hint" id="baseurl-hint">DeepSeek 直接填 https://api.deepseek.com；GLM 填 https://open.bigmodel.cn/api/paas/v4</div>
       <label>API Key（仅本机内存，不落盘/不进日志）</label>
       <input id="apikey" type="password" placeholder="sk-...">
       <button type="button" class="mini" id="fetch-models">用此 Key 拉取可用模型列表</button>

@@ -22,6 +22,30 @@ from kernelagent.adapters.models.errors import PermanentModelError, TransientMod
 TRANSIENT_STATUS = {408, 409, 425, 429, 500, 502, 503, 504}
 
 
+def normalize_base_url(base_url: str) -> str:
+    """Trim user-pasted provider URLs: surrounding whitespace/quotes,
+    trailing slashes, and a trailing /chat/completions suffix (users often
+    paste the full chat URL from provider docs)."""
+    url = base_url.strip().strip('"').strip("'").rstrip("/")
+    if url.endswith("/chat/completions"):
+        url = url[: -len("/chat/completions")]
+    return url
+
+
+def _http_error_detail(exc: "urllib.error.HTTPError", limit: int = 200) -> str:
+    try:
+        return exc.read(limit).decode("utf-8", "replace").strip()
+    except Exception:  # noqa: BLE001 - detail is best-effort only
+        return ""
+
+
+def _permanent_message(exc: "urllib.error.HTTPError") -> str:
+    detail = _http_error_detail(exc)
+    if detail:
+        return f"provider HTTP {exc.code}: {detail}"
+    return f"provider HTTP {exc.code}"
+
+
 class OpenAICompatModelClient:
     def __init__(
         self,
@@ -34,7 +58,7 @@ class OpenAICompatModelClient:
             raise PermanentModelError("provider base_url is not configured")
         if not isinstance(api_key, str) or not api_key.strip():
             raise PermanentModelError("provider api_key is not configured")
-        self._base_url = base_url.strip().rstrip("/")
+        self._base_url = normalize_base_url(base_url)
         self._api_key = api_key
         self._timeout = timeout_seconds
         self._sleep = sleep
@@ -113,7 +137,7 @@ def list_models(base_url: str, api_key: str, timeout_seconds: float = 30.0) -> l
         raise PermanentModelError("provider base_url is not configured")
     if not isinstance(api_key, str) or not api_key.strip():
         raise PermanentModelError("provider api_key is not configured")
-    url = f"{base_url.strip().rstrip('/')}/models"
+    url = f"{normalize_base_url(base_url)}/models"
     request_obj = urllib.request.Request(
         url, headers={"Authorization": f"Bearer {api_key}"}, method="GET"
     )
@@ -123,7 +147,7 @@ def list_models(base_url: str, api_key: str, timeout_seconds: float = 30.0) -> l
     except urllib.error.HTTPError as exc:
         if exc.code in TRANSIENT_STATUS:
             raise TransientModelError(f"provider HTTP {exc.code}") from exc
-        raise PermanentModelError(f"provider HTTP {exc.code}") from exc
+        raise PermanentModelError(_permanent_message(exc)) from exc
     except (urllib.error.URLError, TimeoutError, OSError) as exc:
         raise TransientModelError(f"provider transport failed: {exc}") from exc
     data = payload.get("data") if isinstance(payload, dict) else None
