@@ -668,7 +668,10 @@ def run_baseline_profile_for_run(
 class GenerationPort:
     """Calls the CandidateGenerator and reports the per-call token delta
     for budget settlement - cumulative ledger totals must never be
-    settled twice across attempts."""
+    settled twice across attempts. The request content hash travels with
+    every outcome (RV03): candidate records persist it as the durable
+    request-identity evidence, so a resumed run's next request can be
+    verified against the uninterrupted path from disk alone."""
 
     def __init__(self, generator: CandidateGenerator):
         self._generator = generator
@@ -676,6 +679,7 @@ class GenerationPort:
 
     def __call__(self, problem_source: str, model_id: str, seed_note: str) -> dict:
         outcome, _request = self._generator.generate(problem_source, model_id, seed_note)
+        request_sha256 = outcome.request_sha256
         total = self._generator.ledger.total_tokens()
         tokens = total - self._billed_tokens
         self._billed_tokens = total
@@ -686,6 +690,7 @@ class GenerationPort:
                 "reason": outcome.reason,
                 "candidate_source": None,
                 "candidate_sha256": None,
+                "request_sha256": request_sha256,
                 "tokens": tokens,
             }
         assert isinstance(outcome, GenerationSuccess)
@@ -695,6 +700,7 @@ class GenerationPort:
             "reason": "",
             "candidate_source": outcome.candidate_source,
             "candidate_sha256": outcome.candidate_sha256,
+            "request_sha256": request_sha256,
             "tokens": tokens,
         }
 
@@ -1079,6 +1085,7 @@ def _optimize_under_lock(
                     "status": "failed",
                     "detail": gen["reason"][:CHAMPION_TRUNC],
                     "method_id": selected_method_id,
+                    "request_sha256": gen["request_sha256"],
                 }
                 _persist_record(name, record)
                 attempt_history.append(
@@ -1096,13 +1103,24 @@ def _optimize_under_lock(
             source = gen["candidate_source"]
             policy = inspect_candidate_policy(source)
             if not policy.allowed:
+                # Bounded one-line note (RV03 two-path parity): the resume
+                # path rebuilds the next request's feedback text and the
+                # planner's attempt note from the persisted record's
+                # ``detail`` string, so it must be exactly the string the
+                # uninterrupted run feeds back. The structured violations
+                # stay alongside for evidence.
+                policy_note = ("Policy violations: " + "; ".join(policy.violations))[
+                    :CHAMPION_TRUNC
+                ]
                 record = {
                     "candidate": name,
                     "stage": "policy",
                     "status": "rejected",
-                    "detail": list(policy.violations)[:8],
+                    "detail": policy_note,
+                    "violations": list(policy.violations)[:8],
                     "candidate_sha256": gen["candidate_sha256"],
                     "method_id": selected_method_id,
+                    "request_sha256": gen["request_sha256"],
                 }
                 _persist_record(name, record)
                 attempt_history.append(
@@ -1110,12 +1128,10 @@ def _optimize_under_lock(
                         method_id=selected_method_id,
                         stage="policy",
                         failure_class="policy",
-                        note="Policy violations: " + "; ".join(policy.violations),
+                        note=policy_note,
                     )
                 )
-                feedback = _feedback_note(
-                    "policy", "Policy violations: " + "; ".join(policy.violations)
-                )
+                feedback = _feedback_note("policy", policy_note)
                 return {"result_ref": f"{name}:policy-rejected", "tokens": gen["tokens"]}
 
             _mark_stage(name, PipelineStage.EVALUATE.value)
@@ -1130,6 +1146,7 @@ def _optimize_under_lock(
                     "status": "infra_error",
                     "detail": str(evaluation.get("stderr_tail", ""))[:CHAMPION_TRUNC],
                     "candidate_sha256": gen["candidate_sha256"],
+                    "request_sha256": gen["request_sha256"],
                 }
                 _persist_record(name, record)
                 return {"result_ref": f"{name}:eval-infra", "tokens": gen["tokens"]}
@@ -1147,6 +1164,7 @@ def _optimize_under_lock(
                     "detail": reason[:CHAMPION_TRUNC],
                     "candidate_sha256": gen["candidate_sha256"],
                     "method_id": selected_method_id,
+                    "request_sha256": gen["request_sha256"],
                 }
                 _persist_record(name, record)
                 attempt_history.append(
@@ -1174,6 +1192,7 @@ def _optimize_under_lock(
                     "detail": str(pro_note)[:CHAMPION_TRUNC],
                     "candidate_sha256": gen["candidate_sha256"],
                     "method_id": selected_method_id,
+                    "request_sha256": gen["request_sha256"],
                 }
                 _persist_record(name, record)
                 attempt_history.append(
@@ -1200,6 +1219,7 @@ def _optimize_under_lock(
                     "detail": reason,
                     "candidate_sha256": gen["candidate_sha256"],
                     "method_id": selected_method_id,
+                    "request_sha256": gen["request_sha256"],
                 }
                 _persist_record(name, record)
                 attempt_history.append(
@@ -1220,6 +1240,7 @@ def _optimize_under_lock(
                     "detail": "async leak integrity check failed",
                     "candidate_sha256": gen["candidate_sha256"],
                     "method_id": selected_method_id,
+                    "request_sha256": gen["request_sha256"],
                 }
                 _persist_record(name, record)
                 attempt_history.append(
@@ -1278,6 +1299,7 @@ def _optimize_under_lock(
                     "ratio_ci_95": list(decision.ratio_ci_95 or ()),
                     "candidate_batches_ms": batches,
                     "method_id": selected_method_id,
+                    "request_sha256": gen["request_sha256"],
                 }
                 _persist_record(name, record)
                 attempt_history.append(
@@ -1303,6 +1325,7 @@ def _optimize_under_lock(
                 "candidate_sha256": gen["candidate_sha256"],
                 "candidate_batches_ms": batches,
                 "method_id": selected_method_id,
+                "request_sha256": gen["request_sha256"],
             }
             _persist_record(name, record)
             attempt_history.append(
