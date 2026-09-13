@@ -55,3 +55,15 @@ def audit_sweep(payload: dict) -> tuple[bool, str]:
     if payload.get("input_restore_events", 0) < 1 and measured:
         return False, "in-place candidates require restored-input evidence"
     return True, ""
+
+
+def cutlass_ok(cutlass: dict) -> bool:
+    """T20 CUTLASS template acceptance: the path counts only when the
+    template compiled, executed, and self-verified (its stdout contains
+    the cutlass-ok marker)."""
+    return (
+        isinstance(cutlass, dict)
+        and cutlass.get("compiled") is True
+        and cutlass.get("ran") is True
+        and "cutlass-ok" in cutlass.get("stdout_tail", "")
+    )
