@@ -40,6 +40,19 @@ kernelagent resume --base-url '...' --output artifacts/alpha/run  # 断点续跑
 退出码：成功 0 / 无改进 1 / 预算耗尽 2 / 配置错误 3 / 基础设施错误 4。
 详见 [Alpha Runbook](docs/alpha-runbook.md)。
 
+所有命令都提供可直接执行的示例、参数单位、默认值和继承规则：
+
+```bash
+kernelagent --help
+kernelagent optimize --help
+kernelagent resume --help
+kernelagent profile --help
+```
+
+其中 `--max-repair-rounds` 是允许失败/拒绝的候选数量，不会额外增加
+`--max-candidates`；`resume` 未显式指定的运行参数从 `run_manifest.json` 恢复。
+模型密钥只通过 `MODEL_PROVIDER_API_KEY` 提供，不应写入命令参数或运行目录。
+
 ## Web 控制台
 
 ```bash

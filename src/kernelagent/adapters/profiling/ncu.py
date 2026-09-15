@@ -19,7 +19,9 @@ Two strictly separated halves:
 import csv
 import io
 import json
+import shlex
 import subprocess
+import uuid
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -94,6 +96,9 @@ class LaunchMetrics:
 
 
 _SKIP_COLUMNS = frozenset({"ID", "Kernel Name", "Grid Size", "Block Size", "Device", "CC"})
+_UNAVAILABLE_VALUES = frozenset(
+    {"n/a", "na", "not available", "not applicable", "unavailable", "--", "-"}
+)
 
 
 def parse_raw_csv(csv_text: str) -> list[LaunchMetrics]:
@@ -125,7 +130,11 @@ def parse_raw_csv(csv_text: str) -> list[LaunchMetrics]:
             if index >= len(row) or name in _SKIP_COLUMNS:
                 continue
             raw = row[index].strip()
-            if raw == "":
+            # Nsight Compute emits textual sentinels for metrics that are
+            # unsupported or inapplicable to a launch.  Treating those as
+            # measurements makes a partial profile look complete and can
+            # send the planner down the wrong optimization axis.
+            if raw == "" or raw.casefold() in _UNAVAILABLE_VALUES:
                 continue
             unit = units[index].strip() if index < len(units) else ""
             entry: dict = {"unit": unit or None}
@@ -204,46 +213,60 @@ def profile_in_diagnostic_container(
     output_path = Path(output_path).resolve()
     workdir = output_path.parent
     workdir.mkdir(parents=True, exist_ok=True)
+    capture_id = uuid.uuid4().hex
+    temporary_name = f".{output_path.name}.{capture_id}.ncu-rep"
+    temporary_path = workdir / temporary_name
+    container_binary = f"/indata/{binary_path.name}"
+    container_report = f"/out/{temporary_name}"
     script = (
-        f"mkdir -p /work && cp {binary_path} /work/ && cd /work\n"
-        f"{ncu_container_path} --set {set_name} -o report -f ./{binary_path.name}\n"
-        f"cp report.ncu-rep {output_path}\n"
+        "set -eu\n"
+        "mkdir -p /work\n"
+        f"cp {shlex.quote(container_binary)} /work/kernel\n"
+        "cd /work\n"
+        f"{shlex.quote(ncu_container_path)} --set {shlex.quote(set_name)} "
+        f"-o /tmp/report -f ./kernel\n"
+        f"cp /tmp/report.ncu-rep {shlex.quote(container_report)}\n"
     )
-    completed = subprocess.run(
-        [
-            *docker_command,
-            "run",
-            "--rm",
-            "--privileged",
-            "--network",
-            "none",
-            "--device",
-            gpu_device,
-            "-v",
-            f"{Path(toolkit_root).resolve()}:/cuda:ro",
-            "-v",
-            f"{binary_path.parent}:/indata:ro",
-            "-v",
-            f"{workdir}:/out",
-            image,
-            "bash",
-            "-c",
-            script.replace(str(binary_path), f"/indata/{binary_path.name}").replace(
-                str(output_path), "/out/" + output_path.name
-            ),
-        ],
-        capture_output=True,
-        text=True,
-        timeout=600,
-        check=False,
-    )
-    blocker = detect_profiling_blocker(completed.stderr + completed.stdout)
-    if blocker:
-        raise RuntimeError(f"profiling blocked: {blocker}")
-    if not output_path.is_file():
-        raise RuntimeError(
-            f"report not produced (rc={completed.returncode}): {completed.stderr[-300:]}"
+    try:
+        completed = subprocess.run(
+            [
+                *docker_command,
+                "run",
+                "--rm",
+                "--privileged",
+                "--network",
+                "none",
+                "--device",
+                gpu_device,
+                "-v",
+                f"{Path(toolkit_root).resolve()}:/cuda:ro",
+                "-v",
+                f"{binary_path.parent}:/indata:ro",
+                "-v",
+                f"{workdir}:/out",
+                image,
+                "bash",
+                "-c",
+                script,
+            ],
+            capture_output=True,
+            text=True,
+            timeout=600,
+            check=False,
         )
+        combined = completed.stderr + completed.stdout
+        blocker = detect_profiling_blocker(combined)
+        if blocker:
+            raise RuntimeError(f"profiling blocked: {blocker}")
+        if completed.returncode != 0:
+            raise RuntimeError(
+                f"profiling failed rc={completed.returncode}: {completed.stderr[-300:]}"
+            )
+        if not temporary_path.is_file() or temporary_path.stat().st_size == 0:
+            raise RuntimeError("report not produced by this profiling attempt")
+        temporary_path.replace(output_path)
+    finally:
+        temporary_path.unlink(missing_ok=True)
     return output_path
 
 

@@ -17,6 +17,7 @@ candidate stdout, exit code, and any self-written claims are ignored."""
 
 import hashlib
 import json
+import math
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -31,6 +32,10 @@ EVAL_MEMORY_BYTES = 8 * 1024 * 1024 * 1024
 EVAL_TMP_TMPFS_BYTES = 512 * 1024 * 1024
 EVAL_OUTPUT_LIMIT_BYTES = 128 * 1024 * 1024
 _DRIVER_PATH = Path(__file__).resolve().parents[4] / "configs" / "kernelbench" / "eval_driver.py"
+_DIAGNOSTIC_STRING_LIMIT = 4096
+_DIAGNOSTIC_COLLECTION_LIMIT = 64
+_DIAGNOSTIC_DEPTH_LIMIT = 4
+_TRUNCATION_SUFFIX = "...[truncated]"
 
 
 @dataclass(frozen=True, slots=True)
@@ -98,6 +103,64 @@ def derive_upstream_verdict(
         return None, None, None, False
     adapter_pass = compiled and correctness
     return adapter_pass, compiled, correctness, True
+
+
+def _bounded_json_value(value, *, depth: int = 0):
+    """Return a deterministic, bounded JSON-safe diagnostic value.
+
+    The evaluator result normally came from JSON already. This defensive
+    normalization keeps unexpected adapter doubles or future upstream fields
+    from growing candidate records and model prompts without turning metadata
+    into a verdict source.
+    """
+    if value is None or isinstance(value, (bool, int)):
+        return value
+    if isinstance(value, float):
+        return value if math.isfinite(value) else str(value)
+    if isinstance(value, str):
+        if len(value) <= _DIAGNOSTIC_STRING_LIMIT:
+            return value
+        keep = _DIAGNOSTIC_STRING_LIMIT - len(_TRUNCATION_SUFFIX)
+        return value[:keep] + _TRUNCATION_SUFFIX
+    if depth >= _DIAGNOSTIC_DEPTH_LIMIT:
+        return "...[max-depth]"
+    if isinstance(value, list):
+        bounded = [
+            _bounded_json_value(item, depth=depth + 1)
+            for item in value[:_DIAGNOSTIC_COLLECTION_LIMIT]
+        ]
+        if len(value) > _DIAGNOSTIC_COLLECTION_LIMIT:
+            bounded.append("...[truncated-items]")
+        return bounded
+    if isinstance(value, dict):
+        bounded = {}
+        for key, item in list(value.items())[:_DIAGNOSTIC_COLLECTION_LIMIT]:
+            if not isinstance(key, str):
+                continue
+            bounded_key = _bounded_json_value(key)
+            bounded[bounded_key] = _bounded_json_value(item, depth=depth + 1)
+        if len(value) > _DIAGNOSTIC_COLLECTION_LIMIT:
+            bounded["...[truncated-keys]"] = len(value) - _DIAGNOSTIC_COLLECTION_LIMIT
+        return bounded
+    return f"<unsupported {type(value).__name__}>"
+
+
+def extract_upstream_diagnostics(result_payload: dict | None) -> dict:
+    """Extract bounded diagnostic metadata without affecting the verdict.
+
+    KernelBench owns compilation and correctness decisions. Metadata is
+    retained only as quoted evidence for records and repair feedback.
+    """
+    if not isinstance(result_payload, dict):
+        return {}
+    upstream = result_payload.get("upstream")
+    if not isinstance(upstream, dict):
+        return {}
+    metadata = upstream.get("metadata")
+    if not isinstance(metadata, dict):
+        return {}
+    bounded = _bounded_json_value(metadata)
+    return bounded if isinstance(bounded, dict) else {}
 
 
 def _sha256_bytes(data: bytes) -> str:
@@ -184,6 +247,7 @@ def evaluate_case(
         else:
             parse_note = "result.json missing from output directory"
     adapter_pass, compiled, correctness, consistent = derive_upstream_verdict(result_payload)
+    upstream_metadata = extract_upstream_diagnostics(result_payload)
     if parse_note:
         consistent = False
     if outcome.status != "completed":
@@ -215,6 +279,7 @@ def evaluate_case(
             "parse_note": parse_note,
             "staged_files_sha256": staged,
             "stderr_tail": outcome.stderr_tail[-1500:],
+            "upstream_metadata": upstream_metadata,
             "candidate_trust": "cooperative",
             "adversarially_secure": False,
             "policy_allowed": policy.allowed,

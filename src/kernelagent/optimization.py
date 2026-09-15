@@ -77,6 +77,7 @@ from kernelagent.adapters.models.generation import (
     inspect_candidate_policy,
 )
 from kernelagent.adapters.profiling.pipeline import (
+    BASELINE_EVIDENCE_NAME,
     PROFILE_DIR_NAME,
     build_baseline_profiler,
     load_collected_evidence,
@@ -599,6 +600,75 @@ def _feedback_note(stage: str, detail: str) -> str:
     )
 
 
+def _diagnostic_text(value: object, limit: int) -> str:
+    """Compact untrusted evaluator text for a bounded model-facing note."""
+    text = " ".join(str(value or "").split())
+    return text[:limit]
+
+
+def _format_evaluation_failure(evaluation: dict) -> tuple[str, dict]:
+    """Build bounded repair feedback plus structured evaluator evidence.
+
+    Only ``compiled``/``correct`` control the failure outcome. Upstream
+    metadata and stderr are untrusted diagnostic data: useful to the next
+    model attempt, but never allowed to certify or promote a candidate.
+    """
+    compiled = evaluation.get("compiled")
+    correct = evaluation.get("correct")
+    raw_metadata = evaluation.get("upstream_metadata")
+    metadata = raw_metadata if isinstance(raw_metadata, dict) else {}
+    stderr = _diagnostic_text(evaluation.get("stderr_tail"), 1200)
+
+    if compiled is False:
+        kind = "compilation_error"
+        error_name = _diagnostic_text(
+            metadata.get("compilation_error_name") or "CompilationError", 120
+        )
+        message = _diagnostic_text(metadata.get("compilation_error") or stderr, 1200)
+        summary = f"Compilation failed ({error_name})"
+    elif metadata.get("runtime_error") or metadata.get("runtime_error_name"):
+        kind = "runtime_error"
+        error_name = _diagnostic_text(metadata.get("runtime_error_name") or "RuntimeError", 120)
+        message = _diagnostic_text(metadata.get("runtime_error") or stderr, 1200)
+        summary = f"Runtime failed ({error_name})"
+    elif correct is False:
+        kind = "correctness_error"
+        error_name = "CorrectnessError"
+        issue = _diagnostic_text(metadata.get("correctness_issue"), 800)
+        differences = []
+        for label, key in (
+            ("max_difference", "max_difference"),
+            ("avg_difference", "avg_difference"),
+        ):
+            if key in metadata:
+                differences.append(f"{label}={_diagnostic_text(metadata[key], 120)}")
+        message = "; ".join(part for part in (issue, *differences) if part) or stderr
+        message = _diagnostic_text(message, 1200)
+        summary = "Correctness validation failed"
+    else:
+        kind = "evaluation_error"
+        error_name = "EvaluationError"
+        message = stderr or "upstream evaluator rejected the candidate without a diagnostic"
+        summary = "Evaluation failed"
+
+    diagnostics = {
+        "kind": kind,
+        "compiled": compiled,
+        "correct": correct,
+        "error_name": error_name,
+        "message": message,
+        "upstream_metadata": metadata,
+    }
+    if stderr:
+        diagnostics["stderr_tail"] = stderr
+    quoted_message = json.dumps(message, ensure_ascii=False)
+    reason = (
+        f"upstream evaluator verdict: compiled={compiled} correct={correct}. "
+        f"{summary}. Untrusted diagnostic data: {quoted_message}"
+    )
+    return reason[:CHAMPION_TRUNC], diagnostics
+
+
 def _run_baseline_profile(
     *,
     profiler: object,
@@ -646,7 +716,12 @@ def _run_baseline_profile(
         return {"status": "not_run", "reason": "baseline_not_measured", "evidence_view": None}
     existing = record.get("profile")
     if isinstance(existing, dict) and existing.get("status") == "collected":
-        view = load_collected_evidence(profile_dir)
+        view = load_collected_evidence(
+            profile_dir,
+            evidence_name=str(existing.get("evidence") or BASELINE_EVIDENCE_NAME),
+            expected_sha256=existing.get("evidence_sha256"),
+            expected_problem_sha256=problem_sha256,
+        )
         if view is not None:
             # Resume: evidence already collected; reuse verbatim, no re-run.
             return {
@@ -667,12 +742,46 @@ def _run_baseline_profile(
             ts=time.time(),
         )
         return {"status": "not_run", "reason": "budget_exhausted", "evidence_view": None}
+    attempt_id = uuid.uuid4().hex
+    reservation = float(getattr(profiler, "reservation_gpu_seconds", 0.0) or 0.0)
+    if budget is not None and reservation > 0.0:
+        reserved = budget.try_reserve(
+            journal,
+            PROFILE_ACTION_ID,
+            reservation,
+            0,
+            attempt_id=attempt_id,
+        )
+        if reserved is None:
+            journal.append(
+                "profile_not_run",
+                action_id=PROFILE_ACTION_ID,
+                attempt_id=attempt_id,
+                reason="budget_reservation_failed",
+                detail=f"gpu budget cannot cover profiling reservation of {reservation}s",
+                ts=time.time(),
+            )
+            record["profile"] = {
+                "status": "not_run",
+                "reason": "budget_reservation_failed",
+                "detail": f"gpu budget cannot cover profiling reservation of {reservation}s",
+                "capture": {},
+            }
+            _atomic_write_text(record_path, json.dumps(record, indent=2, sort_keys=True))
+            return {
+                "status": "not_run",
+                "reason": "budget_reservation_failed",
+                "evidence_view": None,
+            }
     journal.append(
         "profile_started",
         action_id=PROFILE_ACTION_ID,
+        attempt_id=attempt_id,
         problem_sha256=problem_sha256,
+        reserved_gpu_seconds=reservation,
         ts=time.time(),
     )
+    profile_started = time.monotonic()
     try:
         outcome = profiler()
     except Exception as exc:  # noqa: BLE001 - profiling must never break the loop
@@ -682,31 +791,52 @@ def _run_baseline_profile(
             "detail": f"{type(exc).__name__}: {exc}",
             "capture": {},
         }
+    elapsed = time.monotonic() - profile_started
+    raw_wall = outcome.get("gpu_wall_seconds")
+    wall = float(raw_wall) if isinstance(raw_wall, (int, float)) else elapsed
+    if not math.isfinite(wall) or wall < 0.0:
+        wall = elapsed
+    # Failed/blocked/timed-out profiling still consumed a GPU lease when its
+    # measured wall time is non-zero. Every attempted profile is settled,
+    # not only successful collections.
+    journal.append(
+        "budget_settled",
+        action_id=PROFILE_ACTION_ID,
+        attempt_id=attempt_id,
+        gpu_seconds=wall,
+        tokens=0,
+        gpu_metering="actual",
+    )
+    if budget is not None:
+        budget.apply_settlement(PROFILE_ACTION_ID, attempt_id, wall, 0)
     capture = outcome.get("capture") or {}
     if outcome.get("status") == "collected":
-        wall = float(outcome.get("gpu_wall_seconds") or 0.0)
-        attempt_id = uuid.uuid4().hex
-        journal.append(
-            "budget_settled",
-            action_id=PROFILE_ACTION_ID,
-            attempt_id=attempt_id,
-            gpu_seconds=wall,
-            tokens=0,
-            # B3 precedent, RV04 label: profiling bills its measured GPU
-            # wall time as an actual, into the same durable budget.
-            gpu_metering="actual",
-        )
-        if budget is not None:
-            budget.apply_settlement(PROFILE_ACTION_ID, attempt_id, wall, 0)
+        view = outcome.get("evidence_view")
+        if (
+            outcome.get("source") != "ncu_profile"
+            or not isinstance(view, dict)
+            or view.get("source") != "ncu_profile"
+            or not view.get("launches")
+        ):
+            outcome = {
+                **outcome,
+                "status": "not_run",
+                "reason": "invalid_profile_evidence",
+                "detail": "profiler returned collected without a valid ncu_profile launch view",
+                "evidence_view": None,
+            }
+    if outcome.get("status") == "collected":
         journal.append(
             "profile_collected",
             action_id=PROFILE_ACTION_ID,
+            attempt_id=attempt_id,
             problem_sha256=problem_sha256,
             capture=capture,
             driver_sha256=outcome.get("driver_sha256"),
             report=f"{PROFILE_DIR_NAME}/{outcome.get('report_path')}",
             report_sha256=outcome.get("report_sha256"),
             evidence=f"{PROFILE_DIR_NAME}/{outcome.get('evidence_path')}",
+            evidence_sha256=outcome.get("evidence_sha256"),
             summary=outcome.get("summary"),
             gpu_wall_seconds=wall,
             billed_gpu_seconds=wall,
@@ -722,6 +852,7 @@ def _run_baseline_profile(
             "report": f"{PROFILE_DIR_NAME}/{outcome.get('report_path')}",
             "report_sha256": outcome.get("report_sha256"),
             "evidence": f"{PROFILE_DIR_NAME}/{outcome.get('evidence_path')}",
+            "evidence_sha256": outcome.get("evidence_sha256"),
             "summary": outcome.get("summary"),
             "gpu_wall_seconds": wall,
             "billed_against_gpu_budget": True,
@@ -731,9 +862,12 @@ def _run_baseline_profile(
     journal.append(
         "profile_not_run",
         action_id=PROFILE_ACTION_ID,
+        attempt_id=attempt_id,
         reason=outcome.get("reason"),
         detail=str(outcome.get("detail"))[:CHAMPION_TRUNC],
         capture=capture,
+        gpu_wall_seconds=wall,
+        billed_gpu_seconds=wall,
         ts=time.time(),
     )
     record["profile"] = {
@@ -741,6 +875,8 @@ def _run_baseline_profile(
         "reason": outcome.get("reason"),
         "detail": str(outcome.get("detail"))[:CHAMPION_TRUNC],
         "capture": capture,
+        "gpu_wall_seconds": wall,
+        "billed_against_gpu_budget": True,
     }
     _atomic_write_text(record_path, json.dumps(record, indent=2, sort_keys=True))
     return outcome
@@ -1346,17 +1482,13 @@ def _optimize_under_lock(
                     "tokens": gen["tokens"],
                 }
             if evaluation.get("adapter_pass") is not True:
-                reason = (
-                    f"upstream evaluator verdict: compiled={evaluation.get('compiled')} "
-                    f"correct={evaluation.get('correct')} "
-                    f"metadata={str(evaluation.get('upstream_metadata'))[:200]} "
-                    f"stderr_tail={str(evaluation.get('stderr_tail'))[:400]}"
-                )
+                reason, evaluation_diagnostics = _format_evaluation_failure(evaluation)
                 record = {
                     "candidate": name,
                     "stage": "evaluate",
                     "status": "failed",
-                    "detail": reason[:CHAMPION_TRUNC],
+                    "detail": reason,
+                    "evaluation_diagnostics": evaluation_diagnostics,
                     "candidate_sha256": gen["candidate_sha256"],
                     "method_id": selected_method_id,
                     "request_sha256": gen["request_sha256"],
@@ -1367,7 +1499,7 @@ def _optimize_under_lock(
                         method_id=selected_method_id,
                         stage="evaluate",
                         failure_class="correctness",
-                        note=reason[:CHAMPION_TRUNC],
+                        note=reason,
                     )
                 )
                 feedback = _feedback_note("evaluate", reason)
@@ -1652,6 +1784,7 @@ def _optimize_under_lock(
             "reason": profile_field.get("reason"),
             "report": profile_field.get("report"),
             "evidence": profile_field.get("evidence"),
+            "evidence_sha256": profile_field.get("evidence_sha256"),
             "summary": profile_field.get("summary"),
             "gpu_wall_seconds": profile_field.get("gpu_wall_seconds"),
             "billed_against_gpu_budget": bool(profile_field.get("billed_against_gpu_budget")),

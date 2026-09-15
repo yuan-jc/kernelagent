@@ -157,6 +157,46 @@ def test_wrong_candidate_feeds_back_then_correct_is_promoted(tmp_path):
     assert parse_exit_code(result) == EXIT_SUCCESS
 
 
+def test_compilation_error_is_recorded_and_fed_to_next_candidate(tmp_path):
+    snapshot = _stage_problem(tmp_path)
+    responder = ScriptedResponder([BAD_CANDIDATE, GOOD_CANDIDATE])
+    evaluate_calls = []
+
+    def evaluate(candidate_source: str, candidate_name: str) -> dict:
+        evaluate_calls.append(candidate_name)
+        if candidate_name == "candidate-000":
+            return {
+                "adapter_pass": False,
+                "compiled": False,
+                "correct": False,
+                "outcome_status": "completed",
+                "stderr_tail": "nvcc failed",
+                "upstream_metadata": {
+                    "compilation_error_name": "CompilationError",
+                    "compilation_error": "invalid operands to binary expression",
+                },
+            }
+        return _passing_evaluate(candidate_source, candidate_name)
+
+    result = _run(
+        _config(tmp_path, snapshot, max_candidates=2, max_repair_rounds=2),
+        responder,
+        evaluate=evaluate,
+    )
+
+    assert result.state == "completed"
+    assert evaluate_calls == ["candidate-000", "candidate-001"]
+    feedback = responder.requests[1].messages[-1][1]
+    assert "CompilationError" in feedback
+    assert "invalid operands to binary expression" in feedback
+    record = json.loads(
+        (tmp_path / "run" / "records" / "candidate-000.json").read_text(encoding="utf-8")
+    )
+    assert record["evaluation_diagnostics"]["kind"] == "compilation_error"
+    assert record["evaluation_diagnostics"]["error_name"] == "CompilationError"
+    assert record["evaluation_diagnostics"]["message"] == ("invalid operands to binary expression")
+
+
 def test_policy_violating_candidate_never_reaches_gpu(tmp_path):
     snapshot = _stage_problem(tmp_path)
     tamper = json.dumps(

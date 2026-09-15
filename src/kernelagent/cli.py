@@ -12,6 +12,8 @@ from kernelagent import __version__
 from kernelagent.acceptance import run_checks
 from kernelagent.adapters.benchmarks.kernelbench import run_verify
 
+_HELP_FORMATTER = argparse.RawDescriptionHelpFormatter
+
 
 def _run_probe_native() -> tuple[int, str, str]:
     completed = subprocess.run(
@@ -92,67 +94,194 @@ def _optimize_arguments(parser: argparse.ArgumentParser, *, resume_default: bool
     falling back to this machine's defaults."""
     if resume_default:
         parser.add_argument(
-            "--problem", default=None, help="e.g. kernelbench:l1:40 (default: manifest)"
+            "--problem",
+            metavar="KERNELBENCH_ID",
+            default=None,
+            help="Problem identity, for example kernelbench:l1:40 (default: run manifest).",
         )
-        parser.add_argument("--backend", default=None, help="candidate backend (default: manifest)")
-        parser.add_argument("--model", default=None, help="provider model id (default: manifest)")
+        parser.add_argument(
+            "--backend",
+            metavar="BACKEND",
+            default=None,
+            help="Candidate implementation backend (default: run manifest).",
+        )
+        parser.add_argument(
+            "--model",
+            metavar="MODEL_ID",
+            default=None,
+            help="Provider model identifier (default: run manifest).",
+        )
         parser.add_argument(
             "--base-url",
             dest="base_url",
+            metavar="URL",
             default=None,
-            help="OpenAI-compatible base URL (default: manifest)",
+            help="OpenAI-compatible API base URL (default: run manifest).",
         )
         parser.add_argument(
             "--max-candidates",
             type=int,
+            metavar="COUNT",
             default=None,
-            help="override the manifest's candidate allowance",
+            help="Override maximum total candidate attempts; integer >= 1.",
         )
         parser.add_argument(
             "--max-repair-rounds",
             type=int,
+            metavar="COUNT",
             default=None,
-            help="override the manifest's repair rounds",
+            help="Override failed/rejected-candidate allowance; integer >= 0.",
         )
         parser.add_argument(
             "--gpu-budget-seconds",
             type=float,
+            metavar="SECONDS",
             default=None,
-            help="override the manifest's GPU budget",
+            help="Override cumulative GPU lease budget in seconds; finite and > 0.",
         )
         parser.add_argument(
-            "--token-budget", type=int, default=None, help="override the manifest's token budget"
+            "--token-budget",
+            type=int,
+            metavar="TOKENS",
+            default=None,
+            help="Override cumulative model token budget; integer > 0.",
         )
-        parser.add_argument("--output", type=Path, default=Path("artifacts/alpha/run"))
         parser.add_argument(
-            "--snapshot-root", type=Path, default=None, help="snapshot root (default: manifest)"
+            "--output",
+            type=Path,
+            metavar="RUN_DIR",
+            default=Path("artifacts/alpha/run"),
+            help=(
+                "Existing run directory containing run_manifest.json "
+                "(default: artifacts/alpha/run)."
+            ),
         )
-        parser.add_argument("--gpu-device", default=None, help="CDI device (default: manifest)")
-        parser.add_argument("--resume", action="store_true", default=True)
+        parser.add_argument(
+            "--snapshot-root",
+            type=Path,
+            metavar="DIR",
+            default=None,
+            help="Pinned KernelBench snapshot root (default: run manifest).",
+        )
+        parser.add_argument(
+            "--gpu-device",
+            metavar="CDI_DEVICE",
+            default=None,
+            help="NVIDIA CDI device identity (default: run manifest).",
+        )
+        parser.set_defaults(resume=True)
         return
-    parser.add_argument("--problem", default="kernelbench:l1:40", help="e.g. kernelbench:l1:40")
-    parser.add_argument("--backend", default="triton", help="candidate backend (triton)")
-    parser.add_argument("--model", default="glm-4.5", help="provider model id")
+    parser.add_argument(
+        "--problem",
+        metavar="KERNELBENCH_ID",
+        default="kernelbench:l1:40",
+        help="Problem identity in kernelbench:l<level>:<id> form (default: kernelbench:l1:40).",
+    )
+    parser.add_argument(
+        "--backend",
+        metavar="BACKEND",
+        default="triton",
+        help="Candidate implementation backend (default: triton).",
+    )
+    parser.add_argument(
+        "--model",
+        metavar="MODEL_ID",
+        default="glm-4.5",
+        help="Model identifier sent to the configured provider (default: glm-4.5).",
+    )
     parser.add_argument(
         "--base-url",
         dest="base_url",
+        metavar="URL",
         default=os.environ.get("MODEL_PROVIDER_BASE_URL", ""),
-        help="OpenAI-compatible base URL (or MODEL_PROVIDER_BASE_URL)",
+        help="OpenAI-compatible API base URL (default: MODEL_PROVIDER_BASE_URL; required).",
     )
-    parser.add_argument("--max-candidates", type=int, default=5)
-    parser.add_argument("--max-repair-rounds", type=int, default=2)
-    parser.add_argument("--gpu-budget-seconds", type=float, default=1800.0)
-    parser.add_argument("--token-budget", type=int, default=200000)
-    parser.add_argument("--output", type=Path, default=Path("artifacts/alpha/run"))
-    parser.add_argument("--snapshot-root", type=Path, default=None)
-    parser.add_argument("--gpu-device", default=None, help="CDI device, e.g. nvidia.com/gpu=GPU-…")
-    parser.add_argument("--resume", action="store_true", default=resume_default)
+    parser.add_argument(
+        "--max-candidates",
+        type=int,
+        metavar="COUNT",
+        default=5,
+        help=(
+            "Maximum candidate attempts, including failures and successes; "
+            "integer >= 1 (default: 5)."
+        ),
+    )
+    parser.add_argument(
+        "--max-repair-rounds",
+        type=int,
+        metavar="COUNT",
+        default=2,
+        help=(
+            "Failure allowance: stop after more than COUNT failed/rejected candidates; "
+            "not extra attempts; integer >= 0 (default: 2)."
+        ),
+    )
+    parser.add_argument(
+        "--gpu-budget-seconds",
+        type=float,
+        metavar="SECONDS",
+        default=1800.0,
+        help=(
+            "Cumulative GPU lease budget in seconds for evaluation, timing, and "
+            "profiling; finite and > 0 (default: 1800)."
+        ),
+    )
+    parser.add_argument(
+        "--token-budget",
+        type=int,
+        metavar="TOKENS",
+        default=200000,
+        help=(
+            "Cumulative model token budget across generation attempts; "
+            "integer > 0 (default: 200000)."
+        ),
+    )
+    parser.add_argument(
+        "--output",
+        type=Path,
+        metavar="RUN_DIR",
+        default=Path("artifacts/alpha/run"),
+        help=(
+            "Durable run directory; for a fresh run it must be new or empty "
+            "(default: artifacts/alpha/run)."
+        ),
+    )
+    parser.add_argument(
+        "--snapshot-root",
+        type=Path,
+        metavar="DIR",
+        default=None,
+        help=(
+            "Pinned KernelBench checkout root "
+            "(default: research/sources/ScalingIntelligence__KernelBench)."
+        ),
+    )
+    parser.add_argument(
+        "--gpu-device",
+        metavar="CDI_DEVICE",
+        default=None,
+        help=(
+            "NVIDIA CDI device, e.g. nvidia.com/gpu=GPU-<UUID> (default: auto-detect, then GPU 0)."
+        ),
+    )
+    parser.add_argument(
+        "--resume",
+        action="store_true",
+        default=resume_default,
+        help=(
+            "Resume --output instead of starting fresh; prefer the dedicated "
+            "'kernelagent resume' command."
+        ),
+    )
     parser.add_argument(
         "--no-profile-baseline",
         dest="profile_baseline",
         action="store_false",
         default=True,
-        help="Skip the baseline NCU profiling step (classification stays static_only)",
+        help=(
+            "Disable baseline NCU profiling; optimization continues with "
+            "static_only classification."
+        ),
     )
 
 
@@ -375,93 +504,293 @@ def _run_profile(args: argparse.Namespace) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="kernelagent")
-    parser.add_argument("--version", action="version", version=__version__)
-    commands = parser.add_subparsers(dest="command", required=True)
-    check = commands.add_parser("check", help="Run CPU pytest checks and record evidence")
-    check.add_argument("--tests", type=Path, default=Path("tests"))
-    check.add_argument("--output", type=Path, default=Path("artifacts/checks"))
-    check.add_argument("--timeout", type=float, default=300.0)
-    bench = commands.add_parser("bench", help="Benchmark snapshot tools")
+    parser = argparse.ArgumentParser(
+        prog="kernelagent",
+        description=(
+            "Evidence-driven NVIDIA operator optimization: generate candidates, "
+            "validate correctness, measure performance, profile the baseline, and "
+            "persist a resumable audit trail."
+        ),
+        epilog="""Typical workflow:
+  kernelagent probe --target native --output artifacts/probe
+  kernelagent optimize --problem kernelbench:l1:40 --base-url URL --output artifacts/run
+  kernelagent status --output artifacts/run
+  kernelagent resume --output artifacts/run
+
+Environment:
+  MODEL_PROVIDER_API_KEY   Required for optimize/resume; never written to run artifacts.
+  MODEL_PROVIDER_BASE_URL Default API URL for a fresh optimize run when --base-url is omitted.
+
+Run 'kernelagent COMMAND --help' for command-specific options and examples.""",
+        formatter_class=_HELP_FORMATTER,
+    )
+    parser.add_argument(
+        "--version", action="version", version=__version__, help="Show version and exit."
+    )
+    commands = parser.add_subparsers(dest="command", metavar="COMMAND", required=True)
+    check = commands.add_parser(
+        "check",
+        help="Run CPU tests and write a machine-readable evidence bundle",
+        description=(
+            "Run the selected pytest tree in a child process and save stdout, stderr, "
+            "JUnit XML, hashes, counts, and a JSON report. This is CPU acceptance; it "
+            "does not substitute for GPU or live-model validation."
+        ),
+        epilog="""Examples:
+  kernelagent check
+  kernelagent check --tests tests/test_cli.py --output artifacts/cli-check --timeout 120""",
+        formatter_class=_HELP_FORMATTER,
+    )
+    check.add_argument(
+        "--tests",
+        type=Path,
+        metavar="PATH",
+        default=Path("tests"),
+        help="Pytest file or directory to run (default: tests).",
+    )
+    check.add_argument(
+        "--output",
+        type=Path,
+        metavar="DIR",
+        default=Path("artifacts/checks"),
+        help="Parent directory for the timestamped evidence bundle (default: artifacts/checks).",
+    )
+    check.add_argument(
+        "--timeout",
+        type=float,
+        metavar="SECONDS",
+        default=300.0,
+        help="Hard wall-clock timeout for pytest; must be > 0 (default: 300).",
+    )
+    bench = commands.add_parser(
+        "bench",
+        help="Inspect and verify pinned benchmark inputs",
+        description="Utilities for benchmark snapshots used by trusted evaluators.",
+        epilog="""Examples:
+  kernelagent bench verify
+  kernelagent bench verify --root research/sources/ScalingIntelligence__KernelBench""",
+        formatter_class=_HELP_FORMATTER,
+    )
     bench_sub = bench.add_subparsers(dest="bench_command", required=True)
     verify = bench_sub.add_parser(
-        "verify", help="Verify the local KernelBench snapshot against committed manifests"
+        "verify",
+        help="Verify a local KernelBench snapshot against committed manifests",
+        description=(
+            "Hash the pinned KernelBench files and compare them with the committed full "
+            "and development manifests. This verifies input identity; it does not run kernels."
+        ),
+        epilog="""Examples:
+  kernelagent bench verify
+  kernelagent bench verify --root /data/KernelBench \\
+    --manifest configs/kernelbench/snapshot-files.manifest.json""",
+        formatter_class=_HELP_FORMATTER,
     )
     verify.add_argument(
-        "--root", type=Path, default=Path("research/sources/ScalingIntelligence__KernelBench")
+        "--root",
+        type=Path,
+        metavar="DIR",
+        default=Path("research/sources/ScalingIntelligence__KernelBench"),
+        help=(
+            "Local KernelBench snapshot root "
+            "(default: research/sources/ScalingIntelligence__KernelBench)."
+        ),
     )
     verify.add_argument(
-        "--manifest", type=Path, default=Path("configs/kernelbench/snapshot-files.manifest.json")
+        "--manifest",
+        type=Path,
+        metavar="FILE",
+        default=Path("configs/kernelbench/snapshot-files.manifest.json"),
+        help=(
+            "Committed full snapshot hash manifest "
+            "(default: configs/kernelbench/snapshot-files.manifest.json)."
+        ),
     )
     verify.add_argument(
-        "--dev-manifest", type=Path, default=Path("configs/kernelbench/dev-manifest.json")
+        "--dev-manifest",
+        type=Path,
+        metavar="FILE",
+        default=Path("configs/kernelbench/dev-manifest.json"),
+        help=(
+            "Committed development-subset manifest "
+            "(default: configs/kernelbench/dev-manifest.json)."
+        ),
     )
-    probe = commands.add_parser("probe", help="Probe a target environment's GPU/CUDA capabilities")
-    probe.add_argument("--target", choices=["native", "wsl"], default="native")
+    probe = commands.add_parser(
+        "probe",
+        help="Probe GPU, CUDA, nvcc, NCU, and runtime capabilities",
+        description=(
+            "Inspect the selected native or WSL environment and write gpu-probe-report.json. "
+            "A tool being installed is reported separately from a real CUDA launch succeeding."
+        ),
+        epilog="""Examples:
+  kernelagent probe --target native --output artifacts/probe
+  kernelagent probe --target wsl --wsl-distro Ubuntu-24.04 --evidence-root artifacts/evidence""",
+        formatter_class=_HELP_FORMATTER,
+    )
     probe.add_argument(
-        "--wsl-distro", default=None, help="WSL distro name (defaults to system default)"
+        "--target",
+        choices=["native", "wsl"],
+        default="native",
+        help="Environment to inspect (default: native).",
     )
     probe.add_argument(
-        "--output", type=Path, default=Path("artifacts/probe"), help="Report output directory"
+        "--wsl-distro",
+        metavar="NAME",
+        default=None,
+        help=(
+            "Distribution passed to 'wsl.exe -d'; only used with --target wsl "
+            "(default: WSL system default)."
+        ),
+    )
+    probe.add_argument(
+        "--output",
+        type=Path,
+        metavar="DIR",
+        default=Path("artifacts/probe"),
+        help="Directory for gpu-probe-report.json (default: artifacts/probe).",
     )
     probe.add_argument(
         "--evidence-root",
         type=Path,
+        metavar="DIR",
         default=None,
-        help="Optionally record the report into an EvidenceStore at this root",
+        help="Also store a content-addressed copy in an EvidenceStore at DIR (default: disabled).",
     )
     optimize = commands.add_parser(
-        "optimize", help="Optimize one pinned KernelBench problem (generate/eval/time/promote)"
+        "optimize",
+        help="Start a fresh generate/evaluate/time/promote loop",
+        description=(
+            "Start a fresh optimization run for one pinned KernelBench problem. The trusted "
+            "evaluator owns correctness and timing; failed candidates remain in the record."
+        ),
+        epilog="""Examples:
+  export MODEL_PROVIDER_API_KEY='...'
+  kernelagent optimize --problem kernelbench:l1:40 --backend triton \\
+    --model deepseek-chat --base-url https://api.example.com/v1 \\
+    --max-candidates 5 --gpu-budget-seconds 3600 --output artifacts/run-001
+
+Exit codes:
+  0 champion promoted   1 no improvement   2 budget exhausted
+  3 configuration error   4 infrastructure error
+
+MODEL_PROVIDER_API_KEY is required and remains on the control plane.""",
+        formatter_class=_HELP_FORMATTER,
     )
     _optimize_arguments(optimize)
     resume = commands.add_parser(
-        "resume", help="Resume an interrupted optimize run from its durable journal"
+        "resume",
+        help="Continue an existing run from its manifest and journal",
+        description=(
+            "Resume an existing optimize run from RUN_DIR/run_manifest.json and its durable "
+            "journal. Unspecified values inherit the manifest; identity fields must match, "
+            "while explicit candidate/budget fields create revision events."
+        ),
+        epilog="""Examples:
+  kernelagent resume --output artifacts/run-001
+  kernelagent resume --output artifacts/run-001 --max-candidates 8 --token-budget 300000
+
+MODEL_PROVIDER_API_KEY is required. Use --base-url only when the stored run has no usable URL.
+Exit codes are the same as 'kernelagent optimize'.""",
+        formatter_class=_HELP_FORMATTER,
     )
     _optimize_arguments(resume, resume_default=True)
-    status = commands.add_parser("status", help="Show a run's durable state and budget")
-    status.add_argument("--output", type=Path, required=True, help="Run output directory")
+    status = commands.add_parser(
+        "status",
+        help="Show durable run state, champion, and budget usage",
+        description=(
+            "Read an existing run without invoking the model or GPU. Output is JSON derived "
+            "from the durable manifest, journal, records, and report."
+        ),
+        epilog="""Examples:
+  kernelagent status --output artifacts/run-001""",
+        formatter_class=_HELP_FORMATTER,
+    )
+    status.add_argument(
+        "--output",
+        type=Path,
+        metavar="RUN_DIR",
+        required=True,
+        help="Existing optimization run directory.",
+    )
     profile = commands.add_parser(
         "profile",
-        help="Collect baseline NCU evidence for a run directory (ADR-0003 diagnostic lease)",
+        help="Collect or reuse baseline NCU evidence for an existing run",
+        description=(
+            "Profile the trusted baseline of an existing optimize run under the ADR-0003 "
+            "diagnostic lease. Profiling is billed to the run's GPU budget, is separate from "
+            "formal timing, and does not benchmark candidates."
+        ),
+        epilog="""Examples:
+  kernelagent profile --output artifacts/run-001
+  kernelagent profile --output artifacts/run-001 --set basic --launch-count 8
+  kernelagent profile --output artifacts/run-001 --metrics metric_a,metric_b
+
+Preconditions: RUN_DIR must contain a valid run_manifest.json and unchanged pinned problem.
+Explicit --metrics overrides --set. NCU failure is recorded honestly and
+never proves a bottleneck.""",
+        formatter_class=_HELP_FORMATTER,
     )
-    profile.add_argument("--output", type=Path, required=True, help="Run output directory")
+    profile.add_argument(
+        "--output",
+        type=Path,
+        metavar="RUN_DIR",
+        required=True,
+        help="Existing optimize run directory to receive profile evidence.",
+    )
     profile.add_argument(
         "--kind",
         choices=["baseline"],
         default="baseline",
-        help="What to profile; only the baseline reference is allowed (candidates are "
-        "never profiled)",
+        help="Profile target; only the trusted baseline is allowed (default: baseline).",
     )
     profile.add_argument(
         "--set",
         dest="set_name",
+        metavar="NCU_SET",
         default=None,
-        help="NCU section set (e.g. basic); default: the explicit Tier-A metric list "
-        "mirroring MetricCatalog",
+        help="NCU section set, e.g. basic (default: explicit Tier-A metric list).",
     )
     profile.add_argument(
         "--metrics",
+        metavar="M1,M2,...",
         default=None,
-        help="Comma-separated explicit NCU metric list (overrides --set)",
+        help="Comma-separated explicit NCU metrics; overrides --set.",
     )
     profile.add_argument(
         "--launch-count",
         type=int,
+        metavar="COUNT",
         default=12,
-        help="Cap on profiled kernel launches (default: 12)",
+        help="Maximum profiled kernel launches; integer >= 1 (default: 12).",
     )
     profile.add_argument(
-        "--launch-skip", type=int, default=0, help="Kernel launches to skip first (default: 0)"
+        "--launch-skip",
+        type=int,
+        metavar="COUNT",
+        default=0,
+        help="Initial kernel launches excluded before collection; integer >= 0 (default: 0).",
     )
     profile.add_argument(
         "--timeout-seconds",
         type=float,
+        metavar="SECONDS",
         default=300.0,
-        help="Hard wall-clock timeout for the profiling container (default: 300)",
+        help=(
+            "Hard profiling-container wall-clock timeout and budget reservation; "
+            "> 0 (default: 300)."
+        ),
     )
-    profile.add_argument("--gpu-device", default=None, help="CDI device (default: manifest)")
     profile.add_argument(
-        "--ncu-bin", default=None, help="Host ncu binary for --import (default: auto-detect)"
+        "--gpu-device",
+        metavar="CDI_DEVICE",
+        default=None,
+        help="NVIDIA CDI device identity (default: run manifest).",
+    )
+    profile.add_argument(
+        "--ncu-bin",
+        metavar="PATH",
+        default=None,
+        help="Host Nsight Compute executable used to import .ncu-rep (default: auto-detect).",
     )
     args = parser.parse_args(argv)
     if args.command == "bench":

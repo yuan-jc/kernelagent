@@ -6,6 +6,7 @@ fixture (parsed with the real T15 parser), the profiler is injected into
 ``optimize()`` as a fake, and no GPU / docker / ncu binary is touched.
 Live NCU validation is a separate, NOT_RUN-until-executed GPU smoke."""
 
+import hashlib
 import json
 import subprocess
 from pathlib import Path
@@ -23,6 +24,7 @@ from kernelagent.adapters.profiling import (
 from kernelagent.adapters.profiling.pipeline import (
     BASELINE_EVIDENCE_NAME,
     ProfileCapture,
+    build_baseline_profiler,
     profile_baseline,
     stage_profile_inputs,
     summarize_evidence,
@@ -286,6 +288,29 @@ def test_counter_permission_blocker_is_mapped_not_swallowed(
     assert "ERR_NVGPUCTRPERM" in outcome["stderr_tail"]
 
 
+def test_failed_capture_never_reuses_a_stale_scratch_report(
+    tmp_path: Path, mini_snapshot: Path, monkeypatch
+):
+    monkeypatch.setattr(pipeline, "host_ncu_bin", lambda preferred=None: "/fake/ncu")
+    legacy = tmp_path / "run" / "profile" / "scratch"
+    legacy.mkdir(parents=True)
+    (legacy / "driver_meta.json").write_text("{}", encoding="utf-8")
+    (legacy / "baseline.ncu-rep").write_bytes(b"stale-report")
+    completed = subprocess.CompletedProcess(args=[], returncode=9, stdout="", stderr="ncu failed")
+    monkeypatch.setattr(pipeline.subprocess, "run", lambda *a, **k: completed)
+    monkeypatch.setattr(
+        pipeline,
+        "import_report",
+        lambda *a, **k: pytest.fail("a failed capture must not import any pre-existing report"),
+    )
+
+    outcome = _profile(tmp_path, mini_snapshot, ProfileCapture(ncu_bin="/fake/ncu"))
+
+    assert outcome["status"] == "not_run"
+    assert outcome["reason"] == "ncu_failed"
+    assert not (tmp_path / "run" / "profile" / BASELINE_EVIDENCE_NAME).exists()
+
+
 def test_staged_inputs_carry_driver_problem_and_helpers(tmp_path: Path, mini_snapshot: Path):
     inputs = stage_profile_inputs(
         tmp_path / "ws",
@@ -305,6 +330,24 @@ def test_staged_inputs_carry_driver_problem_and_helpers(tmp_path: Path, mini_sna
     assert "load_original_model_and_inputs" in driver
     # The driver is parent-authored and content-hashed (identity in journal).
     assert len(pipeline.driver_sha256()) == 64
+
+
+def test_real_profiler_callable_exposes_worst_case_budget_reservation(
+    tmp_path: Path, mini_snapshot: Path
+):
+    capture = ProfileCapture(timeout_seconds=91.0)
+    profiler = build_baseline_profiler(
+        profile_dir=tmp_path / "run" / "profile",
+        workspace_root=tmp_path / "run" / "workspace",
+        snapshot_root=mini_snapshot,
+        level=1,
+        problem_name="40_LayerNorm.py",
+        problem_source=LAYERNORM_SOURCE,
+        gpu_device="nvidia.com/gpu=GPU-fake",
+        capture=capture,
+        problem_sha256="abc123",
+    )
+    assert profiler.reservation_gpu_seconds == 91.0
 
 
 # ---------------------------------------------------------------------------
@@ -397,6 +440,7 @@ def _journal_entries(output: Path) -> list[dict]:
 
 
 def _fake_profiler_outcome(view: dict, wall: float = 42.5) -> dict:
+    evidence_text = json.dumps(view, indent=2, sort_keys=True)
     return {
         "status": "collected",
         "reason": None,
@@ -408,6 +452,7 @@ def _fake_profiler_outcome(view: dict, wall: float = 42.5) -> dict:
         "report_path": "baseline.ncu-rep",
         "report_sha256": "f" * 64,
         "evidence_path": BASELINE_EVIDENCE_NAME,
+        "evidence_sha256": hashlib.sha256(evidence_text.encode("utf-8")).hexdigest(),
         "evidence_view": view,
         "summary": summarize_evidence(view),
         "problem_sha256": "abc123",
@@ -492,6 +537,7 @@ def test_loop_profiler_not_run_degrades_without_breaking(tmp_path: Path):
         "reason": "ncu_unavailable_on_host",
         "detail": "no ncu binary",
         "capture": ProfileCapture().to_dict(),
+        "gpu_wall_seconds": 7.25,
     }
     result = _run_optimize(
         _config(tmp_path, snapshot), ScriptedResponder([GOOD_CANDIDATE]), profiler=lambda: outcome
@@ -502,6 +548,12 @@ def test_loop_profiler_not_run_degrades_without_breaking(tmp_path: Path):
     not_run = [entry for entry in entries if entry["kind"] == "profile_not_run"]
     assert len(not_run) == 1 and not_run[0]["reason"] == "ncu_unavailable_on_host"
     assert not [entry for entry in entries if entry["kind"] == "profile_collected"]
+    settlement = next(
+        entry
+        for entry in entries
+        if entry["kind"] == "budget_settled" and entry.get("action_id") == "profile-baseline"
+    )
+    assert settlement["gpu_seconds"] == 7.25, "failed profiling is still billable GPU work"
     plan = next(entry for entry in entries if entry["kind"] == "method_plan")
     assert plan["evidence_coverage"] == "static_only", "honest degradation of coverage"
 
@@ -528,6 +580,26 @@ def test_loop_profiler_exception_is_contained(tmp_path: Path):
     assert "RuntimeError" in not_run[0]["detail"]
 
 
+def test_loop_does_not_start_profiler_without_its_declared_budget(tmp_path: Path):
+    snapshot = _stage_problem(tmp_path)
+    calls = []
+
+    def profiler():
+        calls.append(1)
+        return {"status": "not_run", "reason": "unexpected", "capture": {}}
+
+    profiler.reservation_gpu_seconds = 20_000.0
+    result = _run_optimize(
+        _config(tmp_path, snapshot), ScriptedResponder([GOOD_CANDIDATE]), profiler=profiler
+    )
+    assert result.state == "completed"
+    assert calls == []
+    entries = _journal_entries(tmp_path / "run")
+    skipped = [entry for entry in entries if entry["kind"] == "profile_not_run"]
+    assert len(skipped) == 1 and skipped[0]["reason"] == "budget_reservation_failed"
+    assert not [entry for entry in entries if entry["kind"] == "profile_started"]
+
+
 def test_loop_resume_reuses_collected_evidence_without_rerun(tmp_path: Path):
     snapshot = _stage_problem(tmp_path)
     view = _fixture_view(_RAW_CSV_FULL)
@@ -543,8 +615,8 @@ def test_loop_resume_reuses_collected_evidence_without_rerun(tmp_path: Path):
     # Materialize the evidence file the real pipeline would have written.
     profile_dir = tmp_path / "run" / "profile"
     profile_dir.mkdir(exist_ok=True)
-    (profile_dir / BASELINE_EVIDENCE_NAME).write_text(
-        json.dumps(view, indent=2, sort_keys=True), encoding="utf-8"
+    (profile_dir / BASELINE_EVIDENCE_NAME).write_bytes(
+        json.dumps(view, indent=2, sort_keys=True).encode("utf-8")
     )
 
     def forbidden_profiler():
@@ -564,6 +636,43 @@ def test_loop_resume_reuses_collected_evidence_without_rerun(tmp_path: Path):
     plans = [e for e in entries if e["kind"] == "method_plan"]
     assert len(plans) == 2, "resume planned the new candidate from the reused evidence"
     assert all(p["evidence_coverage"] == "ncu_full" for p in plans)
+
+
+def test_loop_resume_reprofiles_when_persisted_evidence_hash_changed(tmp_path: Path):
+    snapshot = _stage_problem(tmp_path)
+    view = _fixture_view(_RAW_CSV_FULL)
+    bad_candidate = json.dumps(
+        {"code": "class ModelNew:\n    def forward(self, x):\n        return 0"}
+    )
+    result = _run_optimize(
+        _config(tmp_path, snapshot, max_candidates=1),
+        ScriptedResponder([bad_candidate]),
+        profiler=lambda: _fake_profiler_outcome(view),
+    )
+    assert result.state == "no_improvement"
+    profile_dir = tmp_path / "run" / "profile"
+    profile_dir.mkdir(exist_ok=True)
+    tampered = dict(view)
+    tampered["source"] = "tampered"
+    (profile_dir / BASELINE_EVIDENCE_NAME).write_bytes(
+        json.dumps(tampered, indent=2, sort_keys=True).encode("utf-8")
+    )
+    calls = []
+
+    def fresh_profiler():
+        calls.append(1)
+        return _fake_profiler_outcome(view, wall=3.0)
+
+    resumed = optimize(
+        _config(tmp_path, snapshot, resume=True, max_candidates=2, max_repair_rounds=1),
+        generator=CandidateGenerator(ScriptedResponder([GOOD_CANDIDATE]), ledger=RecordingLedger()),
+        evaluate=_passing_evaluate,
+        timing=_fake_timing,
+        correctness_pro=None,
+        profiler=fresh_profiler,
+    )
+    assert resumed.state == "completed"
+    assert calls == [1], "changed evidence must not be silently reused"
 
 
 def test_loop_without_profiler_has_no_profile_events(tmp_path: Path):
@@ -621,8 +730,8 @@ def test_cli_profile_collects_then_reuses_idempotently(tmp_path: Path, monkeypat
     # fake outcome stands in for it, so materialize it for the reuse path.
     profile_dir = tmp_path / "run" / "profile"
     profile_dir.mkdir(exist_ok=True)
-    (profile_dir / BASELINE_EVIDENCE_NAME).write_text(
-        json.dumps(view, indent=2, sort_keys=True), encoding="utf-8"
+    (profile_dir / BASELINE_EVIDENCE_NAME).write_bytes(
+        json.dumps(view, indent=2, sort_keys=True).encode("utf-8")
     )
 
     # Second invocation: reuse without ever CALLING the profiler (building

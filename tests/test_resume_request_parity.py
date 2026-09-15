@@ -85,6 +85,11 @@ FEEDBACK_CASES = {
     ),
 }
 
+COMPILATION_ERROR = {
+    "compilation_error_name": "CompilationError",
+    "compilation_error": "invalid operands to binary expression",
+}
+
 
 class ScriptedResponder:
     """Order-based model double that records every request it sees."""
@@ -164,6 +169,19 @@ def _passing_evaluate(candidate_source: str, candidate_name: str) -> dict:
     }
 
 
+def _compilation_then_passing_evaluate(candidate_source: str, candidate_name: str) -> dict:
+    if candidate_name == "candidate-000":
+        return {
+            "adapter_pass": False,
+            "compiled": False,
+            "correct": False,
+            "outcome_status": "completed",
+            "stderr_tail": "nvcc failed",
+            "upstream_metadata": COMPILATION_ERROR,
+        }
+    return _passing_evaluate(candidate_source, candidate_name)
+
+
 def _source_aware_timing(candidate_source: str, role: str) -> dict:
     """Eager baseline 10ms; a genuinely-changed candidate 5ms (promoted),
     the no-improvement candidate 10ms (retained at confirm)."""
@@ -175,16 +193,43 @@ def _source_aware_timing(candidate_source: str, role: str) -> dict:
     return {"source_ok": True, "precondition": True, "async_leak": False, "batches": batches}
 
 
-def _drive(config: OptimizationConfig, contents: list[str]):
+def _drive(config: OptimizationConfig, contents: list[str], *, evaluate=_passing_evaluate):
     responder = ScriptedResponder(contents)
     result = optimize(
         config,
         generator=CandidateGenerator(responder, ledger=RecordingLedger()),
-        evaluate=_passing_evaluate,
+        evaluate=evaluate,
         timing=_source_aware_timing,
         correctness_pro=None,
     )
     return result, responder
+
+
+def test_compilation_feedback_is_identical_after_resume(tmp_path):
+    snapshot_a = _stage_snapshot(tmp_path / "a")
+    result_a, responder_a = _drive(
+        _config(tmp_path / "a", snapshot_a, resume=False, max_candidates=2, max_repair_rounds=2),
+        [CORRECTNESS_CANDIDATE, GOOD_CANDIDATE],
+        evaluate=_compilation_then_passing_evaluate,
+    )
+
+    snapshot_b = _stage_snapshot(tmp_path / "b")
+    _drive(
+        _config(tmp_path / "b", snapshot_b, resume=False, max_candidates=1, max_repair_rounds=0),
+        [CORRECTNESS_CANDIDATE],
+        evaluate=_compilation_then_passing_evaluate,
+    )
+    result_b, responder_b = _drive(
+        _config(tmp_path / "b", snapshot_b, resume=True, max_candidates=2, max_repair_rounds=2),
+        [GOOD_CANDIDATE],
+        evaluate=_compilation_then_passing_evaluate,
+    )
+
+    assert result_a.state == result_b.state == "completed"
+    assert responder_a.requests[1] == responder_b.requests[0]
+    feedback = responder_a.requests[1].messages[-1][1]
+    assert "CompilationError" in feedback
+    assert "invalid operands to binary expression" in feedback
 
 
 def _journal(output: Path) -> list[dict]:

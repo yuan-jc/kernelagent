@@ -5,6 +5,62 @@
 首用环境：**Ubuntu + NVIDIA GPU**。环境安装见 [Ubuntu 指南](../UBUNTU.md)，状态清单见 [task board](../task-board.json)，有效检查索引见 [current.json](../evidence/current.json)。
 本页只保留一份当前快照；历史移交见 Git 历史（及提交 `1b4a306` 前的旧记录）。
 
+## 规划增量（2026-09-15，T33 profiling → 方法决策链待办）
+
+- 新增 `docs/work-packages/T33.md`，把当前 baseline NCU → max 聚合 → 单标签规则 →
+  方法 signal → 人工先验分数链路，重构为可拆分实施的可信中间层计划。
+- 目标方案覆盖 metric alias/单位/范围、launch 关联、时间占比聚合、覆盖和稳定性、可选
+  Roofline、多轴 severity/confidence、方法 guards/正反信号、无总分偏序、可选效用分、历史反馈、
+  resume 和证据字段，并列出 T33a–T33f 及正反例验收。
+- T33 当前为 **TODO**；本文没有改变运行代码、阈值或评分，也没有运行 GPU/LIVE_MODEL 验收。
+
+## 当前增量（2026-09-15，T32 用户友好 CLI 帮助）
+
+- `kernelagent --help` 现说明产品用途、典型工作流、模型环境变量，并引导到子命令帮助；
+  `check`、`bench verify`、`probe`、`optimize`、`resume`、`status`、`profile` 均有完整描述、
+  参数含义/单位/默认值或 manifest 继承规则、前置条件和可复制示例。
+- 明确 `max_repair_rounds` 是失败额度而非额外候选数，GPU budget 是 evaluation/timing/profiling
+  的累计租约秒数，profiling 与正式 timing 分离，退出码及凭据边界可在帮助页直接查看。
+  `resume --help` 已移除恒真的冗余 `--resume` 参数；实际 resume 行为未改变。
+- `README.md` 增加帮助入口及关键语义。CLI 专项 `20 passed`；全量
+  `737 passed / 23 skipped / 0 failed`；ruff check 与 format check 均通过。
+- 标准 CPU 报告：`artifacts/cli-help-cpu/50fd156e53594190ba1c26e7508ed66e/report.json`
+  （sha256 `8ab748bf45872bff69e2a44e1aa6967a3c2c36a8069b28c8c479960feee3c1c2`）。
+  本包只改变 CPU CLI 文档层，GPU 与 LIVE_MODEL 均为 `N/A`。
+
+## 当前增量（2026-09-15，T31 编译错误结构化反馈）
+
+- KernelBench 上游 `KernelExecResult.metadata` 现由 control-plane adapter 有界透传；真实 stage port
+  不再把 `upstream_metadata` 硬编码为空。metadata 只作诊断证据，候选是否通过仍仅由上游
+  `compiled && correctness` 决定。
+- evaluate 失败记录新增 `evaluation_diagnostics`：区分 `compilation_error`、`runtime_error`、
+  `correctness_error`，保留错误名、核心消息、stderr 尾和有界上游 metadata。编译失败摘要以
+  quoted untrusted data 注入下一轮生成；不会进入 correctness/timing/晋升。
+- resume 从持久化的 `detail` 重建相同反馈。专项验收
+  `uv run --locked pytest tests/test_kernelbench_eval_adapter.py tests/test_optimization_loop.py tests/test_resume_request_parity.py -q`
+  为 `56 passed`；全量 `727 passed / 23 skipped / 0 failed`；ruff 全绿。
+- 标准 CPU 报告：
+  `artifacts/compile-error-feedback-cpu/e3c193f96c8a4e2292491ccbe9225c94/report.json`
+  （sha256 `5593af7345e7f7d8bdb4519d036fe43520e9832cacfe9279255108f9a4164314`）。
+  本轮未在 Ubuntu/NVIDIA 上触发真实 nvcc/Triton 编译失败，也未调用真实模型，均为 **NOT_RUN**；
+  因而 T31 为 `READY_FOR_ACCEPTANCE`，不是 GPU/LIVE_MODEL 已验收。
+
+## 当前增量（2026-09-15，T30 profiling 链路加固）
+
+- 基线：从最新 `origin/main`（`cf5e46c`）创建
+  `codex/profiling-integration-hardening`；原本地 `main` 的 8 个未推提交保持不动。
+- 优化流程已有的 `baseline timing -> NCU profile -> method plan -> candidate` 链路保留；本轮修复
+  stale scratch/report 可被失败重试误用、NCU 非零退出码被 shell `echo` 掩盖、`n/a` 被当成指标值、
+  resume 未校验证据内容、失败 profiling 未计入预算等可信性问题。
+- profiling 仍与正式 timing 分离；只 profile 父端固定 baseline，不把候选放进 ADR-0003 的
+  privileged 诊断租约。真实 profiler 以 hard timeout 作为启动前 GPU 预算预留，完成后按实际 wall time
+  结算；失败、权限拒绝与超时同样结算已消耗的租约时间并降级为 static-only。
+- 验收：profiling/优化专项 `73 passed`；全量 `722 passed / 23 skipped / 0 failed`；ruff 全绿。
+  标准报告：`artifacts/t30-profiling-hardening-cpu/b012f58b97374d76b9c4ad6eb258449a/report.json`
+  （sha256 `69d35bf8f9ce6927f15f72227bd010b65e56b3e59dacfb7a3e787bfcc068ed24`）。
+- 未验证：本轮没有 Ubuntu/NVIDIA 环境，真实 `.ncu-rep` 与不同 GPU 指标可得性均为 **NOT_RUN**；
+  原 T30 的 RTX 4060 GPU PASS 作为历史证据保留，不能替代本轮加固后的 GPU 复验。
+
 ## 当前快照（2026-09-14 通宵轮：主循环整合 + 前端 + 生成器 + benchmark 扩展）
 
 **主线**：用户指定的通宵目标轮完成（领导者分派 9 个子 agent，逐包审查提交）。全量测试 **681+ passed / 3 skipped**

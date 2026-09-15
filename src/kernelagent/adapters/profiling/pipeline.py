@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import shlex
 import shutil
 import subprocess
 import time
@@ -320,15 +321,19 @@ def profile_baseline(
         return _not_run("staging_failed", str(exc), capture)
 
     profile_dir.mkdir(parents=True, exist_ok=True)
-    workdir = profile_dir / "scratch"
-    workdir.mkdir(parents=True, exist_ok=True)
-    script = (
-        f"cd /out && {capture.ncu_container_path} "
-        + " ".join(capture.ncu_arguments())
-        + " python3 /task/profile_driver.py\n"
-        "echo ncu_rc=$?\n"
-    )
     container_name = f"kernelagent-prof-{uuid.uuid4().hex[:12]}"
+    # A capture gets a unique output directory. Reusing ``profile/scratch``
+    # allowed a failed retry to observe a previous driver marker/report and
+    # falsely accept stale evidence as fresh.
+    workdir = profile_dir / f"scratch-{container_name.removeprefix('kernelagent-prof-')}"
+    workdir.mkdir(parents=True, exist_ok=False)
+    ncu_command = [
+        capture.ncu_container_path,
+        *capture.ncu_arguments(),
+        "python3",
+        "/task/profile_driver.py",
+    ]
+    script = f"cd /out\n{shlex.join(ncu_command)}\nncu_rc=$?\necho ncu_rc=$ncu_rc\nexit $ncu_rc\n"
     command = [
         *capture.docker_command,
         "run",
@@ -358,6 +363,7 @@ def profile_baseline(
         )
     except subprocess.TimeoutExpired:
         _force_remove_container(capture.docker_command, container_name)
+        shutil.rmtree(workdir, ignore_errors=True)
         return _not_run(
             "timeout",
             f"ncu container exceeded timeout_seconds={capture.timeout_seconds}; "
@@ -366,6 +372,7 @@ def profile_baseline(
             gpu_wall_seconds=time.monotonic() - started,
         )
     except OSError as exc:
+        shutil.rmtree(workdir, ignore_errors=True)
         return _not_run(
             "docker_unavailable",
             f"failed to launch the diagnostic container: {exc}",
@@ -375,9 +382,21 @@ def profile_baseline(
     wall = time.monotonic() - started
     combined = completed.stdout + "\n" + completed.stderr
 
+    if completed.returncode != 0:
+        blocker = detect_profiling_blocker(combined)
+        shutil.rmtree(workdir, ignore_errors=True)
+        return _not_run(
+            blocker or "ncu_failed",
+            f"ncu diagnostic container failed (rc={completed.returncode})",
+            capture,
+            gpu_wall_seconds=wall,
+            stderr_tail=combined,
+        )
+
     driver_marker = workdir / "driver_meta.json"
     if not driver_marker.is_file():
         blocker = detect_profiling_blocker(combined)
+        shutil.rmtree(workdir, ignore_errors=True)
         return _not_run(
             blocker or "driver_failed",
             f"baseline driver did not complete inside the diagnostic container "
@@ -388,8 +407,9 @@ def profile_baseline(
         )
 
     raw_report = workdir / "baseline.ncu-rep"
-    if not raw_report.is_file():
+    if not raw_report.is_file() or raw_report.stat().st_size == 0:
         blocker = detect_profiling_blocker(combined)
+        shutil.rmtree(workdir, ignore_errors=True)
         return _not_run(
             blocker or "report_not_produced",
             f"ncu produced no report (rc={completed.returncode})",
@@ -399,10 +419,11 @@ def profile_baseline(
         )
 
     report_path = profile_dir / BASELINE_REPORT_NAME
-    shutil.move(str(raw_report), report_path)
+    raw_report.replace(report_path)
     try:
         launches = import_report(ncu_bin, report_path, timeout=120.0)
     except (RuntimeError, ValueError, subprocess.TimeoutExpired, OSError) as exc:
+        shutil.rmtree(workdir, ignore_errors=True)
         return _not_run(
             "import_failed",
             f"host-side report import failed: {exc}",
@@ -411,6 +432,7 @@ def profile_baseline(
             stderr_tail=combined,
         )
     if not launches:
+        shutil.rmtree(workdir, ignore_errors=True)
         return _not_run(
             "no_kernels_profiled",
             "report parsed but contains zero launches",
@@ -418,11 +440,25 @@ def profile_baseline(
             gpu_wall_seconds=wall,
             stderr_tail=combined,
         )
+    report_sha256 = hashlib.sha256(report_path.read_bytes()).hexdigest()
     view = evidence_view(launches, MetricCatalog.default())
+    view["profile_identity"] = {
+        "source": "ncu_profile",
+        "problem_sha256": problem_sha256,
+        "driver_sha256": driver_sha256(),
+        "report_sha256": report_sha256,
+        "capture": capture.to_dict(),
+    }
     evidence_path = profile_dir / BASELINE_EVIDENCE_NAME
     from kernelagent.adapters.profiling.ncu import to_json
 
-    evidence_path.write_text(to_json(view), encoding="utf-8")
+    evidence_text = to_json(view)
+    evidence_bytes = evidence_text.encode("utf-8")
+    evidence_temporary = evidence_path.with_name(f".{evidence_path.name}.{uuid.uuid4().hex}.tmp")
+    evidence_temporary.write_bytes(evidence_bytes)
+    evidence_temporary.replace(evidence_path)
+    evidence_sha256 = hashlib.sha256(evidence_bytes).hexdigest()
+    shutil.rmtree(workdir, ignore_errors=True)
     return {
         "status": "collected",
         "reason": None,
@@ -432,8 +468,9 @@ def profile_baseline(
         "gpu_wall_seconds": wall,
         "stderr_tail": combined[-1200:],
         "report_path": report_path.name,
-        "report_sha256": hashlib.sha256(report_path.read_bytes()).hexdigest(),
+        "report_sha256": report_sha256,
         "evidence_path": evidence_path.name,
+        "evidence_sha256": evidence_sha256,
         "evidence_view": view,
         "summary": summarize_evidence(view),
         "problem_sha256": problem_sha256,
@@ -487,16 +524,40 @@ def summarize_evidence(view: dict) -> dict:
     }
 
 
-def load_collected_evidence(profile_dir: Path) -> dict | None:
-    """Previously collected evidence view for this run, or ``None``."""
-    path = Path(profile_dir) / BASELINE_EVIDENCE_NAME
+def load_collected_evidence(
+    profile_dir: Path,
+    *,
+    evidence_name: str = BASELINE_EVIDENCE_NAME,
+    expected_sha256: str | None = None,
+    expected_problem_sha256: str | None = None,
+) -> dict | None:
+    """Return reusable evidence only when its persisted identity matches.
+
+    A missing hash is accepted for legacy records, but new records always
+    provide one. A supplied hash/problem identity is fail-closed: corrupted,
+    stale or cross-problem evidence is never fed to the method planner.
+    """
+    path = Path(profile_dir) / Path(evidence_name).name
     if not path.is_file():
         return None
     try:
-        view = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
+        raw = path.read_bytes()
+        if expected_sha256 is not None and hashlib.sha256(raw).hexdigest() != expected_sha256:
+            return None
+        view = json.loads(raw.decode("utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
         return None
-    return view if isinstance(view, dict) and view.get("launches") else None
+    if (
+        not isinstance(view, dict)
+        or view.get("source") != "ncu_profile"
+        or not view.get("launches")
+    ):
+        return None
+    identity = view.get("profile_identity")
+    if expected_problem_sha256 is not None and isinstance(identity, dict):
+        if identity.get("problem_sha256") != expected_problem_sha256:
+            return None
+    return view
 
 
 def build_baseline_profiler(
@@ -517,6 +578,8 @@ def build_baseline_profiler(
     :func:`profile_baseline` and is injectable in tests (the loop never
     builds it when offline fakes replace the real timing port)."""
 
+    effective_capture = capture or ProfileCapture()
+
     def run() -> dict:
         return profile_baseline(
             profile_dir=profile_dir,
@@ -526,8 +589,12 @@ def build_baseline_profiler(
             problem_name=problem_name,
             problem_source=problem_source,
             gpu_device=gpu_device,
-            capture=capture,
+            capture=effective_capture,
             problem_sha256=problem_sha256,
         )
 
+    # The loop uses this before starting the real GPU lease. The reservation
+    # equals the hard timeout, so profiling cannot begin without budget for
+    # its worst permitted wall-clock duration.
+    run.reservation_gpu_seconds = effective_capture.timeout_seconds  # type: ignore[attr-defined]
     return run

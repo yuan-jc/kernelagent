@@ -112,7 +112,7 @@ def build_stage_ports(
             "correct": result.upstream_correctness,
             "outcome_status": result.outcome_status,
             "stderr_tail": result.detail.get("stderr_tail", ""),
-            "upstream_metadata": "",
+            "upstream_metadata": result.detail.get("upstream_metadata", {}),
         }
 
     def correctness_pro(

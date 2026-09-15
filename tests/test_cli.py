@@ -14,8 +14,80 @@ def test_cli_help_lists_product_commands(capsys):
         main(["--help"])
     assert excinfo.value.code == 0
     out = capsys.readouterr().out
-    for command in ("optimize", "resume", "status"):
+    for command in ("check", "bench", "probe", "optimize", "resume", "status", "profile"):
         assert command in out
+    assert "Typical workflow" in out
+    assert "MODEL_PROVIDER_API_KEY" in out
+
+
+@pytest.mark.parametrize(
+    "argv",
+    [
+        ["check", "--help"],
+        ["bench", "--help"],
+        ["bench", "verify", "--help"],
+        ["probe", "--help"],
+        ["status", "--help"],
+        ["profile", "--help"],
+    ],
+)
+def test_every_non_optimization_command_has_detailed_help(argv, capsys):
+    with pytest.raises(SystemExit) as excinfo:
+        main(argv)
+    assert excinfo.value.code == 0
+    out = capsys.readouterr().out
+    assert "Examples:" in out
+    assert "options:" in out
+
+
+def test_optimize_help_explains_defaults_units_and_failure_allowance(capsys):
+    with pytest.raises(SystemExit) as excinfo:
+        main(["optimize", "--help"])
+    assert excinfo.value.code == 0
+    out = " ".join(capsys.readouterr().out.split())
+    for marker in (
+        "kernelbench:l1:40",
+        "default: triton",
+        "MODEL_PROVIDER_BASE_URL",
+        "Maximum candidate attempts",
+        "Failure allowance",
+        "GPU lease budget in seconds",
+        "model token budget",
+        "must be new or empty",
+        "default: auto-detect",
+        "Disable baseline NCU profiling",
+        "MODEL_PROVIDER_API_KEY",
+        "Exit codes:",
+    ):
+        assert marker in out
+
+
+def test_resume_help_explains_manifest_inheritance_without_redundant_flag(capsys):
+    with pytest.raises(SystemExit) as excinfo:
+        main(["resume", "--help"])
+    assert excinfo.value.code == 0
+    out = capsys.readouterr().out
+    assert "run_manifest.json" in out
+    assert "identity fields must match" in out
+    assert "candidate/budget fields create revision events" in out
+    assert "--resume" not in out
+
+
+def test_profile_help_explains_preconditions_and_metric_precedence(capsys):
+    with pytest.raises(SystemExit) as excinfo:
+        main(["profile", "--help"])
+    assert excinfo.value.code == 0
+    out = capsys.readouterr().out
+    assert "existing optimize run" in out
+    assert "overrides --set" in out
+    assert "does not benchmark candidates" in out
+
+
+def test_invalid_profile_kind_is_an_argparse_error(capsys):
+    with pytest.raises(SystemExit) as excinfo:
+        main(["profile", "--output", "run", "--kind", "candidate"])
+    assert excinfo.value.code == 2
+    assert "invalid choice" in capsys.readouterr().err
 
 
 def test_optimize_without_base_url_is_a_config_error(tmp_path, monkeypatch):

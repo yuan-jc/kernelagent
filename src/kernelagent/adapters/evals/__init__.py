@@ -13,6 +13,7 @@ from kernelagent.adapters.evals.kernelbench_eval import (
     EvalCaseResult,
     derive_upstream_verdict,
     evaluate_case,
+    extract_upstream_diagnostics,
 )
 from kernelagent.adapters.evals.timing import (
     SOURCE_TAG,
@@ -37,6 +38,7 @@ __all__ = [
     "bootstrap_ratio_ci",
     "derive_upstream_verdict",
     "evaluate_case",
+    "extract_upstream_diagnostics",
     "overall_verdict",
     "run_pro_case",
     "run_timing_case",

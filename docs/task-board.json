@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "updated_at": "2026-09-14",
+  "updated_at": "2026-09-15",
   "design_baseline": "docs/NVIDIA算子优化Agent设计文档.md",
   "plan": "docs/开发任务与验收计划.md",
   "status_values": [
@@ -27,7 +27,8 @@
     "2026-09-14 04:50 closeout: RV03 landed (3278f4c, dual-path request parity, 714 passed); frontend closeout 1b1ff61 (unknown-state convergence, baseline lane badge, best-speedup tile, NCU baseline card). Live experiments: 5-candidate method rotation ran 5 distinct methods, all compiled=True but correct=False -> honest no_improvement; max_repair_rounds semantics = tolerated failed candidates (failure budget), needs ADR-level clarification in RV04 round. DeepSeek total spend about 0.05 CNY.",
     "RV04 landed (a554573): actual GPU-lease metering replaces fixed 300s quota; reservations=stage floors, deadline to real ports, actual/estimated labels. Real-GPU spot check run 20260914-050538: completed+champion, settled 32.38s all-actual (was 900 fixed). 725 passed / 3 skipped.",
     "RV06 landed (9da1918): mount-source boundary preflight before any docker operation; 10 unconditional tests; CI run 34783428574 triggered. 735 passed / 3 skipped local.",
-    "CI GREEN 2026-09-14: run 34784963289 (cc850bd) 4/4 matrices success. Windows fixes: cross-platform lock holder + hint-byte lock (4096), .gitattributes * -text for byte-faithful frozen hashes, binary workspace fixtures, symlink-fixture skip guard. RV06 TARGET_PASS."
+    "CI GREEN 2026-09-14: run 34784963289 (cc850bd) 4/4 matrices success. Windows fixes: cross-platform lock holder + hint-byte lock (4096), .gitattributes * -text for byte-faithful frozen hashes, binary workspace fixtures, symlink-fixture skip guard. RV06 TARGET_PASS.",
+    "T30 hardening 2026-09-15: profile capture now uses fresh per-attempt scratch + strict NCU exit status; unavailable metric sentinels stay MISSING; persisted planner evidence is content-hash/problem-identity checked on resume; success/failure/timeout profiling is settled against GPU budget and the real profiler reserves its timeout before launch. CPU 722 passed / 23 environment-gated skipped; GPU revalidation for this hardening is NOT_RUN."
   ],
   "tasks": [
     {
@@ -729,10 +730,80 @@
       },
       "evidence": [
         "tests/test_profiling_pipeline.py",
-        "src/kernelagent/adapters/profiling/pipeline.py"
+        "src/kernelagent/adapters/profiling/pipeline.py",
+        "artifacts/t30-profiling-hardening-cpu/b012f58b97374d76b9c4ad6eb258449a/report.json"
       ],
       "work_package_record": "docs/handoffs/current.md",
-      "blocker": "GPU 冒烟在本机 4060 实测（LayerNorm baseline，ncu_full，launch_bound）；其它 GPU 型号的指标可得性未验"
+      "blocker": "原 T30 GPU 冒烟在 RTX 4060 实测（LayerNorm baseline，ncu_full，launch_bound）；2026-09-15 的 stale-artifact/identity/budget 加固仅完成 Windows CPU 回归，真实 NCU/GPU 复验 NOT_RUN；其它 GPU 型号的指标可得性未验"
+    },
+    {
+      "id": "T31",
+      "title": "编译错误结构化反馈（KernelBench metadata 透传、候选记录、下一轮修复提示、resume 一致性）",
+      "dependencies": [
+        "T05",
+        "T16",
+        "T29"
+      ],
+      "status": "READY_FOR_ACCEPTANCE",
+      "checks": {
+        "CPU": "PASS",
+        "GPU": "NOT_RUN",
+        "LIVE_MODEL": "NOT_RUN",
+        "REVIEW": "PASS"
+      },
+      "evidence": [
+        "tests/test_kernelbench_eval_adapter.py",
+        "tests/test_optimization_loop.py",
+        "tests/test_resume_request_parity.py",
+        "artifacts/compile-error-feedback-cpu/e3c193f96c8a4e2292491ccbe9225c94/report.json"
+      ],
+      "work_package_record": "docs/handoffs/current.md",
+      "blocker": "Windows CPU 适配器/循环/恢复路径已验证；Ubuntu + NVIDIA 真实编译失败和真实模型修复循环 NOT_RUN"
+    },
+    {
+      "id": "T32",
+      "title": "用户友好 CLI 帮助（完整参数语义、默认值/继承、示例、环境变量、退出码）",
+      "dependencies": [
+        "T16",
+        "T30"
+      ],
+      "status": "ACCEPTED",
+      "checks": {
+        "CPU": "PASS",
+        "GPU": "N/A",
+        "LIVE_MODEL": "N/A",
+        "REVIEW": "PASS"
+      },
+      "evidence": [
+        "src/kernelagent/cli.py",
+        "tests/test_cli.py",
+        "README.md",
+        "artifacts/cli-help-cpu/50fd156e53594190ba1c26e7508ed66e/report.json"
+      ],
+      "work_package_record": "docs/handoffs/current.md",
+      "blocker": null
+    },
+    {
+      "id": "T33",
+      "title": "Profiling 证据到优化方法的可信决策链（规范化、聚合、Roofline、多轴特征、匹配与可选排序）",
+      "dependencies": [
+        "T15",
+        "T16",
+        "T21",
+        "T30"
+      ],
+      "status": "TODO",
+      "checks": {
+        "CPU": "NOT_RUN",
+        "GPU": "NOT_RUN",
+        "LIVE_MODEL": "NOT_RUN",
+        "REVIEW": "NOT_RUN"
+      },
+      "evidence": [
+        "docs/work-packages/T33.md"
+      ],
+      "work_package_record": "docs/work-packages/T33.md",
+      "blocker": "需先冻结真实目标 GPU/NCU metric schema、硬件峰值来源、多 workload 权重和候选 profiling 信任边界；本文仅为待办设计，不代表实现完成"
     }
   ]
 }

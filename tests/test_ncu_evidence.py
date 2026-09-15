@@ -4,6 +4,11 @@ Pure CPU. The real report generation runs in the ADR-0003 diagnostic
 container via examples/ncu_evidence_smoke.py; these tests pin the
 interpretation semantics on representative raw CSV."""
 
+import subprocess
+from types import SimpleNamespace
+
+import pytest
+
 from kernelagent.adapters.profiling import (
     MISSING,
     LaunchMetrics,
@@ -12,7 +17,9 @@ from kernelagent.adapters.profiling import (
     detect_profiling_blocker,
     evidence_view,
     parse_raw_csv,
+    profile_in_diagnostic_container,
 )
+from kernelagent.adapters.profiling import ncu as ncu_module
 
 RAW_CSV = (
     '"ID","Process ID","Process Name","Host Name","Kernel Name","Context","Stream",'
@@ -60,6 +67,17 @@ def test_zero_is_distinguishable_from_missing():
     assert launches[0].value("gpu__time_duration.sum") is not MISSING
 
 
+def test_ncu_unavailable_sentinels_are_missing_not_string_measurements():
+    raw = RAW_CSV.replace('"12.5","32"', '"12.5","n/a"', 1)
+    launches = parse_raw_csv(raw)
+    assert launches[0].value("launch__registers_per_thread") is MISSING
+    view = evidence_view(launches, MetricCatalog.default())
+    assert "launch__registers_per_thread" not in launches[0].metrics
+    # Other launches still carry the metric, so the aggregate is correctly
+    # partial per launch rather than missing from the entire report.
+    assert "launch__registers_per_thread" not in view["catalog_metrics_missing_in_all_launches"]
+
+
 def test_launch_association_keeps_all_and_order():
     launches = parse_raw_csv(RAW_CSV)
     scale_launches = associate_launches(launches, "scale")
@@ -104,3 +122,50 @@ def test_launch_metrics_dataclass_validates_via_value():
     )
     assert launch.value("m") == 1
     assert launch.value("absent") is MISSING
+
+
+def test_diagnostic_capture_failure_never_accepts_existing_output(tmp_path, monkeypatch):
+    binary = tmp_path / "fixed-kernel"
+    binary.write_bytes(b"binary")
+    output = tmp_path / "profile.ncu-rep"
+    output.write_bytes(b"old-report")
+    monkeypatch.setattr(
+        ncu_module.subprocess,
+        "run",
+        lambda *a, **k: subprocess.CompletedProcess(a, 7, "", "capture failed"),
+    )
+
+    with pytest.raises(RuntimeError, match="profiling failed rc=7"):
+        profile_in_diagnostic_container(
+            binary_path=binary,
+            output_path=output,
+            gpu_device="nvidia.com/gpu=GPU-fake",
+        )
+
+    assert output.read_bytes() == b"old-report"
+
+
+def test_diagnostic_capture_atomically_replaces_output_from_this_attempt(tmp_path, monkeypatch):
+    binary = tmp_path / "fixed kernel"
+    binary.write_bytes(b"binary")
+    output = tmp_path / "profile.ncu-rep"
+    output.write_bytes(b"old-report")
+    monkeypatch.setattr(ncu_module.uuid, "uuid4", lambda: SimpleNamespace(hex="capture123"))
+
+    def successful_run(*args, **kwargs):
+        temporary = tmp_path / ".profile.ncu-rep.capture123.ncu-rep"
+        temporary.write_bytes(b"fresh-report")
+        command = args[0]
+        script = command[-1]
+        assert "'/indata/fixed kernel'" in script
+        return subprocess.CompletedProcess(command, 0, "", "")
+
+    monkeypatch.setattr(ncu_module.subprocess, "run", successful_run)
+    returned = profile_in_diagnostic_container(
+        binary_path=binary,
+        output_path=output,
+        gpu_device="nvidia.com/gpu=GPU-fake",
+    )
+
+    assert returned == output.resolve()
+    assert output.read_bytes() == b"fresh-report"
